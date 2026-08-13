@@ -1,0 +1,11 @@
+{
+  "name": "Remix Olaria do Zico",
+  "description": "Sistema de Gestão Inteligente por Voz para Olaria do Zico - Produção, Vendas, Estoque e Financeiro",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
