@@ -46,38 +46,46 @@ async function startServer() {
         return res.json(fallbackRuleBasedNlu(transcript, context));
       }
 
-      const productsSummary = context?.products ? context.products.map((p: any) => `${p.name} (Estoque: ${p.stock}, R$${p.price})`).join(', ') : '';
-      const customersSummary = context?.customers ? context.customers.map((c: any) => c.name).join(', ') : '';
+      const productsSummary = context?.products
+        ? context.products.map((p: any) => `${p.name} (Estoque: ${p.stock}, R$${p.price})`).join(', ')
+        : '';
+      const customersSummary = context?.customers
+        ? context.customers.map((c: any) => c.name).join(', ')
+        : '';
 
       const systemInstruction = `
-Você é o "Assistente da Olaria", a IA administrativa da "Olaria do Zico" (fábrica de vasos, fontes, cachepôs, jardineiras e peças decorativas de cerâmica).
-Seu papel é interpretar falas em Português do Brasil do oleiro/proprietário e transformar em dados estruturados ou responder a dúvidas financeiras/estoque.
+Você é o "Assistente da Olaria", a IA administrativa e operacional de confiança da "Olaria do Zico" (fábrica de vasos, fontes, cachepôs, jardineiras, bacias e peças cerâmicas decorativas).
+Seu papel é interpretar com máxima precisão falas em Português do Brasil do oleiro/proprietário e transformar em dados estruturados estritamente confiáveis ou responder a dúvidas operacionais e financeiras.
 
-Produtos atuais em catálogo: [${productsSummary}]
-Clientes cadastrados: [${customersSummary}]
+Catálogo atual de produtos em estoque:
+[${productsSummary}]
 
-Defina uma das intenções (intent):
-1. RECORD_SALE: Venda de vaso, fonte ou produto cerâmico (ex: "Vendi um vaso Vietnamita por 180 reais para João, no Pix", "Vendi duas fontes para Carlos por 600").
-2. RECORD_PRODUCTION: Registro de produção/queima (ex: "Produzi 15 vasos médios hoje", "Fiz 10 cachepôs").
-3. RECORD_RAW_MATERIAL: Compra de matéria-prima (ex: "Comprei 50 quilos de argila por 300 reais", "Comprei esmalte azul").
-4. RECORD_LOSS: Perda ou quebra (ex: "Quebrei três vasos na queima", "Dos 20, 3 quebraram na queima").
-5. RECORD_RECEIVABLE_PAYMENT: Recebimento de dívida/fiado (ex: "Recebi 500 reais do João", "Pedro pagou 200").
-6. RECORD_EXPENSE: Pagamento de despesa (ex: "Gastei 150 reais de combustível", "Paguei a luz").
-7. RECORD_RESERVE: Reserva de produto (ex: "Reserve cinco vasos para o Carlos").
-8. RECORD_DELIVERY: Confirmação de entrega (ex: "Entreguei o pedido da Maria", "Entreguei pro Carlos").
-9. QUERY: Pergunta do oleiro sobre faturamento, vendas, estoque, dívidas (ex: "Quanto vendi esse mês?", "Quem está devendo?", "Quantos vasos grandes tenho?").
+Clientes cadastrados na olaria:
+[${customersSummary}]
+
+Defina rigorosamente uma das intenções (intent):
+1. RECORD_SALE: Venda de vaso, fonte, jardineira ou produto cerâmico (ex: "Vendi um vaso Vietnamita por 180 reais para João no Pix", "Vendi duas fontes para Carlos por 600 no fiado", "Venda de 3 vasos espirais por 360, deu 100 de entrada").
+2. RECORD_PRODUCTION: Registro de produção/queima/lote (ex: "Produzi 15 vasos médios hoje", "Fiz 10 cachepôs", "Botei 20 vasos no forno").
+3. RECORD_RAW_MATERIAL: Compra de matéria-prima (ex: "Comprei 50 quilos de argila por 300 reais", "Comprei 5 litros de esmalte azul por 200 reais").
+4. RECORD_LOSS: Perda ou quebra na queima/manuseio (ex: "Quebrei três vasos na queima", "Perdi 2 jardineiras no forno").
+5. RECORD_RECEIVABLE_PAYMENT: Recebimento de dívida/fiado (ex: "Recebi 500 reais do João", "Carlos pagou 200 do que devia").
+6. RECORD_EXPENSE: Pagamento de despesa operacional (ex: "Gastei 150 reais de combustível da entrega", "Paguei 220 reais de conta de luz").
+7. RECORD_RESERVE: Reserva de produto para cliente (ex: "Reserve cinco vasos para o Carlos").
+8. RECORD_DELIVERY: Confirmação de entrega de pedido (ex: "Entreguei o pedido da Maria", "Entrega do Carlos concluída").
+9. QUERY: Pergunta do oleiro sobre faturamento, vendas, saldo, estoque ou dívidas (ex: "Quanto vendi esse mês?", "Quem está devendo?", "Quantos vasos grandes tenho em estoque?").
 10. UNKNOWN: Outro assunto não relacionado.
 
-Regras importantes:
-- Se faltar informação essencial em uma operação (por exemplo, forma de pagamento em uma venda), defina needsMoreInfo=true e coloque em questionToUser uma pergunta curta e amigável (ex: "Como Carlos pagou?").
-- Se a operação de venda exceder o estoque disponível fornecido no contexto, crie um alerta no campo warning (ex: "Atenção: você possui apenas 5 unidades em estoque.").
-- Se o valor for atipicamente alto em relação ao normal (ex: "Vendi um vaso por R$ 5.000"), crie um alerta no campo warning ("Atenção: valor informado de R$ 5.000 é muito maior que o habitual de R$ 250.").
-- No campo queryAnswer (quando intent for QUERY), forneça uma resposta direta, clara e sucinta em português como um assistente de olaria prestativo.
-- Crie um resumo conciso (summary) no formato: "Venda de 1 Vaso Vietnamita por R$ 180 para João, pagamento via Pix."
+Regras de negócio cruciais:
+- Para vendas com pagamento a prazo/fiado: 'paidValue' deve ser 0 (ou valor da entrada caso haja), 'pendingValue' deve ser o restante, e 'paymentMethod' deve ser 'Fiado' ou o método da entrada.
+- Sempre tente associar o nome do produto exatamente com o catálogo disponível. Se o produto falado não constar exatamente, use o nome falado sem forçar o produto errado.
+- Se a quantidade vendida for maior que o estoque atual informado no contexto, adicione um aviso explicativo no campo 'warning'.
+- Se o valor for discrepante (ex: vaso por R$ 5.000), aponte no campo 'warning'.
+- Se for QUERY, gere uma resposta clara, objetiva e amigável em 'parsedData.queryAnswer'.
+- Gere sempre um resumo (summary) conciso, elegante e no formato ideal de confirmação humana.
 `;
 
       const response = await aiClient.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-2.5-flash',
         contents: `Analise a fala do oleiro: "${transcript}"`,
         config: {
           systemInstruction,
@@ -155,63 +163,94 @@ Regras importantes:
 function fallbackRuleBasedNlu(text: string, context: any) {
   const lower = text.toLowerCase().trim();
 
+  // Helper to find product from context
+  const findProductInContext = (str: string) => {
+    if (!context?.products || !Array.isArray(context.products)) return null;
+    const match = context.products.find((p: any) => str.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(str));
+    return match || null;
+  };
+
   // 1. Sale
-  if (lower.includes('vendi') || lower.includes('venda')) {
+  if (lower.includes('vendi') || lower.includes('venda') || lower.includes('comprou')) {
     const hasPix = lower.includes('pix');
-    const hasFiado = lower.includes('fiado') || lower.includes('devendo');
-    let paymentMethod = hasPix ? 'Pix' : (hasFiado ? 'Fiado' : 'Dinheiro');
+    const hasFiado = lower.includes('fiado') || lower.includes('devendo') || lower.includes('prazo');
+    const hasCartao = lower.includes('cartao') || lower.includes('cartão');
+    let paymentMethod = hasPix ? 'Pix' : (hasFiado ? 'Fiado' : (hasCartao ? 'Cartão' : 'Dinheiro'));
     
     // Numbers extraction
-    const matchVal = lower.match(/(?:por|de|valor|r\$)\s*(\d+)/i) || lower.match(/(\d+)\s*(?:reais|real)/i);
-    const val = matchVal ? parseFloat(matchVal[1]) : 180;
+    const matchVal = lower.match(/(?:por|de|valor|r\$)\s*(\d+(?:[.,]\d+)?)/i) || lower.match(/(\d+(?:[.,]\d+)?)\s*(?:reais|real)/i);
+    let val = matchVal ? parseFloat(matchVal[1].replace(',', '.')) : 180;
 
-    const matchQty = lower.match(/(\d+)\s*(?:vaso|vasos|fonte|fontes|cachepô|cachepos|jardineira)/i) || lower.match(/(?:um|uma)\s*(?:vaso|fonte|cachepô)/i);
+    const matchQty = lower.match(/(\d+)\s*(?:vaso|vasos|fonte|fontes|cachepô|cachepos|jardineira|peca|peça)/i) || lower.match(/(?:um|uma)\s*(?:vaso|fonte|cachepô)/i);
     const qty = matchQty ? (matchQty[1] ? parseInt(matchQty[1]) : 1) : 1;
 
-    let customerName = 'Cliente';
-    const matchCustomer = lower.match(/(?:para|pro|pra|cliente)\s+([a-záàâãéèêíóôõúç]+)/i);
-    if (matchCustomer) {
+    // Detect product from text
+    let matchedProd = findProductInContext(lower);
+    let prodName = matchedProd ? matchedProd.name : (
+      lower.includes('fonte') ? 'Fonte Decorativa' :
+      lower.includes('espiral') ? 'Vaso Espiral Terracota' :
+      lower.includes('cachepô') || lower.includes('cachepo') ? 'Cachepô Esmaltado' :
+      lower.includes('jardineira') ? 'Jardineira Rústica' : 'Vaso Cerâmico Artesanal'
+    );
+
+    let customerName = 'Cliente Balcão';
+    const matchCustomer = lower.match(/(?:para|pro|pra|cliente|ao)\s+([a-záàâãéèêíóôõúç]+)/i);
+    if (matchCustomer && !['um', 'uma', 'dois', 'duas', 'vaso', 'fonte'].includes(matchCustomer[1].toLowerCase())) {
       customerName = matchCustomer[1].charAt(0).toUpperCase() + matchCustomer[1].slice(1);
     }
 
+    const paidValue = hasFiado ? 0 : val;
+    const pendingValue = hasFiado ? val : 0;
+
     return {
       intent: 'RECORD_SALE',
-      summary: `Venda de ${qty} Vaso(s) por R$ ${val} para ${customerName}, pagamento em ${paymentMethod}.`,
+      summary: `Venda de ${qty}x ${prodName} por R$ ${val.toFixed(2)} para ${customerName} (${paymentMethod}).`,
       needsMoreInfo: false,
-      confidence: 0.85,
+      confidence: 0.88,
       parsedData: {
         customerName,
-        productName: lower.includes('fonte') ? 'Fonte Decorativa' : 'Vaso Vietnamita',
+        productName: prodName,
         quantity: qty,
         unitPrice: val / qty,
         totalPrice: val,
-        paidValue: paymentMethod === 'Fiado' ? 0 : val,
-        pendingValue: paymentMethod === 'Fiado' ? val : 0,
+        paidValue,
+        pendingValue,
         paymentMethod
       }
     };
   }
 
   // 2. Production
-  if (lower.includes('produzi') || lower.includes('fiz') || lower.includes('produção')) {
+  if (lower.includes('produzi') || lower.includes('fiz') || lower.includes('produção') || lower.includes('producao') || lower.includes('forno')) {
     const matchQty = lower.match(/(\d+)/);
     const qty = matchQty ? parseInt(matchQty[1]) : 10;
+    
+    const matchLost = lower.match(/(\d+)\s*(?:perda|perdas|quebra|quebras|trinca)/i);
+    const qtyLost = matchLost ? parseInt(matchLost[1]) : 0;
+
+    let matchedProd = findProductInContext(lower);
+    let prodName = matchedProd ? matchedProd.name : (
+      lower.includes('fonte') ? 'Fonte Decorativa' :
+      lower.includes('espiral') ? 'Vaso Espiral Terracota' :
+      lower.includes('cachepô') ? 'Cachepô Esmaltado' : 'Vaso Cerâmico'
+    );
+
     return {
       intent: 'RECORD_PRODUCTION',
-      summary: `Registro de produção de ${qty} vasos médios.`,
+      summary: `Produção de lote com ${qty} unidades de ${prodName} (${qtyLost} perdas).`,
       needsMoreInfo: false,
-      confidence: 0.85,
+      confidence: 0.88,
       parsedData: {
-        productName: 'Vaso Vietnamita Médio',
+        productName: prodName,
         quantityProduced: qty,
-        quantityLost: 0,
+        quantityLost: qtyLost,
         stage: 'Pronto'
       }
     };
   }
 
   // 3. Loss / Breakage
-  if (lower.includes('quebrei') || lower.includes('trincou') || lower.includes('perda')) {
+  if (lower.includes('quebrei') || lower.includes('trincou') || lower.includes('perda') || lower.includes('quebra')) {
     const matchQty = lower.match(/(\d+)/) || lower.match(/(?:dois|tres|três|quatro)/);
     let qty = 1;
     if (matchQty) {
@@ -219,52 +258,62 @@ function fallbackRuleBasedNlu(text: string, context: any) {
       else if (lower.includes('dois')) qty = 2;
       else if (lower.includes('tres') || lower.includes('três')) qty = 3;
     }
+
+    let matchedProd = findProductInContext(lower);
+    let prodName = matchedProd ? matchedProd.name : 'Vaso Cerâmico';
+
     return {
       intent: 'RECORD_LOSS',
-      summary: `Registro de perda/quebra de ${qty} vaso(s).`,
+      summary: `Registro de quebra/perda de ${qty} unidade(s) de ${prodName}.`,
       needsMoreInfo: false,
-      confidence: 0.85,
+      confidence: 0.88,
       parsedData: {
-        productName: 'Vaso Vietnamita',
+        productName: prodName,
         quantityLost: qty
       }
     };
   }
 
   // 4. Raw Material
-  if (lower.includes('argila') || lower.includes('esmalte') || lower.includes('matéria') || lower.includes('comprei')) {
-    const matchVal = lower.match(/(\d+)\s*reais/) || lower.match(/(?:por|de)\s*(\d+)/);
-    const amount = matchVal ? parseFloat(matchVal[1]) : 300;
+  if (lower.includes('argila') || lower.includes('esmalte') || lower.includes('tinta') || lower.includes('matéria') || lower.includes('comprei')) {
+    const matchVal = lower.match(/(\d+(?:[.,]\d+)?)\s*reais/) || lower.match(/(?:por|de|valor)\s*(\d+(?:[.,]\d+)?)/);
+    const amount = matchVal ? parseFloat(matchVal[1].replace(',', '.')) : 300;
 
-    const matchQty = lower.match(/(\d+)\s*(?:kg|quilos|kilos)/i);
+    const matchQty = lower.match(/(\d+)\s*(?:kg|quilos|kilos|l|litros)/i);
     const qty = matchQty ? parseFloat(matchQty[1]) : 50;
+
+    const isEsmalte = lower.includes('esmalte');
+    const matName = isEsmalte ? 'Esmalte Cerâmico' : 'Argila Terracota';
+    const cat = isEsmalte ? 'Esmalte' : 'Argila';
 
     return {
       intent: 'RECORD_RAW_MATERIAL',
-      summary: `Compra de ${qty}kg de Argila no valor de R$ ${amount}.`,
+      summary: `Compra de ${qty}${isEsmalte ? 'L' : 'kg'} de ${matName} no valor de R$ ${amount.toFixed(2)}.`,
       needsMoreInfo: false,
-      confidence: 0.85,
+      confidence: 0.88,
       parsedData: {
-        materialName: 'Argila Terracota',
-        materialCategory: 'Argila',
+        materialName: matName,
+        materialCategory: cat,
         quantity: qty,
         amount: amount
       }
     };
   }
 
-  // 5. Payment Received
-  if (lower.includes('recebi') || lower.includes('pagou')) {
-    const matchVal = lower.match(/(\d+)/);
-    const amount = matchVal ? parseFloat(matchVal[1]) : 200;
-    const matchCust = lower.match(/(?:do|da|de|pelo)\s+([a-záàâãéèêíóôõúç]+)/i);
-    const customerName = matchCust ? matchCust[1].charAt(0).toUpperCase() + matchCust[1].slice(1) : 'João';
+  // 5. Payment Received (Recebimento de fiado)
+  if (lower.includes('recebi') || lower.includes('pagou') || lower.includes('acertou')) {
+    const matchVal = lower.match(/(\d+(?:[.,]\d+)?)/);
+    const amount = matchVal ? parseFloat(matchVal[1].replace(',', '.')) : 200;
+    const matchCust = lower.match(/(?:do|da|de|pelo|o)\s+([a-záàâãéèêíóôõúç]+)/i);
+    const customerName = (matchCust && !['reais', 'dinheiro', 'pix'].includes(matchCust[1].toLowerCase()))
+      ? matchCust[1].charAt(0).toUpperCase() + matchCust[1].slice(1)
+      : 'Cliente';
 
     return {
       intent: 'RECORD_RECEIVABLE_PAYMENT',
-      summary: `Recebimento de R$ ${amount} de ${customerName}.`,
+      summary: `Recebimento de R$ ${amount.toFixed(2)} de ${customerName}.`,
       needsMoreInfo: false,
-      confidence: 0.85,
+      confidence: 0.88,
       parsedData: {
         customerName,
         amount
@@ -272,39 +321,58 @@ function fallbackRuleBasedNlu(text: string, context: any) {
     };
   }
 
-  // 6. Delivery
+  // 6. Expense
+  if (lower.includes('gastei') || lower.includes('paguei') || lower.includes('despesa') || lower.includes('combustivel') || lower.includes('luz')) {
+    const matchVal = lower.match(/(\d+(?:[.,]\d+)?)/);
+    const amount = matchVal ? parseFloat(matchVal[1].replace(',', '.')) : 100;
+    const desc = lower.includes('luz') || lower.includes('energia') ? 'Energia Elétrica' :
+      lower.includes('combustivel') || lower.includes('gasolina') ? 'Combustível Entrega' : 'Despesa Geral Olaria';
+
+    return {
+      intent: 'RECORD_EXPENSE',
+      summary: `Pagamento de despesa (${desc}) de R$ ${amount.toFixed(2)}.`,
+      needsMoreInfo: false,
+      confidence: 0.88,
+      parsedData: {
+        expenseCategory: desc,
+        amount
+      }
+    };
+  }
+
+  // 7. Delivery
   if (lower.includes('entreguei') || lower.includes('entrega')) {
     const matchCust = lower.match(/(?:do|da|de|para|pro)\s+([a-záàâãéèêíóôõúç]+)/i);
-    const customerName = matchCust ? matchCust[1].charAt(0).toUpperCase() + matchCust[1].slice(1) : 'Carlos';
+    const customerName = matchCust ? matchCust[1].charAt(0).toUpperCase() + matchCust[1].slice(1) : 'Cliente';
     return {
       intent: 'RECORD_DELIVERY',
       summary: `Confirmação de entrega realizada para ${customerName}.`,
       needsMoreInfo: false,
-      confidence: 0.85,
+      confidence: 0.88,
       parsedData: {
         customerName
       }
     };
   }
 
-  // Query
-  if (lower.includes('quanto') || lower.includes('quem') || lower.includes('qual') || lower.includes('quantos')) {
+  // 8. Query
+  if (lower.includes('quanto') || lower.includes('quem') || lower.includes('qual') || lower.includes('quantos') || lower.includes('saldo')) {
     return {
       intent: 'QUERY',
       summary: `Consulta ao sistema de gestão.`,
       needsMoreInfo: false,
-      confidence: 0.8,
+      confidence: 0.85,
       parsedData: {
-        queryAnswer: `No momento você possui 12 Vasos Vietnamitas Grandes e 8 Médios em estoque. Vendas do mês somam R$ 1.760,00.`
+        queryAnswer: `Seus registros estão em dia. No painel de controle você pode conferir o saldo em caixa, pedidos pendentes e estoque em tempo real.`
       }
     };
   }
 
   return {
     intent: 'UNKNOWN',
-    summary: `Comando não compreendido totalmente: "${text}"`,
+    summary: `Comando não compreendido com certeza: "${text}"`,
     needsMoreInfo: true,
-    questionToUser: 'Pode repetir a operação? Exemplo: "Vendi um vaso por 180 reais".',
+    questionToUser: 'Pode repetir o comando? Ex: "Vendi 2 vasos por 240 no Pix para Carlos".',
     confidence: 0.4
   };
 }

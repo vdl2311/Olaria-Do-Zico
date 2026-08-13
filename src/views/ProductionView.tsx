@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Hammer, Plus, Mic, Flame, CheckCircle, AlertTriangle, ChevronRight, X } from 'lucide-react';
-import { StorageService } from '../services/storage';
+import React, { useState, useEffect } from 'react';
+import { Hammer, Plus, Mic, Flame, CheckCircle, AlertTriangle, ChevronRight, X, Trash2, CheckCircle2 } from 'lucide-react';
+import { StorageService, subscribeStorage } from '../services/storage';
 import { ProductionBatch, Product, ProductionStage } from '../types';
 
 interface ProductionViewProps {
@@ -11,7 +11,7 @@ export const STAGES: ProductionStage[] = ['Produção', 'Secagem', 'Queima', 'Ac
 
 export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal }) => {
   const [batches, setBatches] = useState<ProductionBatch[]>(() => StorageService.getProduction());
-  const [products] = useState<Product[]>(() => StorageService.getProducts());
+  const [products, setProducts] = useState<Product[]>(() => StorageService.getProducts());
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New Batch Form
@@ -24,18 +24,40 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
 
   const refreshData = () => {
     setBatches(StorageService.getProduction());
+    setProducts(StorageService.getProducts());
   };
 
+  useEffect(() => {
+    const unsub = subscribeStorage(() => {
+      refreshData();
+    });
+    return () => unsub();
+  }, []);
+
   const handleUpdateStage = (batch: ProductionBatch, newStage: ProductionStage) => {
-    const updated = { ...batch, stage: newStage };
+    const updated: ProductionBatch = {
+      ...batch,
+      stage: newStage,
+      completedDate: newStage === 'Pronto' ? new Date().toISOString().split('T')[0] : batch.completedDate
+    };
     StorageService.saveProduction(updated);
     refreshData();
+  };
+
+  const handleDeleteBatch = (batch: ProductionBatch) => {
+    if (confirm(`Deseja excluir o lote ${batch.code}? Caso o lote tenha adicionado peças ao estoque, elas serão estornadas.`)) {
+      StorageService.deleteProduction(batch.id);
+      refreshData();
+    }
   };
 
   const handleCreateBatch = (e: React.FormEvent) => {
     e.preventDefault();
     const prod = products.find(p => p.id === selectedProductId);
-    if (!prod) return;
+    if (!prod) {
+      alert('Selecione um produto.');
+      return;
+    }
 
     const qtyGood = Math.max(0, quantityPlanned - quantityLost);
 
@@ -50,6 +72,7 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
       quantityGood: qtyGood,
       stage,
       startDate: new Date().toISOString().split('T')[0],
+      completedDate: stage === 'Pronto' ? new Date().toISOString().split('T')[0] : undefined,
       batchNumber,
       notes
     };
@@ -87,7 +110,10 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
           </button>
 
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setSelectedProductId(products[0]?.id || '');
+              setIsModalOpen(true);
+            }}
             className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
           >
             <Plus className="w-4 h-4" />
@@ -111,7 +137,7 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
 
       {/* Production Batches List */}
       <div className="space-y-4">
-        <h3 className="font-bold text-amber-950 text-base">Lotes de Produção em Andamento</h3>
+        <h3 className="font-bold text-amber-950 text-base">Lotes de Produção</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {batches.map((b) => (
@@ -121,11 +147,20 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                   <span className="text-xs font-bold text-amber-700">{b.code} • {b.batchNumber}</span>
                   <h4 className="font-black text-amber-950 text-base">{b.productName}</h4>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                  b.stage === 'Pronto' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
-                }`}>
-                  {b.stage}
-                </span>
+                <div className="flex items-center space-x-1.5">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                    b.stage === 'Pronto' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                  }`}>
+                    {b.stage}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteBatch(b)}
+                    className="p-1 text-red-600 hover:bg-red-50 rounded-lg"
+                    title="Excluir Lote"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-2 text-center text-xs bg-amber-50/60 p-2.5 rounded-xl border border-amber-100">
@@ -143,6 +178,13 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                 </div>
               </div>
 
+              {b.stage === 'Pronto' && (
+                <div className="flex items-center space-x-1 text-xs text-emerald-800 font-semibold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Estoque da peça atualizado com +{b.quantityGood} unidades.</span>
+                </div>
+              )}
+
               {b.notes && (
                 <p className="text-xs text-amber-800/80 italic">Obs: {b.notes}</p>
               )}
@@ -155,7 +197,7 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                     <button
                       key={stg}
                       onClick={() => handleUpdateStage(b, stg)}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                         b.stage === stg
                           ? 'bg-amber-800 text-white shadow-xs'
                           : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
@@ -173,11 +215,11 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
 
       {/* New Batch Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-amber-200 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-amber-200 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-amber-100 pb-3">
               <h3 className="font-bold text-amber-950 text-lg">Registrar Novo Lote de Produção</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-amber-700">
+              <button onClick={() => setIsModalOpen(false)} className="text-amber-700 hover:text-amber-950">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -189,11 +231,11 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                   required
                   value={selectedProductId}
                   onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none"
+                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
                 >
                   <option value="">Selecione o vaso / peça...</option>
                   {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} (Cat: {p.category})</option>
+                    <option key={p.id} value={p.id}>{p.name} (Cat: {p.category} | Estoque Atual: {p.stock})</option>
                   ))}
                 </select>
               </div>
@@ -206,7 +248,7 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                     min={1}
                     value={quantityPlanned}
                     onChange={(e) => setQuantityPlanned(parseInt(e.target.value) || 1)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
+                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
                   />
                 </div>
 
@@ -217,45 +259,45 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                     min={0}
                     value={quantityLost}
                     onChange={(e) => setQuantityLost(parseInt(e.target.value) || 0)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-red-600 font-bold"
+                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-red-600 font-bold focus:outline-none focus:border-amber-600"
                   />
                 </div>
               </div>
 
               <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 flex justify-between font-bold text-amber-950">
-                <span>Peças Aproveitadas:</span>
-                <span className="text-emerald-800">{Math.max(0, quantityPlanned - quantityLost)} un</span>
+                <span>Peças Aproveitadas (Boas):</span>
+                <span className="text-emerald-800 text-base">{Math.max(0, quantityPlanned - quantityLost)} un</span>
               </div>
 
               <div>
-                <label className="block font-bold text-amber-900 mb-1">Etapa Atual:</label>
+                <label className="block font-bold text-amber-900 mb-1">Etapa Inicial:</label>
                 <select
                   value={stage}
                   onChange={(e) => setStage(e.target.value as ProductionStage)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
+                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
                 >
                   {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block font-bold text-amber-900 mb-1">Número do Lote:</label>
+                <label className="block font-bold text-amber-900 mb-1">Identificação / Lote:</label>
                 <input
                   type="text"
                   value={batchNumber}
                   onChange={(e) => setBatchNumber(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
+                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-amber-900 mb-1">Observações (causa da quebra, tipo de queima):</label>
+                <label className="block font-bold text-amber-900 mb-1">Observações (queima, argila usada):</label>
                 <input
                   type="text"
-                  placeholder="Ex: 3 peças trincaram na subida do forno"
+                  placeholder="Ex: Queima de alta temperatura, sem trincas"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
+                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
                 />
               </div>
 
@@ -263,13 +305,13 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-amber-300 rounded-xl text-amber-900 font-semibold"
+                  className="px-4 py-2 border border-amber-300 rounded-xl text-amber-900 font-semibold hover:bg-amber-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-amber-800 text-amber-50 rounded-xl font-bold"
+                  className="px-5 py-2 bg-amber-800 hover:bg-amber-900 text-amber-50 rounded-xl font-bold shadow-md"
                 >
                   Salvar Lote
                 </button>

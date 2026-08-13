@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
-import { Package, Plus, Mic, AlertTriangle, Layers, ArrowUpRight, ArrowDownRight, RefreshCw, X } from 'lucide-react';
-import { StorageService } from '../services/storage';
-import { Product, RawMaterial } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Package, Plus, Mic, AlertTriangle, Layers, ArrowUpRight, ArrowDownRight, RefreshCw, X, History, RotateCcw } from 'lucide-react';
+import { StorageService, subscribeStorage } from '../services/storage';
+import { Product, RawMaterial, AuditLog } from '../types';
 
 interface StockViewProps {
   onOpenVoiceModal: () => void;
 }
 
 export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
-  const [activeTab, setActiveTab] = useState<'finished' | 'raw'>('finished');
+  const [activeTab, setActiveTab] = useState<'finished' | 'raw' | 'history'>('finished');
   const [products, setProducts] = useState<Product[]>(() => StorageService.getProducts());
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(() => StorageService.getRawMaterials());
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => StorageService.getAuditLogs());
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
 
   // Quick Adjustment
@@ -22,29 +23,61 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
   const refreshData = () => {
     setProducts(StorageService.getProducts());
     setRawMaterials(StorageService.getRawMaterials());
+    setAuditLogs(StorageService.getAuditLogs());
   };
+
+  useEffect(() => {
+    const unsub = subscribeStorage(() => {
+      refreshData();
+    });
+    return () => unsub();
+  }, []);
 
   const handleAdjustStock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (activeTab === 'finished') {
+    if (!selectedItemId) {
+      alert('Selecione o item.');
+      return;
+    }
+
+    if (activeTab === 'finished' || (!rawMaterials.find(m => m.id === selectedItemId) && products.find(p => p.id === selectedItemId))) {
       const prod = products.find(p => p.id === selectedItemId);
       if (prod) {
         const change = adjustmentType === 'add' ? adjustmentQty : -adjustmentQty;
-        prod.stock = Math.max(0, prod.stock + change);
-        StorageService.saveProduct(prod);
+        const newStock = Math.max(0, prod.stock + change);
+        const updatedProd: Product = {
+          ...prod,
+          stock: newStock
+        };
+        StorageService.saveProduct(updatedProd);
       }
     } else {
       const mat = rawMaterials.find(m => m.id === selectedItemId);
       if (mat) {
         const change = adjustmentType === 'add' ? adjustmentQty : -adjustmentQty;
-        mat.stockQuantity = Math.max(0, mat.stockQuantity + change);
-        StorageService.saveRawMaterial(mat);
+        const newStock = Math.max(0, mat.stockQuantity + change);
+        const updatedMat: RawMaterial = {
+          ...mat,
+          stockQuantity: newStock
+        };
+        StorageService.saveRawMaterial(updatedMat);
       }
     }
     refreshData();
     setIsAdjustmentModalOpen(false);
     setSelectedItemId('');
     setReason('');
+  };
+
+  const handleUndoAudit = (logId: string) => {
+    if (confirm('Deseja realmente desfazer esta ação?')) {
+      const success = StorageService.undoAuditAction(logId);
+      if (success) {
+        refreshData();
+      } else {
+        alert('Não foi possível desfazer esta ação.');
+      }
+    }
   };
 
   return (
@@ -56,7 +89,7 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
             <Package className="w-6 h-6 text-amber-800" />
             <span>Gestão de Estoque Olaria</span>
           </h2>
-          <p className="text-xs text-amber-800/80">Produtos Acabados e Matérias-Primas (Argila, Esmaltes, Tintas).</p>
+          <p className="text-xs text-amber-800/80">Produtos Acabados, Matérias-Primas e Histórico com auditoria reversível.</p>
         </div>
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
@@ -69,7 +102,10 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
           </button>
 
           <button
-            onClick={() => setIsAdjustmentModalOpen(true)}
+            onClick={() => {
+              setSelectedItemId(products[0]?.id || '');
+              setIsAdjustmentModalOpen(true);
+            }}
             className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
           >
             <Plus className="w-4 h-4" />
@@ -100,6 +136,17 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
           }`}
         >
           🧱 Matérias-Primas ({rawMaterials.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-5 py-3 font-bold text-sm border-b-2 transition-all ${
+            activeTab === 'history'
+              ? 'border-amber-800 text-amber-950 bg-amber-50/50'
+              : 'border-transparent text-amber-700 hover:text-amber-950'
+          }`}
+        >
+          📋 Histórico & Desfazer ({auditLogs.length})
         </button>
       </div>
 
@@ -270,12 +317,54 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
         </div>
       )}
 
+      {/* History & Audit Tab */}
+      {activeTab === 'history' && (
+        <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-xs">
+          <div className="p-4 bg-amber-50/60 border-b border-amber-200 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-amber-950 text-sm">Histórico de Operações & Rastreabilidade</h3>
+              <p className="text-xs text-amber-700">Todas as operações registram auditoria com suporte a reversão segura.</p>
+            </div>
+          </div>
+          <div className="divide-y divide-amber-100">
+            {auditLogs.length === 0 ? (
+              <div className="p-6 text-center text-amber-800/60">Nenhum registro de auditoria.</div>
+            ) : (
+              auditLogs.map((log) => (
+                <div key={log.id} className="p-3.5 flex items-center justify-between hover:bg-amber-50/40 text-xs">
+                  <div>
+                    <span className="font-bold text-amber-950 block">{log.details || log.action}</span>
+                    <span className="text-[11px] text-amber-700">
+                      {new Date(log.timestamp).toLocaleString('pt-BR')} • {log.action} • {log.entityType}
+                    </span>
+                  </div>
+                  {log.status !== 'Desfeito' && (
+                    <button
+                      onClick={() => handleUndoAudit(log.id)}
+                      className="flex items-center space-x-1 px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-lg transition-colors"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Desfazer</span>
+                    </button>
+                  )}
+                  {log.status === 'Desfeito' && (
+                    <span className="text-[11px] text-neutral-500 italic bg-neutral-100 px-2 py-0.5 rounded">
+                      Desfeito
+                    </span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Manual Stock Adjustment Modal */}
       {isAdjustmentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-amber-200 space-y-4">
             <div className="flex items-center justify-between border-b border-amber-100 pb-3">
-              <h3 className="font-bold text-amber-950 text-base">Ajuste de Estoque ({activeTab === 'finished' ? 'Produtos' : 'Matérias-Primas'})</h3>
+              <h3 className="font-bold text-amber-950 text-base">Ajuste Manual de Estoque</h3>
               <button onClick={() => setIsAdjustmentModalOpen(false)} className="text-amber-700">
                 <X className="w-5 h-5" />
               </button>
@@ -288,13 +377,15 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
                   required
                   value={selectedItemId}
                   onChange={(e) => setSelectedItemId(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
+                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
                 >
                   <option value="">Selecione o item...</option>
-                  {activeTab === 'finished'
-                    ? products.map(p => <option key={p.id} value={p.id}>{p.name} (Atual: {p.stock} un)</option>)
-                    : rawMaterials.map(m => <option key={m.id} value={m.id}>{m.name} (Atual: {m.stockQuantity} {m.unit})</option>)
-                  }
+                  <optgroup label="Produtos Acabados">
+                    {products.map(p => <option key={p.id} value={p.id}>{p.name} (Atual: {p.stock} un)</option>)}
+                  </optgroup>
+                  <optgroup label="Matérias-Primas">
+                    {rawMaterials.map(m => <option key={m.id} value={m.id}>{m.name} (Atual: {m.stockQuantity} {m.unit})</option>)}
+                  </optgroup>
                 </select>
               </div>
 
@@ -304,7 +395,7 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
                   <select
                     value={adjustmentType}
                     onChange={(e) => setAdjustmentType(e.target.value as 'add' | 'remove')}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 font-bold"
+                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 font-bold focus:outline-none focus:border-amber-600"
                   >
                     <option value="add">➕ Entrada (+)</option>
                     <option value="remove">➖ Saída / Perda (-)</option>
@@ -318,7 +409,7 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
                     min={1}
                     value={adjustmentQty}
                     onChange={(e) => setAdjustmentQty(parseInt(e.target.value) || 1)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
+                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
                   />
                 </div>
               </div>
@@ -327,10 +418,10 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
                 <label className="block font-bold text-amber-900 mb-1">Motivo do Ajuste:</label>
                 <input
                   type="text"
-                  placeholder="Ex: Contagem de estoque física ou quebra"
+                  placeholder="Ex: Contagem física periódica ou quebra"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
+                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
                 />
               </div>
 
@@ -338,13 +429,13 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
                 <button
                   type="button"
                   onClick={() => setIsAdjustmentModalOpen(false)}
-                  className="px-4 py-2 border border-amber-300 rounded-xl text-amber-900 font-semibold"
+                  className="px-4 py-2 border border-amber-300 rounded-xl text-amber-900 font-semibold hover:bg-amber-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-amber-800 text-amber-50 rounded-xl font-bold"
+                  className="px-5 py-2 bg-amber-800 hover:bg-amber-900 text-amber-50 rounded-xl font-bold shadow-md"
                 >
                   Confirmar Ajuste
                 </button>

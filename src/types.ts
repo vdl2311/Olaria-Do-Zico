@@ -105,7 +105,7 @@ export interface Sale {
   paymentMethod: PaymentMethod;
   date: string;
   notes?: string;
-  status: 'Concluída' | 'Parcial' | 'Pendente';
+  status: 'Concluída' | 'Parcial' | 'Pendente' | 'Cancelada';
 }
 
 export type ProductionStage = 'Produção' | 'Secagem' | 'Queima' | 'Acabamento' | 'Pronto';
@@ -124,6 +124,7 @@ export interface ProductionBatch {
   completedDate?: string;
   batchNumber?: string;
   notes?: string;
+  stockCredited?: boolean;
 }
 
 export interface CustomOrder {
@@ -195,6 +196,7 @@ export interface AuditLog {
   status?: 'Aplicado' | 'Desfeito' | string;
   previousValue?: string;
   newValue?: string;
+  actionData?: any;
 }
 
 // Voice NLU Types
