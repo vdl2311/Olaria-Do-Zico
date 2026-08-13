@@ -251,8 +251,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
           </div>
 
           {/* Real-time Transcription or Input */}
-          <div className="bg-amber-900/40 border border-amber-800/80 rounded-xl p-3.5">
-            <div className="flex items-center justify-between mb-1">
+          <div className="bg-amber-900/40 border border-amber-800/80 rounded-xl p-3.5 space-y-3">
+            <div className="flex items-center justify-between">
               <span className="text-[11px] uppercase font-bold text-amber-400 tracking-wider">
                 O que você falou / digitou:
               </span>
@@ -268,6 +268,17 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
             <p className="text-sm font-medium text-amber-100 min-h-[36px] italic">
               {currentText ? `"${currentText}"` : 'Aguardando voz ou texto...'}
             </p>
+
+            {/* Prominent Send/Process Button for Audio/Text */}
+            {currentText && !nluResult && !isLoading && (
+              <button
+                onClick={() => handleSendText(currentText)}
+                className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-lg border border-amber-400/40 active:scale-98"
+              >
+                <Send className="w-4 h-4" />
+                <span>PROCESSAR COMANDO COM IA</span>
+              </button>
+            )}
           </div>
 
           {/* Action Loading */}

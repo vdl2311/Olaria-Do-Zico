@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { VoiceModal } from './components/VoiceModal';
@@ -20,6 +20,11 @@ export default function App() {
   const [activeView, setActiveView] = useState('dashboard');
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  // Scroll to top whenever the active view changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  }, [activeView]);
 
   const handleOpenVoiceModal = () => {
     setIsVoiceModalOpen(true);
