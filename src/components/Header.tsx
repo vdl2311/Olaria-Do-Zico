@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, RefreshCw, Mic, Store, Menu } from 'lucide-react';
+import { Sparkles, RefreshCw, Mic, Store, Menu, Cloud } from 'lucide-react';
 import { StorageService } from '../services/storage';
 
 interface HeaderProps {
@@ -54,8 +54,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenVoiceModal, activeView, on
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-black tracking-tight text-amber-100 flex items-center gap-2 truncate">
               <span className="truncate">Olaria do Zico</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-800/90 text-amber-200 border border-amber-700 hidden md:inline-block shrink-0">
-                Gestão por Voz
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-900/90 text-emerald-200 border border-emerald-700 hidden sm:inline-flex items-center gap-1 shrink-0">
+                <Cloud className="w-3 h-3 text-emerald-400" />
+                <span>Firebase Firestore</span>
               </span>
             </h1>
             <p className="text-[11px] text-amber-300/80 font-medium truncate hidden xs:block">{getViewTitle()}</p>
@@ -87,4 +88,5 @@ export const Header: React.FC<HeaderProps> = ({ onOpenVoiceModal, activeView, on
     </header>
   );
 };
+
 

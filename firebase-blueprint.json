@@ -1,0 +1,147 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Finished ceramic or pottery product in inventory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "price": { "type": "number" },
+        "cost": { "type": "number" },
+        "stock": { "type": "number" },
+        "minStock": { "type": "number" },
+        "photoUrl": { "type": "string", "maxLength": 1000 },
+        "dimensions": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["id", "code", "name", "price", "stock"]
+    },
+    "RawMaterial": {
+      "title": "RawMaterial",
+      "description": "Raw material such as clay, wood, glazes and additives",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "stockQuantity": { "type": "number" },
+        "unit": { "type": "string", "maxLength": 32 },
+        "costPerUnit": { "type": "number" },
+        "minStock": { "type": "number" },
+        "supplier": { "type": "string", "maxLength": 200 }
+      },
+      "required": ["id", "name", "stockQuantity", "unit", "costPerUnit"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Client or buyer registered in the olaria system",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "address": { "type": "string", "maxLength": 300 },
+        "document": { "type": "string", "maxLength": 50 },
+        "creditLimit": { "type": "number" },
+        "outstandingBalance": { "type": "number" },
+        "totalPurchases": { "type": "number" }
+      },
+      "required": ["id", "name"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Sales order records and line items",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "customerName": { "type": "string", "maxLength": 200 },
+        "date": { "type": "string", "maxLength": 50 },
+        "totalValue": { "type": "number" },
+        "paidValue": { "type": "number" },
+        "paymentMethod": { "type": "string", "maxLength": 50 },
+        "paymentStatus": { "type": "string", "maxLength": 50 },
+        "deliveryStatus": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "date", "totalValue", "paymentStatus"]
+    },
+    "ProductionBatch": {
+      "title": "ProductionBatch",
+      "description": "Ceramic manufacturing and kiln firing batch",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "batchNumber": { "type": "string", "maxLength": 64 },
+        "productCode": { "type": "string", "maxLength": 64 },
+        "productName": { "type": "string", "maxLength": 200 },
+        "targetQuantity": { "type": "number" },
+        "producedQuantity": { "type": "number" },
+        "stage": { "type": "string", "maxLength": 50 },
+        "lossQuantity": { "type": "number" }
+      },
+      "required": ["id", "batchNumber", "stage"]
+    },
+    "FinancialRecord": {
+      "title": "FinancialRecord",
+      "description": "Cash flow, expense and revenue entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "maxLength": 20 },
+        "category": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 300 },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "type", "description", "amount", "date", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "System event and reversible audit history log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "maxLength": 64 },
+        "action": { "type": "string", "maxLength": 100 },
+        "entityType": { "type": "string", "maxLength": 100 },
+        "entityId": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "timestamp", "action", "entityType"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of all finished pottery inventory items"
+    },
+    "/raw_materials/{materialId}": {
+      "schema": "RawMaterial",
+      "description": "Collection of raw materials and inputs"
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Collection of clients and accounts receivable balances"
+    },
+    "/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "Collection of orders and sales transactions"
+    },
+    "/production_batches/{batchId}": {
+      "schema": "ProductionBatch",
+      "description": "Collection of production and kiln batch cycles"
+    },
+    "/financial_records/{recordId}": {
+      "schema": "FinancialRecord",
+      "description": "Collection of financial cash flow transactions"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Collection of reversible audit trails"
+    }
+  }
+}

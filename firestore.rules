@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    function isValidProduct(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.code is string && data.code.size() <= 64
+        && data.name is string && data.name.size() <= 200
+        && data.price is number && data.price >= 0
+        && data.stock is number;
+    }
+
+    function isValidRawMaterial(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 200
+        && data.stockQuantity is number
+        && data.unit is string && data.unit.size() <= 32
+        && data.costPerUnit is number && data.costPerUnit >= 0;
+    }
+
+    function isValidCustomer(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 200;
+    }
+
+    function isValidSale(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.date is string && data.date.size() <= 50
+        && data.totalValue is number && data.totalValue >= 0;
+    }
+
+    function isValidProductionBatch(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.batchNumber is string && data.batchNumber.size() <= 64
+        && data.stage is string && data.stage.size() <= 50;
+    }
+
+    function isValidFinancialRecord(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.type is string && data.type.size() <= 20
+        && data.amount is number
+        && data.date is string && data.date.size() <= 50
+        && data.status is string && data.status.size() <= 50;
+    }
+
+    function isValidAuditLog(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.timestamp is string && data.timestamp.size() <= 64
+        && data.action is string && data.action.size() <= 100
+        && data.entityType is string && data.entityType.size() <= 100;
+    }
+
+    // Default deny rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if isValidId(productId) && isValidProduct(request.resource.data);
+      allow delete: if isValidId(productId);
+    }
+
+    match /raw_materials/{materialId} {
+      allow read: if true;
+      allow create, update: if isValidId(materialId) && isValidRawMaterial(request.resource.data);
+      allow delete: if isValidId(materialId);
+    }
+
+    match /customers/{customerId} {
+      allow read: if true;
+      allow create, update: if isValidId(customerId) && isValidCustomer(request.resource.data);
+      allow delete: if isValidId(customerId);
+    }
+
+    match /sales/{saleId} {
+      allow read: if true;
+      allow create, update: if isValidId(saleId) && isValidSale(request.resource.data);
+      allow delete: if isValidId(saleId);
+    }
+
+    match /production_batches/{batchId} {
+      allow read: if true;
+      allow create, update: if isValidId(batchId) && isValidProductionBatch(request.resource.data);
+      allow delete: if isValidId(batchId);
+    }
+
+    match /financial_records/{recordId} {
+      allow read: if true;
+      allow create, update: if isValidId(recordId) && isValidFinancialRecord(request.resource.data);
+      allow delete: if isValidId(recordId);
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if true;
+      allow create, update: if isValidId(logId) && isValidAuditLog(request.resource.data);
+      allow delete: if isValidId(logId);
+    }
+
+    // Connection test collection
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

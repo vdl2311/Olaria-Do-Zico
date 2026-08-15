@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { VoiceModal } from './components/VoiceModal';
 import { VoiceFloatingButton } from './components/VoiceFloatingButton';
+import { StorageService } from './services/storage';
 
 import { DashboardView } from './views/DashboardView';
 import { SalesView } from './views/SalesView';
@@ -25,6 +26,11 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   }, [activeView]);
+
+  // Initialize real-time cloud database sync with Firebase
+  useEffect(() => {
+    StorageService.initFirestoreSync();
+  }, []);
 
   const handleOpenVoiceModal = () => {
     setIsVoiceModalOpen(true);

@@ -26,6 +26,13 @@ import {
   INITIAL_AUDIT_LOGS
 } from '../data/initialData';
 
+import {
+  syncDocToFirestore,
+  deleteDocFromFirestore,
+  listenToCollection,
+  testConnection
+} from './firebase';
+
 const KEYS = {
   CATEGORIES: 'olaria_categories_v1',
   PRODUCTS: 'olaria_products_v1',
@@ -82,7 +89,82 @@ function normalizeString(str: string): string {
     .trim();
 }
 
+let isSyncInitialized = false;
+
 export const StorageService = {
+  // Initialize real-time cloud synchronization with Firebase Firestore
+  async initFirestoreSync() {
+    if (isSyncInitialized) return;
+    isSyncInitialized = true;
+
+    try {
+      await testConnection();
+
+      // Listen for remote updates on Products
+      listenToCollection<Product>('products', (cloudProducts) => {
+        if (cloudProducts && cloudProducts.length > 0) {
+          setItem(KEYS.PRODUCTS, cloudProducts);
+        } else {
+          // Seed if Firestore collection is empty
+          const local = this.getProducts();
+          local.forEach(p => syncDocToFirestore('products', p.id, p).catch(() => {}));
+        }
+      });
+
+      // Listen for remote updates on Raw Materials
+      listenToCollection<RawMaterial>('raw_materials', (cloudMaterials) => {
+        if (cloudMaterials && cloudMaterials.length > 0) {
+          setItem(KEYS.RAW_MATERIALS, cloudMaterials);
+        } else {
+          const local = this.getRawMaterials();
+          local.forEach(m => syncDocToFirestore('raw_materials', m.id, m).catch(() => {}));
+        }
+      });
+
+      // Listen for remote updates on Customers
+      listenToCollection<Customer>('customers', (cloudCustomers) => {
+        if (cloudCustomers && cloudCustomers.length > 0) {
+          setItem(KEYS.CUSTOMERS, cloudCustomers);
+        } else {
+          const local = this.getCustomers();
+          local.forEach(c => syncDocToFirestore('customers', c.id, c).catch(() => {}));
+        }
+      });
+
+      // Listen for remote updates on Sales
+      listenToCollection<Sale>('sales', (cloudSales) => {
+        if (cloudSales && cloudSales.length > 0) {
+          setItem(KEYS.SALES, cloudSales);
+        } else {
+          const local = this.getSales();
+          local.forEach(s => syncDocToFirestore('sales', s.id, s).catch(() => {}));
+        }
+      });
+
+      // Listen for remote updates on Production Batches
+      listenToCollection<ProductionBatch>('production_batches', (cloudBatches) => {
+        if (cloudBatches && cloudBatches.length > 0) {
+          setItem(KEYS.PRODUCTION, cloudBatches);
+        } else {
+          const local = this.getProduction();
+          local.forEach(b => syncDocToFirestore('production_batches', b.id, b).catch(() => {}));
+        }
+      });
+
+      // Listen for remote updates on Audit Logs
+      listenToCollection<AuditLog>('audit_logs', (cloudLogs) => {
+        if (cloudLogs && cloudLogs.length > 0) {
+          setItem(KEYS.AUDIT, cloudLogs);
+        } else {
+          const local = this.getAuditLogs();
+          local.forEach(l => syncDocToFirestore('audit_logs', l.id, l).catch(() => {}));
+        }
+      });
+    } catch (err) {
+      console.warn('Firebase sync initialized in offline/local-fallback mode:', err);
+    }
+  },
+
   // Category Management
   getCategories(): string[] {
     return getItem<string[]>(KEYS.CATEGORIES, INITIAL_CATEGORIES);
@@ -115,6 +197,7 @@ export const StorageService = {
       updated = [product, ...list];
     }
     setItem(KEYS.PRODUCTS, updated);
+    syncDocToFirestore('products', product.id, product).catch(() => {});
     if (!skipAudit) {
       this.logAudit('Salvar Produto', 'Produto', product.id, `Produto ${product.name} gravado. Estoque: ${product.stock}`);
     }
@@ -124,6 +207,7 @@ export const StorageService = {
   deleteProduct(id: string) {
     const list = this.getProducts().filter(p => p.id !== id);
     setItem(KEYS.PRODUCTS, list);
+    deleteDocFromFirestore('products', id).catch(() => {});
     this.logAudit('Excluir Produto', 'Produto', id, `Produto removido.`);
   },
 
@@ -176,6 +260,7 @@ export const StorageService = {
       updated = [mat, ...list];
     }
     setItem(KEYS.RAW_MATERIALS, updated);
+    syncDocToFirestore('raw_materials', mat.id, mat).catch(() => {});
     if (!skipAudit) {
       this.logAudit('Salvar Matéria-Prima', 'Matéria-Prima', mat.id, `${mat.name}: ${mat.stockQuantity} ${mat.unit}`);
     }
@@ -185,6 +270,7 @@ export const StorageService = {
   deleteRawMaterial(id: string) {
     const list = this.getRawMaterials().filter(m => m.id !== id);
     setItem(KEYS.RAW_MATERIALS, list);
+    deleteDocFromFirestore('raw_materials', id).catch(() => {});
     this.logAudit('Excluir Matéria-Prima', 'Matéria-Prima', id, `Matéria-prima removida.`);
   },
 
@@ -204,6 +290,7 @@ export const StorageService = {
       updated = [customer, ...list];
     }
     setItem(KEYS.CUSTOMERS, updated);
+    syncDocToFirestore('customers', customer.id, customer).catch(() => {});
     if (!skipAudit) {
       this.logAudit('Salvar Cliente', 'Cliente', customer.id, `Cliente ${customer.name} registrado.`);
     }
@@ -280,6 +367,7 @@ export const StorageService = {
       updatedSales = [sale, ...sales];
     }
     setItem(KEYS.SALES, updatedSales);
+    syncDocToFirestore('sales', sale.id, sale).catch(() => {});
 
     // Synchronize Account Receivables
     if (sale.customerId) {
@@ -355,6 +443,7 @@ export const StorageService = {
     // Remove sale
     const updatedSales = sales.filter(s => s.id !== id);
     setItem(KEYS.SALES, updatedSales);
+    deleteDocFromFirestore('sales', id).catch(() => {});
 
     this.logAudit('Excluir Venda', 'Venda', id, `Venda ${target.code} cancelada e estoque estornado.`);
   },
@@ -412,6 +501,7 @@ export const StorageService = {
       updated = [batch, ...list];
     }
     setItem(KEYS.PRODUCTION, updated);
+    syncDocToFirestore('production_batches', batch.id, batch).catch(() => {});
 
     if (!skipAudit) {
       this.logAudit(
@@ -440,6 +530,7 @@ export const StorageService = {
 
     const updated = list.filter(b => b.id !== id);
     setItem(KEYS.PRODUCTION, updated);
+    deleteDocFromFirestore('production_batches', id).catch(() => {});
     this.logAudit('Excluir Produção', 'Produção', id, `Lote de produção ${target.code} removido.`);
   },
 
@@ -515,6 +606,10 @@ export const StorageService = {
       updated = [exp, ...list];
     }
     setItem(KEYS.EXPENSES, updated);
+    syncDocToFirestore('financial_records', exp.id, {
+      ...exp,
+      type: 'Despesa'
+    }).catch(() => {});
     if (!skipAudit) {
       this.logAudit('Registrar Despesa', 'Despesa', exp.id, `Despesa: ${exp.description} - R$ ${exp.amount.toFixed(2)} (${exp.status})`);
     }
@@ -524,6 +619,7 @@ export const StorageService = {
   deleteExpense(id: string) {
     const list = this.getExpenses().filter(e => e.id !== id);
     setItem(KEYS.EXPENSES, list);
+    deleteDocFromFirestore('financial_records', id).catch(() => {});
     this.logAudit('Excluir Despesa', 'Despesa', id, `Despesa removida.`);
   },
 
@@ -543,6 +639,10 @@ export const StorageService = {
       updated = [rec, ...list];
     }
     setItem(KEYS.RECEIVABLES, updated);
+    syncDocToFirestore('financial_records', rec.id, {
+      ...rec,
+      type: 'Recebível'
+    }).catch(() => {});
     if (!skipAudit) {
       this.logAudit('Conta a Receber', 'Recebível', rec.id, `${rec.customerName}: R$ ${rec.amount.toFixed(2)} (Pago: R$ ${rec.amountPaid.toFixed(2)})`);
     }
@@ -552,6 +652,7 @@ export const StorageService = {
   deleteReceivable(id: string) {
     const list = this.getReceivables().filter(r => r.id !== id);
     setItem(KEYS.RECEIVABLES, list);
+    deleteDocFromFirestore('financial_records', id).catch(() => {});
     this.logAudit('Excluir Recebível', 'Recebível', id, `Conta a receber removida.`);
   },
 
@@ -730,6 +831,7 @@ export const StorageService = {
       actionData
     };
     setItem(KEYS.AUDIT, [newLog, ...logs]);
+    syncDocToFirestore('audit_logs', newLog.id, newLog).catch(() => {});
   },
 
   // Apply Voice Action (Full NLU Execution with Zero-Corruption Guards)
