@@ -13,16 +13,19 @@ import {
   History,
   Menu,
   X,
-  ChevronRight,
-  Sparkles
+  ShieldCheck,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 import { StorageService } from '../services/storage';
+import { AuthService } from '../services/authService';
 
 interface NavigationProps {
   activeView: string;
   setActiveView: (view: string) => void;
   isMobileDrawerOpen?: boolean;
   setIsMobileDrawerOpen?: (open: boolean) => void;
+  onLogout?: () => void;
 }
 
 export interface NavGroup {
@@ -32,6 +35,8 @@ export interface NavGroup {
     label: string;
     icon: React.ElementType;
     badge?: string | number;
+    requiredPermission?: string;
+    ownerOnly?: boolean;
   }[];
 }
 
@@ -39,41 +44,60 @@ export const Navigation: React.FC<NavigationProps> = ({
   activeView, 
   setActiveView,
   isMobileDrawerOpen = false,
-  setIsMobileDrawerOpen
+  setIsMobileDrawerOpen,
+  onLogout
 }) => {
+  const currentUser = AuthService.getCurrentUser();
+  const isOwner = currentUser?.role === 'PROPRIETARIO';
+  const userPerms = currentUser?.permissions;
+
   const products = StorageService.getProducts();
   const lowStockCount = products.filter(p => p.stock <= p.minStock).length;
   const deliveries = StorageService.getDeliveries();
   const pendingDeliveriesCount = deliveries.filter(d => d.status !== 'Entregue').length;
 
-  const NAV_GROUPS: NavGroup[] = [
+  const ALL_NAV_GROUPS: NavGroup[] = [
     {
       title: 'Operacional',
       items: [
         { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
-        { id: 'vendas', label: 'Vendas', icon: ShoppingCart },
-        { id: 'producao', label: 'Produção', icon: Hammer },
-        { id: 'estoque', label: 'Estoque', icon: Package, badge: lowStockCount > 0 ? lowStockCount : undefined },
+        { id: 'vendas', label: 'Vendas', icon: ShoppingCart, requiredPermission: 'vendas' },
+        { id: 'producao', label: 'Produção', icon: Hammer, requiredPermission: 'producao' },
+        { id: 'estoque', label: 'Estoque', icon: Package, badge: lowStockCount > 0 ? lowStockCount : undefined, requiredPermission: 'estoque' },
       ]
     },
     {
       title: 'Clientes & Pedidos',
       items: [
-        { id: 'clientes', label: 'Clientes', icon: Users },
-        { id: 'pedidos', label: 'Pedidos Especiais', icon: ClipboardList },
-        { id: 'entregas', label: 'Entregas', icon: Truck, badge: pendingDeliveriesCount > 0 ? pendingDeliveriesCount : undefined },
+        { id: 'clientes', label: 'Clientes', icon: Users, requiredPermission: 'clientes' },
+        { id: 'pedidos', label: 'Pedidos Especiais', icon: ClipboardList, requiredPermission: 'pedidos' },
+        { id: 'entregas', label: 'Entregas', icon: Truck, badge: pendingDeliveriesCount > 0 ? pendingDeliveriesCount : undefined, requiredPermission: 'entregas' },
       ]
     },
     {
       title: 'Gestão & Cadastros',
       items: [
-        { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
-        { id: 'produtos', label: 'Produtos', icon: Box },
-        { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
-        { id: 'auditoria', label: 'Histórico', icon: History },
+        { id: 'financeiro', label: 'Financeiro', icon: DollarSign, requiredPermission: 'financeiro' },
+        { id: 'produtos', label: 'Produtos', icon: Box, requiredPermission: 'produtos' },
+        { id: 'relatorios', label: 'Relatórios', icon: BarChart3, requiredPermission: 'relatorios' },
+        { id: 'auditoria', label: 'Histórico', icon: History, requiredPermission: 'auditoria' },
+        { id: 'seguranca', label: 'Segurança & Acessos', icon: ShieldCheck, ownerOnly: true },
       ]
     }
   ];
+
+  // Filter groups based on user permissions
+  const NAV_GROUPS = ALL_NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (isOwner) return true;
+      if (item.ownerOnly) return false;
+      if (item.requiredPermission && userPerms) {
+        return (userPerms as any)[item.requiredPermission] === true;
+      }
+      return true;
+    })
+  })).filter(group => group.items.length > 0);
 
   const PRIMARY_MOBILE_NAV = [
     { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
@@ -89,10 +113,19 @@ export const Navigation: React.FC<NavigationProps> = ({
     }
   };
 
+  const handleLogoutClick = () => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      AuthService.logout();
+      window.location.reload();
+    }
+  };
+
   return (
     <>
       {/* Desktop Sidebar Navigation */}
-      <aside className="hidden lg:block w-64 bg-amber-950/95 text-amber-100 border-r border-amber-900/40 p-4 shrink-0 min-h-[calc(100vh-4rem)] rounded-2xl shadow-lg my-2">
+      <aside className="hidden lg:flex flex-col justify-between w-64 bg-amber-950/95 text-amber-100 border-r border-amber-900/40 p-4 shrink-0 min-h-[calc(100vh-4rem)] rounded-2xl shadow-lg my-2">
         <div className="space-y-6">
           {NAV_GROUPS.map((group, idx) => (
             <div key={idx} className="space-y-1.5">
@@ -107,7 +140,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     <button
                       key={item.id}
                       onClick={() => handleSelectView(item.id)}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                         isActive
                           ? 'bg-amber-600 text-white font-semibold shadow-md translate-x-1'
                           : 'text-amber-200/80 hover:bg-amber-900/60 hover:text-amber-50'
@@ -131,6 +164,33 @@ export const Navigation: React.FC<NavigationProps> = ({
             </div>
           ))}
         </div>
+
+        {/* User Card at Sidebar Bottom */}
+        <div className="pt-4 border-t border-amber-900/60 mt-4">
+          <div className="p-3 bg-amber-900/40 rounded-xl border border-amber-900/60 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-800 flex items-center justify-center text-amber-100 font-bold text-xs shrink-0">
+                <UserCheck className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-amber-100 truncate">
+                  {currentUser?.name || 'Oleiro Zico'}
+                </p>
+                <p className="text-[10px] text-amber-300/80 truncate">
+                  {currentUser?.role === 'PROPRIETARIO' ? '👑 Proprietário' : '👷 Operacional'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleLogoutClick}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-900/30 hover:bg-red-950/60 text-amber-200/70 hover:text-red-300 text-xs font-bold transition-colors cursor-pointer border border-transparent hover:border-red-900/50"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sair do Sistema</span>
+          </button>
+        </div>
       </aside>
 
       {/* Mobile Bottom Quick Bar */}
@@ -143,7 +203,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleSelectView(item.id)}
-                className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-all relative ${
+                className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-all relative cursor-pointer ${
                   isActive
                     ? 'text-amber-400 font-bold scale-105'
                     : 'text-amber-300/70 hover:text-amber-100'
@@ -165,7 +225,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           {/* More Menu Trigger */}
           <button
             onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(true)}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-all ${
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${
               isMobileDrawerOpen ? 'text-amber-400 font-bold' : 'text-amber-300/70 hover:text-amber-100'
             }`}
           >
@@ -185,8 +245,8 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div className="relative bg-amber-950 text-amber-50 rounded-t-3xl border-t border-amber-800 p-5 shadow-2xl max-h-[85vh] overflow-y-auto z-10 space-y-5">
             <div className="flex items-center justify-between border-b border-amber-800/80 pb-3">
               <div className="flex items-center space-x-2">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-amber-100 text-base">Menu Principal Olaria</h3>
+                <ShieldCheck className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-amber-100 text-base">Menu Olaria do Zico</h3>
               </div>
               <button
                 onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(false)}
@@ -210,7 +270,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                         <button
                           key={item.id}
                           onClick={() => handleSelectView(item.id)}
-                          className={`flex items-center space-x-2.5 p-3 rounded-xl text-xs font-semibold text-left transition-all ${
+                          className={`flex items-center space-x-2.5 p-3 rounded-xl text-xs font-semibold text-left transition-all cursor-pointer ${
                             isActive
                               ? 'bg-amber-600 text-white shadow-md'
                               : 'bg-amber-900/50 text-amber-200 hover:bg-amber-900'
@@ -231,10 +291,17 @@ export const Navigation: React.FC<NavigationProps> = ({
               ))}
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col gap-2">
+              <button
+                onClick={handleLogoutClick}
+                className="w-full py-2.5 bg-red-950/60 text-red-200 hover:bg-red-900 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sair do Sistema</span>
+              </button>
               <button
                 onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(false)}
-                className="w-full py-3 bg-amber-900 text-amber-200 font-bold rounded-xl text-center text-xs"
+                className="w-full py-2.5 bg-amber-900 text-amber-200 font-bold rounded-xl text-center text-xs"
               >
                 Fechar Menu
               </button>
@@ -245,4 +312,5 @@ export const Navigation: React.FC<NavigationProps> = ({
     </>
   );
 };
+
 

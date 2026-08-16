@@ -4,7 +4,10 @@ import { Navigation } from './components/Navigation';
 import { VoiceModal } from './components/VoiceModal';
 import { VoiceFloatingButton } from './components/VoiceFloatingButton';
 import { StorageService, subscribeStorage } from './services/storage';
+import { AuthService } from './services/authService';
+import { AuthUser } from './types';
 
+// Views
 import { DashboardView } from './views/DashboardView';
 import { SalesView } from './views/SalesView';
 import { ProductionView } from './views/ProductionView';
@@ -16,8 +19,15 @@ import { FinanceView } from './views/FinanceView';
 import { ProductsView } from './views/ProductsView';
 import { ReportsView } from './views/ReportsView';
 import { AuditView } from './views/AuditView';
+import { SecurityUsersView } from './views/SecurityUsersView';
+import { LoginView } from './views/LoginView';
+import { TechnicalAdminView } from './views/TechnicalAdminView';
+import { ShieldAlert, Lock } from 'lucide-react';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => AuthService.getCurrentUser());
+  const [isTechnicalPortalOpen, setIsTechnicalPortalOpen] = useState(false);
+  
   const [activeView, setActiveView] = useState('dashboard');
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -37,6 +47,18 @@ export default function App() {
     return () => unsub();
   }, []);
 
+  const handleLoginSuccess = (user: AuthUser) => {
+    setCurrentUser(user);
+    setIsTechnicalPortalOpen(false);
+    setActiveView('dashboard');
+  };
+
+  const handleLogout = () => {
+    AuthService.logout();
+    setCurrentUser(null);
+    setIsTechnicalPortalOpen(false);
+  };
+
   const handleOpenVoiceModal = () => {
     setIsVoiceModalOpen(true);
   };
@@ -50,34 +72,80 @@ export default function App() {
     setActiveView((prev) => prev);
   };
 
+  // If in Technical DevOps portal mode
+  if (isTechnicalPortalOpen) {
+    return (
+      <TechnicalAdminView onBackToCommercial={() => setIsTechnicalPortalOpen(false)} />
+    );
+  }
+
+  // If not authenticated, display login screen
+  if (!currentUser) {
+    return (
+      <LoginView
+        onLoginSuccess={handleLoginSuccess}
+        onNavigateToTechnical={() => setIsTechnicalPortalOpen(true)}
+      />
+    );
+  }
+
+  // Permission Guard Helper
+  const checkPermission = (requiredKey: string): boolean => {
+    if (currentUser.role === 'PROPRIETARIO') return true;
+    if (!currentUser.permissions) return false;
+    return (currentUser.permissions as any)[requiredKey] === true;
+  };
+
+  const renderAccessDenied = (moduleName: string) => (
+    <div className="bg-white border border-amber-200 rounded-3xl p-8 text-center max-w-lg mx-auto my-12 shadow-xs space-y-4">
+      <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-900 mx-auto flex items-center justify-center">
+        <Lock className="w-8 h-8" />
+      </div>
+      <h3 className="text-xl font-bold text-amber-950">Acesso Restrito: {moduleName}</h3>
+      <p className="text-sm text-stone-600 leading-relaxed">
+        Seu perfil de usuário (<strong>{currentUser.name}</strong>) não possui permissão para visualizar este módulo. Solicite a liberação ao proprietário da olaria.
+      </p>
+      <button
+        onClick={() => setActiveView('dashboard')}
+        className="px-5 py-2.5 bg-amber-900 text-white font-bold rounded-xl text-xs hover:bg-amber-950 transition-all cursor-pointer"
+      >
+        Voltar para a Visão Geral
+      </button>
+    </div>
+  );
+
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
         return <DashboardView onOpenVoiceModal={handleOpenVoiceModal} setActiveView={setActiveView} />;
       case 'vendas':
-        return <SalesView onOpenVoiceModal={handleOpenVoiceModal} />;
+        return checkPermission('vendas') ? <SalesView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Vendas');
       case 'producao':
-        return <ProductionView onOpenVoiceModal={handleOpenVoiceModal} />;
+        return checkPermission('producao') ? <ProductionView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Produção');
       case 'estoque':
-        return <StockView onOpenVoiceModal={handleOpenVoiceModal} />;
+        return checkPermission('estoque') ? <StockView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Estoque');
       case 'clientes':
-        return <CustomersView />;
+        return checkPermission('clientes') ? <CustomersView /> : renderAccessDenied('Clientes');
       case 'pedidos':
-        return <CustomOrdersView onOpenVoiceModal={handleOpenVoiceModal} />;
+        return checkPermission('pedidos') ? <CustomOrdersView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Pedidos Sob Encomenda');
       case 'entregas':
-        return <DeliveriesView onOpenVoiceModal={handleOpenVoiceModal} />;
+        return checkPermission('entregas') ? <DeliveriesView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Entregas');
       case 'financeiro':
-        return <FinanceView onOpenVoiceModal={handleOpenVoiceModal} />;
+        return checkPermission('financeiro') ? <FinanceView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Financeiro & Contas');
       case 'produtos':
-        return <ProductsView />;
+        return checkPermission('produtos') ? <ProductsView /> : renderAccessDenied('Produtos');
       case 'relatorios':
-        return <ReportsView />;
+        return checkPermission('relatorios') ? <ReportsView /> : renderAccessDenied('Relatórios');
       case 'auditoria':
-        return <AuditView />;
+        return checkPermission('auditoria') ? <AuditView /> : renderAccessDenied('Histórico e Auditoria');
+      case 'seguranca':
+        return currentUser.role === 'PROPRIETARIO' ? <SecurityUsersView /> : renderAccessDenied('Segurança & Permissões');
       default:
         return <DashboardView onOpenVoiceModal={handleOpenVoiceModal} setActiveView={setActiveView} />;
     }
   };
+
+  const isDemo = currentUser.tenantId === 'tenant_demo_sandbox_01';
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900 font-sans flex flex-col antialiased selection:bg-amber-200 selection:text-amber-950">
@@ -86,7 +154,41 @@ export default function App() {
         activeView={activeView} 
         onOpenVoiceModal={handleOpenVoiceModal} 
         onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
+        onNavigateToTechnical={() => setIsTechnicalPortalOpen(true)}
+        onNavigateToSecurity={() => setActiveView('seguranca')}
       />
+
+      {/* Demo Sandbox Banner */}
+      {isDemo && (
+        <div className="bg-amber-900 text-amber-100 border-b border-amber-800/80 px-4 py-2.5 shadow-xs">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 text-center sm:text-left">
+              <span className="px-2 py-0.5 rounded-md bg-amber-800 font-black text-[10px] tracking-wider uppercase border border-amber-700 shrink-0">
+                Sandbox
+              </span>
+              <span className="font-medium text-amber-200">
+                Você está no <strong>Ambiente de Demonstração</strong>. Todos os dados (vendas, estoque, financeiro) são fictícios e 100% isolados da produção real.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  StorageService.resetDemoSandbox();
+                }}
+                className="px-3 py-1 bg-amber-800 hover:bg-amber-700 text-amber-100 rounded-lg font-semibold transition-colors cursor-pointer text-xs"
+              >
+                Resetar Demonstração
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1 bg-stone-900 hover:bg-stone-800 text-stone-200 rounded-lg font-semibold transition-colors cursor-pointer text-xs"
+              >
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Body with Desktop Sidebar Navigation */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 gap-6">
@@ -95,6 +197,7 @@ export default function App() {
           setActiveView={setActiveView} 
           isMobileDrawerOpen={isMobileDrawerOpen}
           setIsMobileDrawerOpen={setIsMobileDrawerOpen}
+          onLogout={handleLogout}
         />
 
         <main className="flex-1 min-w-0 pb-20 lg:pb-6">

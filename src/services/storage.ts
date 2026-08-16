@@ -11,6 +11,7 @@ import {
   AuditLog,
   NluActionPayload
 } from '../types';
+import { AuthService } from './authService';
 
 import {
   INITIAL_CATEGORIES,
@@ -25,6 +26,20 @@ import {
   INITIAL_RECEIVABLES,
   INITIAL_AUDIT_LOGS
 } from '../data/initialData';
+
+import {
+  DEMO_TENANT_ID,
+  DEMO_PRODUCTS,
+  DEMO_RAW_MATERIALS,
+  DEMO_CUSTOMERS,
+  DEMO_SALES,
+  DEMO_PRODUCTION_BATCHES,
+  DEMO_CUSTOM_ORDERS,
+  DEMO_DELIVERIES,
+  DEMO_EXPENSES,
+  DEMO_RECEIVABLES,
+  DEMO_AUDIT_LOGS
+} from '../data/demoData';
 
 import {
   syncDocToFirestore,
@@ -47,6 +62,92 @@ const KEYS = {
   AUDIT: 'olaria_audit_v2',
   VOICE_LOGS: 'olaria_voice_logs_v2'
 };
+
+function getActiveTenantId(): string {
+  const user = AuthService.getCurrentUser();
+  return user ? user.tenantId : 'tenant_olaria_zico_01';
+}
+
+function enforceTenantFilter<T extends { tenantId?: string }>(items: T[]): T[] {
+  // If technical admin is querying commercial datasets directly, return empty (blackout guarantee)
+  const user = AuthService.getCurrentUser();
+  if (user && user.role === 'ADMIN_TECNICO') {
+    return [];
+  }
+
+  const tenantId = getActiveTenantId();
+  if (tenantId === DEMO_TENANT_ID) {
+    // Demonstration Sandbox: ONLY return records specifically stamped for demo
+    return items.filter(item => item.tenantId === DEMO_TENANT_ID);
+  }
+
+  // Production environment: NEVER return demo records; match production tenant
+  return items.filter(item => {
+    if (item.tenantId === DEMO_TENANT_ID) return false;
+    return !item.tenantId || item.tenantId === tenantId;
+  });
+}
+
+function ensureDemoDataInitialized() {
+  const tenantId = getActiveTenantId();
+  if (tenantId !== DEMO_TENANT_ID) return;
+
+  const demoSeeded = localStorage.getItem('olaria_demo_sandbox_seeded_v2');
+  if (demoSeeded === 'true') return;
+
+  // Merge demo data into storage without overwriting production items
+  const currentProducts = getItem<Product[]>(KEYS.PRODUCTS, INITIAL_PRODUCTS);
+  if (!currentProducts.some(p => p.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.PRODUCTS, [...DEMO_PRODUCTS, ...currentProducts]);
+  }
+
+  const currentMaterials = getItem<RawMaterial[]>(KEYS.RAW_MATERIALS, INITIAL_RAW_MATERIALS);
+  if (!currentMaterials.some(m => m.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.RAW_MATERIALS, [...DEMO_RAW_MATERIALS, ...currentMaterials]);
+  }
+
+  const currentCustomers = getItem<Customer[]>(KEYS.CUSTOMERS, INITIAL_CUSTOMERS);
+  if (!currentCustomers.some(c => c.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.CUSTOMERS, [...DEMO_CUSTOMERS, ...currentCustomers]);
+  }
+
+  const currentSales = getItem<Sale[]>(KEYS.SALES, INITIAL_SALES);
+  if (!currentSales.some(s => s.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.SALES, [...DEMO_SALES, ...currentSales]);
+  }
+
+  const currentProd = getItem<ProductionBatch[]>(KEYS.PRODUCTION, INITIAL_PRODUCTION_BATCHES);
+  if (!currentProd.some(b => b.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.PRODUCTION, [...DEMO_PRODUCTION_BATCHES, ...currentProd]);
+  }
+
+  const currentOrders = getItem<CustomOrder[]>(KEYS.CUSTOM_ORDERS, INITIAL_CUSTOM_ORDERS);
+  if (!currentOrders.some(o => o.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.CUSTOM_ORDERS, [...DEMO_CUSTOM_ORDERS, ...currentOrders]);
+  }
+
+  const currentDeliveries = getItem<Delivery[]>(KEYS.DELIVERIES, INITIAL_DELIVERIES);
+  if (!currentDeliveries.some(d => d.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.DELIVERIES, [...DEMO_DELIVERIES, ...currentDeliveries]);
+  }
+
+  const currentExpenses = getItem<Expense[]>(KEYS.EXPENSES, INITIAL_EXPENSES);
+  if (!currentExpenses.some(e => e.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.EXPENSES, [...DEMO_EXPENSES, ...currentExpenses]);
+  }
+
+  const currentReceivables = getItem<AccountReceivable[]>(KEYS.RECEIVABLES, INITIAL_RECEIVABLES);
+  if (!currentReceivables.some(r => r.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.RECEIVABLES, [...DEMO_RECEIVABLES, ...currentReceivables]);
+  }
+
+  const currentAudit = getItem<AuditLog[]>(KEYS.AUDIT, INITIAL_AUDIT_LOGS);
+  if (!currentAudit.some(a => a.tenantId === DEMO_TENANT_ID)) {
+    setItem(KEYS.AUDIT, [...DEMO_AUDIT_LOGS, ...currentAudit]);
+  }
+
+  localStorage.setItem('olaria_demo_sandbox_seeded_v2', 'true');
+}
 
 // Purge any legacy demo mock data from previous sessions
 try {
@@ -116,56 +217,96 @@ export const StorageService = {
       // Listen for remote updates on Products
       listenToCollection<Product>('products', (cloudProducts) => {
         if (cloudProducts) {
-          setItem(KEYS.PRODUCTS, cloudProducts);
+          const localDemo = getItem<Product[]>(KEYS.PRODUCTS, []).filter(p => p.tenantId === DEMO_TENANT_ID);
+          const validCloud = cloudProducts.map(p => ({
+            ...p,
+            tenantId: p.tenantId || 'tenant_olaria_zico_01'
+          }));
+          setItem(KEYS.PRODUCTS, [...localDemo, ...validCloud]);
         }
       });
 
       // Listen for remote updates on Raw Materials
       listenToCollection<RawMaterial>('raw_materials', (cloudMaterials) => {
         if (cloudMaterials) {
-          setItem(KEYS.RAW_MATERIALS, cloudMaterials);
+          const localDemo = getItem<RawMaterial[]>(KEYS.RAW_MATERIALS, []).filter(m => m.tenantId === DEMO_TENANT_ID);
+          const validCloud = cloudMaterials.map(m => ({
+            ...m,
+            tenantId: m.tenantId || 'tenant_olaria_zico_01'
+          }));
+          setItem(KEYS.RAW_MATERIALS, [...localDemo, ...validCloud]);
         }
       });
 
       // Listen for remote updates on Customers
       listenToCollection<Customer>('customers', (cloudCustomers) => {
         if (cloudCustomers) {
-          setItem(KEYS.CUSTOMERS, cloudCustomers);
+          const localDemo = getItem<Customer[]>(KEYS.CUSTOMERS, []).filter(c => c.tenantId === DEMO_TENANT_ID);
+          const validCloud = cloudCustomers.map(c => ({
+            ...c,
+            tenantId: c.tenantId || 'tenant_olaria_zico_01'
+          }));
+          setItem(KEYS.CUSTOMERS, [...localDemo, ...validCloud]);
         }
       });
 
       // Listen for remote updates on Sales
       listenToCollection<Sale>('sales', (cloudSales) => {
         if (cloudSales) {
-          setItem(KEYS.SALES, cloudSales);
+          const localDemo = getItem<Sale[]>(KEYS.SALES, []).filter(s => s.tenantId === DEMO_TENANT_ID);
+          const validCloud = cloudSales.map(s => ({
+            ...s,
+            tenantId: s.tenantId || 'tenant_olaria_zico_01'
+          }));
+          setItem(KEYS.SALES, [...localDemo, ...validCloud]);
         }
       });
 
       // Listen for remote updates on Production Batches
       listenToCollection<ProductionBatch>('production_batches', (cloudBatches) => {
         if (cloudBatches) {
-          setItem(KEYS.PRODUCTION, cloudBatches);
+          const localDemo = getItem<ProductionBatch[]>(KEYS.PRODUCTION, []).filter(b => b.tenantId === DEMO_TENANT_ID);
+          const validCloud = cloudBatches.map(b => ({
+            ...b,
+            tenantId: b.tenantId || 'tenant_olaria_zico_01'
+          }));
+          setItem(KEYS.PRODUCTION, [...localDemo, ...validCloud]);
         }
       });
 
       // Listen for remote updates on Custom Orders
       listenToCollection<CustomOrder>('custom_orders', (cloudOrders) => {
         if (cloudOrders) {
-          setItem(KEYS.CUSTOM_ORDERS, cloudOrders);
+          const localDemo = getItem<CustomOrder[]>(KEYS.CUSTOM_ORDERS, []).filter(o => o.tenantId === DEMO_TENANT_ID);
+          const validCloud = cloudOrders.map(o => ({
+            ...o,
+            tenantId: o.tenantId || 'tenant_olaria_zico_01'
+          }));
+          setItem(KEYS.CUSTOM_ORDERS, [...localDemo, ...validCloud]);
         }
       });
 
       // Listen for remote updates on Deliveries
       listenToCollection<Delivery>('deliveries', (cloudDeliveries) => {
         if (cloudDeliveries) {
-          setItem(KEYS.DELIVERIES, cloudDeliveries);
+          const localDemo = getItem<Delivery[]>(KEYS.DELIVERIES, []).filter(d => d.tenantId === DEMO_TENANT_ID);
+          const validCloud = cloudDeliveries.map(d => ({
+            ...d,
+            tenantId: d.tenantId || 'tenant_olaria_zico_01'
+          }));
+          setItem(KEYS.DELIVERIES, [...localDemo, ...validCloud]);
         }
       });
 
       // Listen for remote updates on Audit Logs
       listenToCollection<AuditLog>('audit_logs', (cloudLogs) => {
         if (cloudLogs) {
-          setItem(KEYS.AUDIT, cloudLogs);
+          const localDemo = getItem<AuditLog[]>(KEYS.AUDIT, []).filter(a => a.tenantId === DEMO_TENANT_ID);
+          const validCloud = cloudLogs.map(a => ({
+            ...a,
+            tenantId: a.tenantId || 'tenant_olaria_zico_01'
+          }));
+          setItem(KEYS.AUDIT, [...localDemo, ...validCloud]);
         }
       });
     } catch (err) {
@@ -191,11 +332,14 @@ export const StorageService = {
 
   // Product Management
   getProducts(): Product[] {
-    return getItem<Product[]>(KEYS.PRODUCTS, INITIAL_PRODUCTS);
+    ensureDemoDataInitialized();
+    const all = getItem<Product[]>(KEYS.PRODUCTS, INITIAL_PRODUCTS);
+    return enforceTenantFilter(all).filter(p => !p.softDeleted);
   },
 
   saveProduct(product: Product, skipAudit = false): Product {
-    const list = this.getProducts();
+    product.tenantId = product.tenantId || getActiveTenantId();
+    const list = getItem<Product[]>(KEYS.PRODUCTS, INITIAL_PRODUCTS);
     const idx = list.findIndex(p => p.id === product.id);
     let updated: Product[];
     if (idx >= 0) {
@@ -205,7 +349,9 @@ export const StorageService = {
       updated = [product, ...list];
     }
     setItem(KEYS.PRODUCTS, updated);
-    syncDocToFirestore('products', product.id, product).catch(() => {});
+    if (product.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('products', product.id, product).catch(() => {});
+    }
     if (!skipAudit) {
       this.logAudit('Salvar Produto', 'Produto', product.id, `Produto ${product.name} gravado. Estoque: ${product.stock}`);
     }
@@ -213,9 +359,13 @@ export const StorageService = {
   },
 
   deleteProduct(id: string) {
-    const list = this.getProducts().filter(p => p.id !== id);
-    setItem(KEYS.PRODUCTS, list);
-    deleteDocFromFirestore('products', id).catch(() => {});
+    const list = getItem<Product[]>(KEYS.PRODUCTS, INITIAL_PRODUCTS);
+    const target = list.find(p => p.id === id);
+    const updated = list.filter(p => p.id !== id);
+    setItem(KEYS.PRODUCTS, updated);
+    if (target && target.tenantId !== DEMO_TENANT_ID) {
+      deleteDocFromFirestore('products', id).catch(() => {});
+    }
     this.logAudit('Excluir Produto', 'Produto', id, `Produto removido.`);
   },
 
@@ -254,11 +404,14 @@ export const StorageService = {
 
   // Raw Materials
   getRawMaterials(): RawMaterial[] {
-    return getItem<RawMaterial[]>(KEYS.RAW_MATERIALS, INITIAL_RAW_MATERIALS);
+    ensureDemoDataInitialized();
+    const all = getItem<RawMaterial[]>(KEYS.RAW_MATERIALS, INITIAL_RAW_MATERIALS);
+    return enforceTenantFilter(all).filter(m => !m.softDeleted);
   },
 
   saveRawMaterial(mat: RawMaterial, skipAudit = false): RawMaterial {
-    const list = this.getRawMaterials();
+    mat.tenantId = mat.tenantId || getActiveTenantId();
+    const list = getItem<RawMaterial[]>(KEYS.RAW_MATERIALS, INITIAL_RAW_MATERIALS);
     const idx = list.findIndex(m => m.id === mat.id);
     let updated: RawMaterial[];
     if (idx >= 0) {
@@ -268,7 +421,9 @@ export const StorageService = {
       updated = [mat, ...list];
     }
     setItem(KEYS.RAW_MATERIALS, updated);
-    syncDocToFirestore('raw_materials', mat.id, mat).catch(() => {});
+    if (mat.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('raw_materials', mat.id, mat).catch(() => {});
+    }
     if (!skipAudit) {
       this.logAudit('Salvar Matéria-Prima', 'Matéria-Prima', mat.id, `${mat.name}: ${mat.stockQuantity} ${mat.unit}`);
     }
@@ -276,19 +431,26 @@ export const StorageService = {
   },
 
   deleteRawMaterial(id: string) {
-    const list = this.getRawMaterials().filter(m => m.id !== id);
-    setItem(KEYS.RAW_MATERIALS, list);
-    deleteDocFromFirestore('raw_materials', id).catch(() => {});
+    const list = getItem<RawMaterial[]>(KEYS.RAW_MATERIALS, INITIAL_RAW_MATERIALS);
+    const target = list.find(m => m.id === id);
+    const updated = list.filter(m => m.id !== id);
+    setItem(KEYS.RAW_MATERIALS, updated);
+    if (target && target.tenantId !== DEMO_TENANT_ID) {
+      deleteDocFromFirestore('raw_materials', id).catch(() => {});
+    }
     this.logAudit('Excluir Matéria-Prima', 'Matéria-Prima', id, `Matéria-prima removida.`);
   },
 
   // Customers
   getCustomers(): Customer[] {
-    return getItem<Customer[]>(KEYS.CUSTOMERS, INITIAL_CUSTOMERS);
+    ensureDemoDataInitialized();
+    const all = getItem<Customer[]>(KEYS.CUSTOMERS, INITIAL_CUSTOMERS);
+    return enforceTenantFilter(all).filter(c => !c.softDeleted);
   },
 
   saveCustomer(customer: Customer, skipAudit = false): Customer {
-    const list = this.getCustomers();
+    customer.tenantId = customer.tenantId || getActiveTenantId();
+    const list = getItem<Customer[]>(KEYS.CUSTOMERS, INITIAL_CUSTOMERS);
     const idx = list.findIndex(c => c.id === customer.id);
     let updated: Customer[];
     if (idx >= 0) {
@@ -298,7 +460,9 @@ export const StorageService = {
       updated = [customer, ...list];
     }
     setItem(KEYS.CUSTOMERS, updated);
-    syncDocToFirestore('customers', customer.id, customer).catch(() => {});
+    if (customer.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('customers', customer.id, customer).catch(() => {});
+    }
     if (!skipAudit) {
       this.logAudit('Salvar Cliente', 'Cliente', customer.id, `Cliente ${customer.name} registrado.`);
     }
@@ -306,13 +470,15 @@ export const StorageService = {
   },
 
   deleteCustomer(id: string) {
-    const customers = this.getCustomers();
+    const customers = getItem<Customer[]>(KEYS.CUSTOMERS, INITIAL_CUSTOMERS);
     const target = customers.find(c => c.id === id);
     if (!target) return;
 
     const list = customers.filter(c => c.id !== id);
     setItem(KEYS.CUSTOMERS, list);
-    deleteDocFromFirestore('customers', id).catch(() => {});
+    if (target.tenantId !== DEMO_TENANT_ID) {
+      deleteDocFromFirestore('customers', id).catch(() => {});
+    }
     this.logAudit('Excluir Cliente', 'Cliente', id, `Cliente ${target.name} removido do cadastro.`);
   },
 
@@ -325,6 +491,7 @@ export const StorageService = {
     
     const newCustomer: Customer = {
       id: `cli-${Date.now()}`,
+      tenantId: getActiveTenantId(),
       name: cleanName,
       type: 'Cliente final',
       createdAt: new Date().toISOString().split('T')[0]
@@ -334,11 +501,14 @@ export const StorageService = {
 
   // Sales (with Delta-based Stock Management & Receivables Sync)
   getSales(): Sale[] {
-    return getItem<Sale[]>(KEYS.SALES, INITIAL_SALES);
+    ensureDemoDataInitialized();
+    const all = getItem<Sale[]>(KEYS.SALES, INITIAL_SALES);
+    return enforceTenantFilter(all);
   },
 
   saveSale(sale: Sale, options?: { skipStockAdjustment?: boolean; skipAudit?: boolean }): Sale {
-    const sales = this.getSales();
+    sale.tenantId = sale.tenantId || getActiveTenantId();
+    const sales = getItem<Sale[]>(KEYS.SALES, INITIAL_SALES);
     const idx = sales.findIndex(s => s.id === sale.id);
     const oldSale = idx >= 0 ? sales[idx] : null;
 
@@ -386,7 +556,9 @@ export const StorageService = {
       updatedSales = [sale, ...sales];
     }
     setItem(KEYS.SALES, updatedSales);
-    syncDocToFirestore('sales', sale.id, sale).catch(() => {});
+    if (sale.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('sales', sale.id, sale).catch(() => {});
+    }
 
     // Synchronize Account Receivables
     if (sale.customerId) {
@@ -395,7 +567,8 @@ export const StorageService = {
 
       if (sale.status === 'Cancelada') {
         if (recIdx >= 0) {
-          receivables.splice(recIdx, 1);
+          receivables[recIdx].status = 'Cancelada';
+          receivables[recIdx].softDeleted = true;
           setItem(KEYS.RECEIVABLES, receivables);
         }
       } else if (sale.pendingValue > 0) {
@@ -407,6 +580,7 @@ export const StorageService = {
         } else {
           const newReceivable: AccountReceivable = {
             id: `rec-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            tenantId: sale.tenantId,
             saleId: sale.id,
             customerId: sale.customerId,
             customerName: sale.customerName,
@@ -438,12 +612,13 @@ export const StorageService = {
     return sale;
   },
 
-  deleteSale(id: string) {
-    const sales = this.getSales();
+  // Soft cancel sale to preserve financial integrity and auditability
+  cancelSale(id: string, reason: string = 'Cancelamento solicitado pelo usuário'): boolean {
+    const sales = getItem<Sale[]>(KEYS.SALES, INITIAL_SALES);
     const target = sales.find(s => s.id === id);
-    if (!target) return;
+    if (!target) return false;
 
-    // Restore stock
+    // Restore stock if it was active
     if (target.status !== 'Cancelada') {
       const products = this.getProducts();
       target.items.forEach(item => {
@@ -455,25 +630,40 @@ export const StorageService = {
       setItem(KEYS.PRODUCTS, products);
     }
 
-    // Remove associated receivable
-    const receivables = this.getReceivables().filter(r => r.saleId !== id);
-    setItem(KEYS.RECEIVABLES, receivables);
+    target.status = 'Cancelada';
+    target.cancelledReason = reason;
+    setItem(KEYS.SALES, sales);
+    if (target.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('sales', id, target).catch(() => {});
+    }
 
-    // Remove sale
-    const updatedSales = sales.filter(s => s.id !== id);
-    setItem(KEYS.SALES, updatedSales);
-    deleteDocFromFirestore('sales', id).catch(() => {});
+    // Cancel linked receivable
+    const receivables = this.getReceivables();
+    const rec = receivables.find(r => r.saleId === id);
+    if (rec) {
+      rec.status = 'Cancelada';
+      rec.cancelledReason = reason;
+      setItem(KEYS.RECEIVABLES, receivables);
+    }
 
-    this.logAudit('Excluir Venda', 'Venda', id, `Venda ${target.code} cancelada e estoque estornado.`);
+    this.logAudit('Cancelar Venda', 'Venda', id, `Venda ${target.code} cancelada (Motivo: ${reason}). Estoque estornado.`);
+    return true;
+  },
+
+  deleteSale(id: string) {
+    this.cancelSale(id, 'Exclusão de registro');
   },
 
   // Production Batches (with Idempotency & Stock Duplication Guards)
   getProduction(): ProductionBatch[] {
-    return getItem<ProductionBatch[]>(KEYS.PRODUCTION, INITIAL_PRODUCTION_BATCHES);
+    ensureDemoDataInitialized();
+    const all = getItem<ProductionBatch[]>(KEYS.PRODUCTION, INITIAL_PRODUCTION_BATCHES);
+    return enforceTenantFilter(all).filter(b => !b.softDeleted);
   },
 
   saveProduction(batch: ProductionBatch, skipAudit = false): ProductionBatch {
-    const list = this.getProduction();
+    batch.tenantId = batch.tenantId || getActiveTenantId();
+    const list = getItem<ProductionBatch[]>(KEYS.PRODUCTION, INITIAL_PRODUCTION_BATCHES);
     const idx = list.findIndex(b => b.id === batch.id);
     const oldBatch = idx >= 0 ? list[idx] : null;
 
@@ -520,7 +710,9 @@ export const StorageService = {
       updated = [batch, ...list];
     }
     setItem(KEYS.PRODUCTION, updated);
-    syncDocToFirestore('production_batches', batch.id, batch).catch(() => {});
+    if (batch.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('production_batches', batch.id, batch).catch(() => {});
+    }
 
     if (!skipAudit) {
       this.logAudit(
@@ -534,7 +726,7 @@ export const StorageService = {
   },
 
   deleteProduction(id: string) {
-    const list = this.getProduction();
+    const list = getItem<ProductionBatch[]>(KEYS.PRODUCTION, INITIAL_PRODUCTION_BATCHES);
     const target = list.find(b => b.id === id);
     if (!target) return;
 
@@ -549,17 +741,22 @@ export const StorageService = {
 
     const updated = list.filter(b => b.id !== id);
     setItem(KEYS.PRODUCTION, updated);
-    deleteDocFromFirestore('production_batches', id).catch(() => {});
+    if (target.tenantId !== DEMO_TENANT_ID) {
+      deleteDocFromFirestore('production_batches', id).catch(() => {});
+    }
     this.logAudit('Excluir Produção', 'Produção', id, `Lote de produção ${target.code} removido.`);
   },
 
   // Custom Orders
   getCustomOrders(): CustomOrder[] {
-    return getItem<CustomOrder[]>(KEYS.CUSTOM_ORDERS, INITIAL_CUSTOM_ORDERS);
+    ensureDemoDataInitialized();
+    const all = getItem<CustomOrder[]>(KEYS.CUSTOM_ORDERS, INITIAL_CUSTOM_ORDERS);
+    return enforceTenantFilter(all).filter(o => !o.softDeleted);
   },
 
   saveCustomOrder(order: CustomOrder, skipAudit = false): CustomOrder {
-    const list = this.getCustomOrders();
+    order.tenantId = order.tenantId || getActiveTenantId();
+    const list = getItem<CustomOrder[]>(KEYS.CUSTOM_ORDERS, INITIAL_CUSTOM_ORDERS);
     const idx = list.findIndex(o => o.id === order.id);
     let updated: CustomOrder[];
     if (idx >= 0) {
@@ -569,7 +766,9 @@ export const StorageService = {
       updated = [order, ...list];
     }
     setItem(KEYS.CUSTOM_ORDERS, updated);
-    syncDocToFirestore('custom_orders', order.id, order).catch(() => {});
+    if (order.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('custom_orders', order.id, order).catch(() => {});
+    }
     if (!skipAudit) {
       this.logAudit('Salvar Pedido Personalizado', 'Pedido', order.id, `Pedido ${order.code} de ${order.customerName} - ${order.productDescription}`);
     }
@@ -577,19 +776,26 @@ export const StorageService = {
   },
 
   deleteCustomOrder(id: string) {
-    const list = this.getCustomOrders().filter(o => o.id !== id);
-    setItem(KEYS.CUSTOM_ORDERS, list);
-    deleteDocFromFirestore('custom_orders', id).catch(() => {});
+    const list = getItem<CustomOrder[]>(KEYS.CUSTOM_ORDERS, INITIAL_CUSTOM_ORDERS);
+    const target = list.find(o => o.id === id);
+    const updated = list.filter(o => o.id !== id);
+    setItem(KEYS.CUSTOM_ORDERS, updated);
+    if (target && target.tenantId !== DEMO_TENANT_ID) {
+      deleteDocFromFirestore('custom_orders', id).catch(() => {});
+    }
     this.logAudit('Excluir Pedido', 'Pedido', id, `Pedido personalizado removido.`);
   },
 
   // Deliveries
   getDeliveries(): Delivery[] {
-    return getItem<Delivery[]>(KEYS.DELIVERIES, INITIAL_DELIVERIES);
+    ensureDemoDataInitialized();
+    const all = getItem<Delivery[]>(KEYS.DELIVERIES, INITIAL_DELIVERIES);
+    return enforceTenantFilter(all).filter(d => !d.softDeleted);
   },
 
   saveDelivery(del: Delivery, skipAudit = false): Delivery {
-    const list = this.getDeliveries();
+    del.tenantId = del.tenantId || getActiveTenantId();
+    const list = getItem<Delivery[]>(KEYS.DELIVERIES, INITIAL_DELIVERIES);
     const idx = list.findIndex(d => d.id === del.id);
     let updated: Delivery[];
     if (idx >= 0) {
@@ -599,7 +805,9 @@ export const StorageService = {
       updated = [del, ...list];
     }
     setItem(KEYS.DELIVERIES, updated);
-    syncDocToFirestore('deliveries', del.id, del).catch(() => {});
+    if (del.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('deliveries', del.id, del).catch(() => {});
+    }
     if (!skipAudit) {
       this.logAudit('Salvar Entrega', 'Entrega', del.id, `Entrega para ${del.customerName} - Status: ${del.status}`);
     }
@@ -607,19 +815,26 @@ export const StorageService = {
   },
 
   deleteDelivery(id: string) {
-    const list = this.getDeliveries().filter(d => d.id !== id);
-    setItem(KEYS.DELIVERIES, list);
-    deleteDocFromFirestore('deliveries', id).catch(() => {});
+    const list = getItem<Delivery[]>(KEYS.DELIVERIES, INITIAL_DELIVERIES);
+    const target = list.find(d => d.id === id);
+    const updated = list.filter(d => d.id !== id);
+    setItem(KEYS.DELIVERIES, updated);
+    if (target && target.tenantId !== DEMO_TENANT_ID) {
+      deleteDocFromFirestore('deliveries', id).catch(() => {});
+    }
     this.logAudit('Excluir Entrega', 'Entrega', id, `Entrega removida.`);
   },
 
   // Expenses
   getExpenses(): Expense[] {
-    return getItem<Expense[]>(KEYS.EXPENSES, INITIAL_EXPENSES);
+    ensureDemoDataInitialized();
+    const all = getItem<Expense[]>(KEYS.EXPENSES, INITIAL_EXPENSES);
+    return enforceTenantFilter(all).filter(e => !e.softDeleted);
   },
 
   saveExpense(exp: Expense, skipAudit = false): Expense {
-    const list = this.getExpenses();
+    exp.tenantId = exp.tenantId || getActiveTenantId();
+    const list = getItem<Expense[]>(KEYS.EXPENSES, INITIAL_EXPENSES);
     const idx = list.findIndex(e => e.id === exp.id);
     let updated: Expense[];
     if (idx >= 0) {
@@ -629,10 +844,12 @@ export const StorageService = {
       updated = [exp, ...list];
     }
     setItem(KEYS.EXPENSES, updated);
-    syncDocToFirestore('financial_records', exp.id, {
-      ...exp,
-      type: 'Despesa'
-    }).catch(() => {});
+    if (exp.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('financial_records', exp.id, {
+        ...exp,
+        type: 'Despesa'
+      }).catch(() => {});
+    }
     if (!skipAudit) {
       this.logAudit('Registrar Despesa', 'Despesa', exp.id, `Despesa: ${exp.description} - R$ ${exp.amount.toFixed(2)} (${exp.status})`);
     }
@@ -640,19 +857,29 @@ export const StorageService = {
   },
 
   deleteExpense(id: string) {
-    const list = this.getExpenses().filter(e => e.id !== id);
-    setItem(KEYS.EXPENSES, list);
-    deleteDocFromFirestore('financial_records', id).catch(() => {});
-    this.logAudit('Excluir Despesa', 'Despesa', id, `Despesa removida.`);
+    const list = getItem<Expense[]>(KEYS.EXPENSES, INITIAL_EXPENSES);
+    const target = list.find(e => e.id === id);
+    if (target) {
+      target.status = 'Cancelada';
+      target.softDeleted = true;
+      setItem(KEYS.EXPENSES, list);
+      if (target.tenantId !== DEMO_TENANT_ID) {
+        deleteDocFromFirestore('financial_records', id).catch(() => {});
+      }
+      this.logAudit('Cancelar Despesa', 'Despesa', id, `Despesa ${target.description} cancelada no financeiro.`);
+    }
   },
 
   // Account Receivables
   getReceivables(): AccountReceivable[] {
-    return getItem<AccountReceivable[]>(KEYS.RECEIVABLES, INITIAL_RECEIVABLES);
+    ensureDemoDataInitialized();
+    const all = getItem<AccountReceivable[]>(KEYS.RECEIVABLES, INITIAL_RECEIVABLES);
+    return enforceTenantFilter(all).filter(r => !r.softDeleted);
   },
 
   saveReceivable(rec: AccountReceivable, skipAudit = false): AccountReceivable {
-    const list = this.getReceivables();
+    rec.tenantId = rec.tenantId || getActiveTenantId();
+    const list = getItem<AccountReceivable[]>(KEYS.RECEIVABLES, INITIAL_RECEIVABLES);
     const idx = list.findIndex(r => r.id === rec.id);
     let updated: AccountReceivable[];
     if (idx >= 0) {
@@ -662,10 +889,12 @@ export const StorageService = {
       updated = [rec, ...list];
     }
     setItem(KEYS.RECEIVABLES, updated);
-    syncDocToFirestore('financial_records', rec.id, {
-      ...rec,
-      type: 'Recebível'
-    }).catch(() => {});
+    if (rec.tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('financial_records', rec.id, {
+        ...rec,
+        type: 'Recebível'
+      }).catch(() => {});
+    }
     if (!skipAudit) {
       this.logAudit('Conta a Receber', 'Recebível', rec.id, `${rec.customerName}: R$ ${rec.amount.toFixed(2)} (Pago: R$ ${rec.amountPaid.toFixed(2)})`);
     }
@@ -673,10 +902,17 @@ export const StorageService = {
   },
 
   deleteReceivable(id: string) {
-    const list = this.getReceivables().filter(r => r.id !== id);
-    setItem(KEYS.RECEIVABLES, list);
-    deleteDocFromFirestore('financial_records', id).catch(() => {});
-    this.logAudit('Excluir Recebível', 'Recebível', id, `Conta a receber removida.`);
+    const list = getItem<AccountReceivable[]>(KEYS.RECEIVABLES, INITIAL_RECEIVABLES);
+    const target = list.find(r => r.id === id);
+    if (target) {
+      target.status = 'Cancelada';
+      target.softDeleted = true;
+      setItem(KEYS.RECEIVABLES, list);
+      if (target.tenantId !== DEMO_TENANT_ID) {
+        deleteDocFromFirestore('financial_records', id).catch(() => {});
+      }
+      this.logAudit('Cancelar Recebível', 'Recebível', id, `Recebível de ${target.customerName} cancelado.`);
+    }
   },
 
   recordCustomerPayment(
@@ -750,11 +986,13 @@ export const StorageService = {
 
   // Audit Logs & Rollback
   getAuditLogs(): AuditLog[] {
-    return getItem<AuditLog[]>(KEYS.AUDIT, INITIAL_AUDIT_LOGS);
+    ensureDemoDataInitialized();
+    const all = getItem<AuditLog[]>(KEYS.AUDIT, INITIAL_AUDIT_LOGS);
+    return enforceTenantFilter(all);
   },
 
   undoAuditAction(logId: string): boolean {
-    const logs = this.getAuditLogs();
+    const logs = getItem<AuditLog[]>(KEYS.AUDIT, INITIAL_AUDIT_LOGS);
     const idx = logs.findIndex(l => l.id === logId);
     if (idx < 0) return false;
 
@@ -767,7 +1005,7 @@ export const StorageService = {
       switch (actionData.actionType) {
         case 'RECORD_SALE': {
           if (actionData.saleId) {
-            this.deleteSale(actionData.saleId);
+            this.cancelSale(actionData.saleId, 'Ação desfeita no histórico de auditoria');
           }
           break;
         }
@@ -827,7 +1065,7 @@ export const StorageService = {
           break;
       }
     } else if (targetLog.entityType === 'Venda' && targetLog.entityId) {
-      this.deleteSale(targetLog.entityId);
+      this.cancelSale(targetLog.entityId, 'Ação desfeita na auditoria');
     } else if (targetLog.entityType === 'Produção' && targetLog.entityId) {
       this.deleteProduction(targetLog.entityId);
     } else if (targetLog.entityType === 'Despesa' && targetLog.entityId) {
@@ -836,16 +1074,19 @@ export const StorageService = {
 
     targetLog.status = 'Desfeito';
     setItem(KEYS.AUDIT, logs);
-    this.logAudit('Desfazer Ação', 'Auditoria', logId, `Ação "${targetLog.action}" revertida pelo usuário com estorno total.`);
+    this.logAudit('Desfazer Ação', 'Auditoria', logId, `Ação "${targetLog.action}" revertida pelo usuário com estorno.`);
     return true;
   },
 
   logAudit(action: string, entityType: string, entityId: string, details: string, actionData?: any) {
+    const user = AuthService.getCurrentUser();
     const logs = getItem<AuditLog[]>(KEYS.AUDIT, INITIAL_AUDIT_LOGS);
+    const tenantId = getActiveTenantId();
     const newLog: AuditLog = {
       id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      tenantId: tenantId,
       timestamp: new Date().toISOString(),
-      user: 'Oleiro Zico',
+      user: user ? `${user.name} (${user.role === 'PROPRIETARIO' ? 'Proprietário' : 'Funcionário'})` : 'Oleiro Zico',
       action,
       entityType,
       entityId,
@@ -854,7 +1095,9 @@ export const StorageService = {
       actionData
     };
     setItem(KEYS.AUDIT, [newLog, ...logs]);
-    syncDocToFirestore('audit_logs', newLog.id, newLog).catch(() => {});
+    if (tenantId !== DEMO_TENANT_ID) {
+      syncDocToFirestore('audit_logs', newLog.id, newLog).catch(() => {});
+    }
   },
 
   // Apply Voice Action (Full NLU Execution with Zero-Corruption Guards)
@@ -888,6 +1131,7 @@ export const StorageService = {
 
         const newSale: Sale = {
           id: `sale-${Date.now()}`,
+          tenantId: getActiveTenantId(),
           code: `VND-${Math.floor(1000 + Math.random() * 9000)}`,
           customerId: customer.id,
           customerName: customer.name,
@@ -935,6 +1179,7 @@ export const StorageService = {
 
         const newBatch: ProductionBatch = {
           id: `batch-${Date.now()}`,
+          tenantId: getActiveTenantId(),
           code: `PRD-${Math.floor(100 + Math.random() * 900)}`,
           productId: prod ? prod.id : `prod-custom-${Date.now()}`,
           productName: prod ? prod.name : prodNameQuery,
@@ -979,6 +1224,7 @@ export const StorageService = {
         } else {
           mat = {
             id: `mat-${Date.now()}`,
+            tenantId: getActiveTenantId(),
             name: matName,
             category: parsed.materialCategory || 'Argila',
             stockQuantity: qty,
@@ -993,6 +1239,7 @@ export const StorageService = {
         // Record corresponding expense
         const newExpense: Expense = {
           id: `exp-${Date.now()}`,
+          tenantId: getActiveTenantId(),
           description: `Compra de ${qty} ${mat.unit} de ${mat.name}`,
           category: 'Matéria-Prima',
           amount: amount,
@@ -1030,6 +1277,7 @@ export const StorageService = {
 
         const batchLoss: ProductionBatch = {
           id: `loss-${Date.now()}`,
+          tenantId: getActiveTenantId(),
           code: `PRD-PERDA`,
           productId: prod ? prod.id : 'prod-loss',
           productName: prod ? prod.name : prodNameQuery,
@@ -1072,6 +1320,7 @@ export const StorageService = {
         const amount = Math.max(1, parsed.amount || 50);
         const newExp: Expense = {
           id: `exp-${Date.now()}`,
+          tenantId: getActiveTenantId(),
           description: parsed.expenseCategory || 'Despesa Geral',
           category: 'Outros',
           amount: amount,
@@ -1117,6 +1366,7 @@ export const StorageService = {
         } else {
           const newDel: Delivery = {
             id: `del-${Date.now()}`,
+            tenantId: getActiveTenantId(),
             customerName: customerName,
             address: 'Endereço cadastrado',
             deliveryDate: new Date().toISOString().split('T')[0],
@@ -1142,6 +1392,30 @@ export const StorageService = {
       default:
         return { success: false, message: 'Intenção de comando não reconhecida.' };
     }
+  },
+
+  resetDemoSandbox() {
+    // Reset only items belonging to DEMO_TENANT_ID, leaving production 100% untouched
+    const removeDemo = <T extends { tenantId?: string }>(key: string) => {
+      const items = getItem<T[]>(key, []);
+      const clean = items.filter(i => i.tenantId !== DEMO_TENANT_ID);
+      setItem(key, clean);
+    };
+
+    removeDemo(KEYS.PRODUCTS);
+    removeDemo(KEYS.RAW_MATERIALS);
+    removeDemo(KEYS.CUSTOMERS);
+    removeDemo(KEYS.SALES);
+    removeDemo(KEYS.PRODUCTION);
+    removeDemo(KEYS.CUSTOM_ORDERS);
+    removeDemo(KEYS.DELIVERIES);
+    removeDemo(KEYS.EXPENSES);
+    removeDemo(KEYS.RECEIVABLES);
+    removeDemo(KEYS.AUDIT);
+
+    localStorage.removeItem('olaria_demo_sandbox_seeded_v2');
+    ensureDemoDataInitialized();
+    notifyListeners();
   },
 
   resetToDefault() {
