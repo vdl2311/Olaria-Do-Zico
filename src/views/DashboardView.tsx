@@ -217,23 +217,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenVoiceModal, 
             </button>
           </div>
 
-          <div className="space-y-2.5">
-            {production.slice(0, 4).map(b => (
-              <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-amber-50/40 border border-amber-200">
-                <div>
-                  <p className="font-bold text-sm text-amber-950">{b.productName}</p>
-                  <p className="text-xs text-amber-700">
-                    Lote {b.code} | Produzidos: {b.quantityProduced} | Quebras: {b.quantityLost}
-                  </p>
+          {production.length === 0 ? (
+            <div className="text-center py-6 text-amber-800/60 text-sm">
+              <Hammer className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+              <p className="font-semibold text-amber-900">Nenhum lote em produção no momento</p>
+              <p className="text-xs text-amber-700 mt-1">Inicie uma nova fornada ou fale por voz: "Produzi 20 vasos"</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {production.slice(0, 4).map(b => (
+                <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-amber-50/40 border border-amber-200">
+                  <div>
+                    <p className="font-bold text-sm text-amber-950">{b.productName}</p>
+                    <p className="text-xs text-amber-700">
+                      Lote {b.code} | Produzidos: {b.quantityProduced} | Quebras: {b.quantityLost}
+                    </p>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                    b.stage === 'Pronto' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'
+                  }`}>
+                    Etapa: {b.stage}
+                  </span>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                  b.stage === 'Pronto' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'
-                }`}>
-                  Etapa: {b.stage}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -250,66 +258,76 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenVoiceModal, 
           </button>
         </div>
 
-        {/* Mobile View: Cards */}
-        <div className="block sm:hidden space-y-2.5">
-          {sales.slice(0, 5).map(s => (
-            <div key={s.id} className="p-3 bg-amber-50/40 border border-amber-200/80 rounded-xl space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-amber-900">{s.code} • {s.customerName}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                  s.status === 'Concluída' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'
-                }`}>
-                  {s.status}
-                </span>
-              </div>
-              <p className="text-xs text-amber-800 line-clamp-1">
-                {s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}
-              </p>
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-amber-100">
-                <span className="font-semibold text-amber-700">{s.paymentMethod}</span>
-                <span className="font-black text-amber-950">R$ {s.totalValue.toFixed(2)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Desktop View: Table */}
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
-            <thead>
-              <tr className="border-b border-amber-200 text-amber-800">
-                <th className="pb-2 font-bold">Código</th>
-                <th className="pb-2 font-bold">Cliente</th>
-                <th className="pb-2 font-bold">Itens</th>
-                <th className="pb-2 font-bold">Valor</th>
-                <th className="pb-2 font-bold">Pagamento</th>
-                <th className="pb-2 font-bold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-amber-100">
+        {sales.length === 0 ? (
+          <div className="text-center py-8 text-amber-800/60 text-sm">
+            <TrendingUp className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+            <p className="font-semibold text-amber-900">Nenhuma venda registrada ainda</p>
+            <p className="text-xs text-amber-700 mt-1">Realize a primeira venda pelo botão de voz ou na aba de Vendas!</p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile View: Cards */}
+            <div className="block sm:hidden space-y-2.5">
               {sales.slice(0, 5).map(s => (
-                <tr key={s.id} className="hover:bg-amber-50/50">
-                  <td className="py-2.5 font-bold text-amber-900">{s.code}</td>
-                  <td className="py-2.5 text-amber-950">{s.customerName}</td>
-                  <td className="py-2.5 text-amber-800">{s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</td>
-                  <td className="py-2.5 font-bold text-amber-950">R$ {s.totalValue.toFixed(2)}</td>
-                  <td className="py-2.5">
-                    <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium text-xs">
-                      {s.paymentMethod}
-                    </span>
-                  </td>
-                  <td className="py-2.5">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                <div key={s.id} className="p-3 bg-amber-50/40 border border-amber-200/80 rounded-xl space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="text-amber-900">{s.code} • {s.customerName}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${
                       s.status === 'Concluída' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'
                     }`}>
                       {s.status}
                     </span>
-                  </td>
-                </tr>
+                  </div>
+                  <p className="text-xs text-amber-800 line-clamp-1">
+                    {s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}
+                  </p>
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-amber-100">
+                    <span className="font-semibold text-amber-700">{s.paymentMethod}</span>
+                    <span className="font-black text-amber-950">R$ {s.totalValue.toFixed(2)}</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+
+            {/* Desktop View: Table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-amber-200 text-amber-800">
+                    <th className="pb-2 font-bold">Código</th>
+                    <th className="pb-2 font-bold">Cliente</th>
+                    <th className="pb-2 font-bold">Itens</th>
+                    <th className="pb-2 font-bold">Valor</th>
+                    <th className="pb-2 font-bold">Pagamento</th>
+                    <th className="pb-2 font-bold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-amber-100">
+                  {sales.slice(0, 5).map(s => (
+                    <tr key={s.id} className="hover:bg-amber-50/50">
+                      <td className="py-2.5 font-bold text-amber-900">{s.code}</td>
+                      <td className="py-2.5 text-amber-950">{s.customerName}</td>
+                      <td className="py-2.5 text-amber-800">{s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</td>
+                      <td className="py-2.5 font-bold text-amber-950">R$ {s.totalValue.toFixed(2)}</td>
+                      <td className="py-2.5">
+                        <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium text-xs">
+                          {s.paymentMethod}
+                        </span>
+                      </td>
+                      <td className="py-2.5">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                          s.status === 'Concluída' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'
+                        }`}>
+                          {s.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

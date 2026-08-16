@@ -42,7 +42,7 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
     setCustomerName('');
     setSelectedProductId(products[0]?.id || '');
     setQuantity(1);
-    const initialPrice = products[0]?.price || 180;
+    const initialPrice = products[0]?.price || 0;
     setUnitPrice(initialPrice);
     setDiscount(0);
     setPaymentMethod('Pix');

@@ -25,13 +25,25 @@ export const ProductsView: React.FC = () => {
   const [category, setCategory] = useState<ProductCategory>('Vaso');
   const [size, setSize] = useState('Médio (35cm x 30cm)');
   const [finish, setFinish] = useState('Terracota Natural');
-  const [cost, setCost] = useState<number>(30);
-  const [price, setPrice] = useState<number>(120);
-  const [stock, setStock] = useState<number>(10);
-  const [minStock, setMinStock] = useState<number>(3);
+  const [cost, setCost] = useState<number>(0);
+  const [price, setPrice] = useState<number>(0);
+  const [stock, setStock] = useState<number>(0);
+  const [minStock, setMinStock] = useState<number>(1);
   const [photoUrl, setPhotoUrl] = useState('');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    return StorageService.getProducts ? () => {} : undefined;
+  }, []);
+
+  const refreshData = () => {
+    setProducts(StorageService.getProducts());
+  };
+
+  React.useEffect(() => {
+    refreshData();
+  }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,21 +59,17 @@ export const ProductsView: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const refreshData = () => {
-    setProducts(StorageService.getProducts());
-  };
-
   const handleOpenCreateModal = () => {
     setEditingProduct(null);
     setName('');
     setCategory('Vaso');
     setSize('Médio (35cm x 30cm)');
     setFinish('Terracota Natural');
-    setCost(30);
-    setPrice(120);
-    setStock(10);
-    setMinStock(3);
-    setPhotoUrl('https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&q=80&w=400');
+    setCost(0);
+    setPrice(0);
+    setStock(0);
+    setMinStock(1);
+    setPhotoUrl('');
     setIsModalOpen(true);
   };
 
@@ -157,60 +165,79 @@ export const ProductsView: React.FC = () => {
       </div>
 
       {/* Product Catalog Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredProducts.map((p) => {
-          const margin = p.price - p.cost;
-          const isLow = p.stock <= p.minStock;
+      {filteredProducts.length === 0 ? (
+        <div className="bg-white border border-amber-200 rounded-2xl p-10 text-center space-y-4 shadow-xs">
+          <PackageSearch className="w-12 h-12 text-amber-400 mx-auto" />
+          <div className="max-w-md mx-auto space-y-1">
+            <h3 className="font-bold text-amber-950 text-base">Nenhum produto cadastrado</h3>
+            <p className="text-xs text-amber-700">
+              Comece cadastrando os vasos, fontes, jardineiras e peças cerâmicas produzidas na olaria.
+            </p>
+          </div>
+          <button
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Cadastrar Primeiro Produto</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredProducts.map((p) => {
+            const margin = p.price - p.cost;
+            const isLow = p.stock <= p.minStock;
 
-          return (
-            <div key={p.id} className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-xs hover:border-amber-400 transition-all flex flex-col justify-between">
-              <div>
-                <div className="relative h-44 bg-amber-100 overflow-hidden">
-                  <img
-                    src={p.photoUrl || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&q=80&w=400'}
-                    alt={p.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <span className="absolute top-2 left-2 bg-amber-950/80 text-amber-100 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
-                    {p.code}
-                  </span>
-                  <span className="absolute top-2 right-2 bg-white/90 text-amber-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
-                    {p.category}
-                  </span>
-                </div>
+            return (
+              <div key={p.id} className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-xs hover:border-amber-400 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="relative h-44 bg-amber-100 overflow-hidden">
+                    <img
+                      src={p.photoUrl || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&q=80&w=400'}
+                      alt={p.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-2 left-2 bg-amber-950/80 text-amber-100 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
+                      {p.code}
+                    </span>
+                    <span className="absolute top-2 right-2 bg-white/90 text-amber-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                      {p.category}
+                    </span>
+                  </div>
 
-                <div className="p-4 space-y-2">
-                  <h3 className="font-black text-amber-950 text-base leading-tight">{p.name}</h3>
-                  <p className="text-xs text-amber-800">Tam: {p.size} | {p.finish || 'Padrão'}</p>
+                  <div className="p-4 space-y-2">
+                    <h3 className="font-black text-amber-950 text-base leading-tight">{p.name}</h3>
+                    <p className="text-xs text-amber-800">Tam: {p.size} | {p.finish || 'Padrão'}</p>
 
-                  <div className="pt-2 border-t border-amber-100 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="text-amber-700 block text-[10px]">Preço Venda</span>
-                      <span className="font-black text-amber-950 text-sm">R$ {p.price.toFixed(2)}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-amber-700 block text-[10px]">Estoque</span>
-                      <span className={`font-black text-sm ${isLow ? 'text-red-600' : 'text-emerald-800'}`}>
-                        {p.stock} un
-                      </span>
+                    <div className="pt-2 border-t border-amber-100 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-amber-700 block text-[10px]">Preço Venda</span>
+                        <span className="font-black text-amber-950 text-sm">R$ {p.price.toFixed(2)}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-amber-700 block text-[10px]">Estoque</span>
+                        <span className={`font-black text-sm ${isLow ? 'text-red-600' : 'text-emerald-800'}`}>
+                          {p.stock} un
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-4 pt-0">
-                <button
-                  onClick={() => handleOpenEditModal(p)}
-                  className="w-full py-2 bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-colors"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Editar Produto</span>
-                </button>
+                <div className="p-4 pt-0">
+                  <button
+                    onClick={() => handleOpenEditModal(p)}
+                    className="w-full py-2 bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Editar Produto</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal Product */}
       {isModalOpen && (

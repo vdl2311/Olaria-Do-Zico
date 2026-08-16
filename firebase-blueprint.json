@@ -83,6 +83,31 @@
       },
       "required": ["id", "batchNumber", "stage"]
     },
+    "CustomOrder": {
+      "title": "CustomOrder",
+      "description": "Encomenda personalizada de peças ou vasos",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "customerName": { "type": "string", "maxLength": 200 },
+        "productDescription": { "type": "string", "maxLength": 500 },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "customerName", "productDescription"]
+    },
+    "Delivery": {
+      "title": "Delivery",
+      "description": "Entrega e frete agendado",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "customerName": { "type": "string", "maxLength": 200 },
+        "address": { "type": "string", "maxLength": 300 },
+        "status": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "customerName", "address", "status"]
+    },
     "FinancialRecord": {
       "title": "FinancialRecord",
       "description": "Cash flow, expense and revenue entry",
@@ -134,6 +159,14 @@
     "/production_batches/{batchId}": {
       "schema": "ProductionBatch",
       "description": "Collection of production and kiln batch cycles"
+    },
+    "/custom_orders/{orderId}": {
+      "schema": "CustomOrder",
+      "description": "Collection of custom commissions and orders"
+    },
+    "/deliveries/{deliveryId}": {
+      "schema": "Delivery",
+      "description": "Collection of logistics and deliveries"
     },
     "/financial_records/{recordId}": {
       "schema": "FinancialRecord",

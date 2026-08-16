@@ -34,19 +34,32 @@ import {
 } from './firebase';
 
 const KEYS = {
-  CATEGORIES: 'olaria_categories_v1',
-  PRODUCTS: 'olaria_products_v1',
-  RAW_MATERIALS: 'olaria_raw_materials_v1',
-  CUSTOMERS: 'olaria_customers_v1',
-  SALES: 'olaria_sales_v1',
-  PRODUCTION: 'olaria_production_v1',
-  CUSTOM_ORDERS: 'olaria_custom_orders_v1',
-  DELIVERIES: 'olaria_deliveries_v1',
-  EXPENSES: 'olaria_expenses_v1',
-  RECEIVABLES: 'olaria_receivables_v1',
-  AUDIT: 'olaria_audit_v1',
-  VOICE_LOGS: 'olaria_voice_logs_v1'
+  CATEGORIES: 'olaria_categories_v2',
+  PRODUCTS: 'olaria_products_v2',
+  RAW_MATERIALS: 'olaria_raw_materials_v2',
+  CUSTOMERS: 'olaria_customers_v2',
+  SALES: 'olaria_sales_v2',
+  PRODUCTION: 'olaria_production_v2',
+  CUSTOM_ORDERS: 'olaria_custom_orders_v2',
+  DELIVERIES: 'olaria_deliveries_v2',
+  EXPENSES: 'olaria_expenses_v2',
+  RECEIVABLES: 'olaria_receivables_v2',
+  AUDIT: 'olaria_audit_v2',
+  VOICE_LOGS: 'olaria_voice_logs_v2'
 };
+
+// Purge any legacy demo mock data from previous sessions
+try {
+  const legacyKeys = [
+    'olaria_categories_v1', 'olaria_products_v1', 'olaria_raw_materials_v1',
+    'olaria_customers_v1', 'olaria_sales_v1', 'olaria_production_v1',
+    'olaria_custom_orders_v1', 'olaria_deliveries_v1', 'olaria_expenses_v1',
+    'olaria_receivables_v1', 'olaria_audit_v1', 'olaria_voice_logs_v1'
+  ];
+  legacyKeys.forEach(k => localStorage.removeItem(k));
+} catch (e) {
+  // ignore
+}
 
 type Listener = () => void;
 const listeners: Set<Listener> = new Set();
@@ -102,62 +115,57 @@ export const StorageService = {
 
       // Listen for remote updates on Products
       listenToCollection<Product>('products', (cloudProducts) => {
-        if (cloudProducts && cloudProducts.length > 0) {
+        if (cloudProducts) {
           setItem(KEYS.PRODUCTS, cloudProducts);
-        } else {
-          // Seed if Firestore collection is empty
-          const local = this.getProducts();
-          local.forEach(p => syncDocToFirestore('products', p.id, p).catch(() => {}));
         }
       });
 
       // Listen for remote updates on Raw Materials
       listenToCollection<RawMaterial>('raw_materials', (cloudMaterials) => {
-        if (cloudMaterials && cloudMaterials.length > 0) {
+        if (cloudMaterials) {
           setItem(KEYS.RAW_MATERIALS, cloudMaterials);
-        } else {
-          const local = this.getRawMaterials();
-          local.forEach(m => syncDocToFirestore('raw_materials', m.id, m).catch(() => {}));
         }
       });
 
       // Listen for remote updates on Customers
       listenToCollection<Customer>('customers', (cloudCustomers) => {
-        if (cloudCustomers && cloudCustomers.length > 0) {
+        if (cloudCustomers) {
           setItem(KEYS.CUSTOMERS, cloudCustomers);
-        } else {
-          const local = this.getCustomers();
-          local.forEach(c => syncDocToFirestore('customers', c.id, c).catch(() => {}));
         }
       });
 
       // Listen for remote updates on Sales
       listenToCollection<Sale>('sales', (cloudSales) => {
-        if (cloudSales && cloudSales.length > 0) {
+        if (cloudSales) {
           setItem(KEYS.SALES, cloudSales);
-        } else {
-          const local = this.getSales();
-          local.forEach(s => syncDocToFirestore('sales', s.id, s).catch(() => {}));
         }
       });
 
       // Listen for remote updates on Production Batches
       listenToCollection<ProductionBatch>('production_batches', (cloudBatches) => {
-        if (cloudBatches && cloudBatches.length > 0) {
+        if (cloudBatches) {
           setItem(KEYS.PRODUCTION, cloudBatches);
-        } else {
-          const local = this.getProduction();
-          local.forEach(b => syncDocToFirestore('production_batches', b.id, b).catch(() => {}));
+        }
+      });
+
+      // Listen for remote updates on Custom Orders
+      listenToCollection<CustomOrder>('custom_orders', (cloudOrders) => {
+        if (cloudOrders) {
+          setItem(KEYS.CUSTOM_ORDERS, cloudOrders);
+        }
+      });
+
+      // Listen for remote updates on Deliveries
+      listenToCollection<Delivery>('deliveries', (cloudDeliveries) => {
+        if (cloudDeliveries) {
+          setItem(KEYS.DELIVERIES, cloudDeliveries);
         }
       });
 
       // Listen for remote updates on Audit Logs
       listenToCollection<AuditLog>('audit_logs', (cloudLogs) => {
-        if (cloudLogs && cloudLogs.length > 0) {
+        if (cloudLogs) {
           setItem(KEYS.AUDIT, cloudLogs);
-        } else {
-          const local = this.getAuditLogs();
-          local.forEach(l => syncDocToFirestore('audit_logs', l.id, l).catch(() => {}));
         }
       });
     } catch (err) {
@@ -550,6 +558,7 @@ export const StorageService = {
       updated = [order, ...list];
     }
     setItem(KEYS.CUSTOM_ORDERS, updated);
+    syncDocToFirestore('custom_orders', order.id, order).catch(() => {});
     if (!skipAudit) {
       this.logAudit('Salvar Pedido Personalizado', 'Pedido', order.id, `Pedido ${order.code} de ${order.customerName} - ${order.productDescription}`);
     }
@@ -559,6 +568,7 @@ export const StorageService = {
   deleteCustomOrder(id: string) {
     const list = this.getCustomOrders().filter(o => o.id !== id);
     setItem(KEYS.CUSTOM_ORDERS, list);
+    deleteDocFromFirestore('custom_orders', id).catch(() => {});
     this.logAudit('Excluir Pedido', 'Pedido', id, `Pedido personalizado removido.`);
   },
 
@@ -578,6 +588,7 @@ export const StorageService = {
       updated = [del, ...list];
     }
     setItem(KEYS.DELIVERIES, updated);
+    syncDocToFirestore('deliveries', del.id, del).catch(() => {});
     if (!skipAudit) {
       this.logAudit('Salvar Entrega', 'Entrega', del.id, `Entrega para ${del.customerName} - Status: ${del.status}`);
     }
@@ -587,6 +598,7 @@ export const StorageService = {
   deleteDelivery(id: string) {
     const list = this.getDeliveries().filter(d => d.id !== id);
     setItem(KEYS.DELIVERIES, list);
+    deleteDocFromFirestore('deliveries', id).catch(() => {});
     this.logAudit('Excluir Entrega', 'Entrega', id, `Entrega removida.`);
   },
 
