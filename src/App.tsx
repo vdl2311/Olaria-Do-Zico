@@ -20,6 +20,7 @@ import { ProductsView } from './views/ProductsView';
 import { ReportsView } from './views/ReportsView';
 import { AuditView } from './views/AuditView';
 import { SecurityUsersView } from './views/SecurityUsersView';
+import { BrandKitView } from './views/BrandKitView';
 import { LoginView } from './views/LoginView';
 import { TechnicalAdminView } from './views/TechnicalAdminView';
 import { ShieldAlert, Lock } from 'lucide-react';
@@ -97,17 +98,17 @@ export default function App() {
   };
 
   const renderAccessDenied = (moduleName: string) => (
-    <div className="bg-white border border-amber-200 rounded-3xl p-8 text-center max-w-lg mx-auto my-12 shadow-xs space-y-4">
-      <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-900 mx-auto flex items-center justify-center">
+    <div className="bg-[#FAF6EF] border border-[#E7D5BE] rounded-3xl p-8 text-center max-w-lg mx-auto my-12 shadow-xs space-y-4 font-brand-sans">
+      <div className="w-16 h-16 rounded-2xl bg-[#E7D5BE] text-[#8A5A44] mx-auto flex items-center justify-center">
         <Lock className="w-8 h-8" />
       </div>
-      <h3 className="text-xl font-bold text-amber-950">Acesso Restrito: {moduleName}</h3>
-      <p className="text-sm text-stone-600 leading-relaxed">
+      <h3 className="font-brand-serif text-xl font-bold text-[#292724]">Acesso Restrito: {moduleName}</h3>
+      <p className="text-sm text-[#5C5852] leading-relaxed">
         Seu perfil de usuário (<strong>{currentUser.name}</strong>) não possui permissão para visualizar este módulo. Solicite a liberação ao proprietário da olaria.
       </p>
       <button
         onClick={() => setActiveView('dashboard')}
-        className="px-5 py-2.5 bg-amber-900 text-white font-bold rounded-xl text-xs hover:bg-amber-950 transition-all cursor-pointer"
+        className="px-5 py-2.5 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold rounded-xl text-xs transition-all cursor-pointer"
       >
         Voltar para a Visão Geral
       </button>
@@ -134,6 +135,8 @@ export default function App() {
         return checkPermission('financeiro') ? <FinanceView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Financeiro & Contas');
       case 'produtos':
         return checkPermission('produtos') ? <ProductsView /> : renderAccessDenied('Produtos');
+      case 'brandkit':
+        return <BrandKitView />;
       case 'relatorios':
         return checkPermission('relatorios') ? <ReportsView /> : renderAccessDenied('Relatórios');
       case 'auditoria':
@@ -148,7 +151,7 @@ export default function App() {
   const isDemo = currentUser.tenantId === 'tenant_demo_sandbox_01';
 
   return (
-    <div className="min-h-screen bg-stone-100 text-stone-900 font-sans flex flex-col antialiased selection:bg-amber-200 selection:text-amber-950">
+    <div className="min-h-screen bg-[#F7F1E7] text-[#292724] font-brand-sans flex flex-col antialiased selection:bg-[#E7D5BE] selection:text-[#292724]">
       {/* Top Header */}
       <Header 
         activeView={activeView} 
@@ -156,17 +159,18 @@ export default function App() {
         onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
         onNavigateToTechnical={() => setIsTechnicalPortalOpen(true)}
         onNavigateToSecurity={() => setActiveView('seguranca')}
+        onNavigateToBrandKit={() => setActiveView('brandkit')}
       />
 
       {/* Demo Sandbox Banner */}
       {isDemo && (
-        <div className="bg-amber-900 text-amber-100 border-b border-amber-800/80 px-4 py-2.5 shadow-xs">
+        <div className="bg-[#8A5A44] text-[#F7F1E7] border-b border-[#6E4533] px-4 py-2.5 shadow-xs font-brand-sans">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 text-center sm:text-left">
-              <span className="px-2 py-0.5 rounded-md bg-amber-800 font-black text-[10px] tracking-wider uppercase border border-amber-700 shrink-0">
+              <span className="px-2 py-0.5 rounded-md bg-[#6E4533] font-black text-[10px] tracking-wider uppercase border border-[#A7735B]/40 shrink-0 text-[#E7D5BE]">
                 Sandbox
               </span>
-              <span className="font-medium text-amber-200">
+              <span className="font-medium text-[#F7F1E7]">
                 Você está no <strong>Ambiente de Demonstração</strong>. Todos os dados (vendas, estoque, financeiro) são fictícios e 100% isolados da produção real.
               </span>
             </div>
@@ -175,13 +179,13 @@ export default function App() {
                 onClick={() => {
                   StorageService.resetDemoSandbox();
                 }}
-                className="px-3 py-1 bg-amber-800 hover:bg-amber-700 text-amber-100 rounded-lg font-semibold transition-colors cursor-pointer text-xs"
+                className="px-3 py-1 bg-[#B85C38] hover:bg-[#9E4A2A] text-white rounded-lg font-bold transition-colors cursor-pointer text-xs"
               >
                 Resetar Demonstração
               </button>
               <button
                 onClick={handleLogout}
-                className="px-3 py-1 bg-stone-900 hover:bg-stone-800 text-stone-200 rounded-lg font-semibold transition-colors cursor-pointer text-xs"
+                className="px-3 py-1 bg-[#292724] hover:bg-black text-[#E7D5BE] rounded-lg font-semibold transition-colors cursor-pointer text-xs"
               >
                 Sair
               </button>

@@ -1,1 +1,63 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Playfair Display", Georgia, Cambria, "Times New Roman", Times, serif;
+
+  --color-brand-terracota: #B85C38;
+  --color-brand-terracota-dark: #9E4A2A;
+  --color-brand-terracota-light: #CF734E;
+  
+  --color-brand-argila: #8A5A44;
+  --color-brand-argila-dark: #6E4533;
+  --color-brand-argila-light: #A7735B;
+
+  --color-brand-areia: #E7D5BE;
+  --color-brand-areia-light: #F1E5D5;
+  --color-brand-areia-dark: #D4BEA2;
+
+  --color-brand-creme: #F7F1E7;
+  --color-brand-creme-pure: #FAF6EF;
+
+  --color-brand-oliva: #667052;
+  --color-brand-oliva-dark: #4F583D;
+  --color-brand-oliva-light: #83906B;
+
+  --color-brand-grafite: #292724;
+  --color-brand-grafite-muted: #5C5852;
+}
+
+:root {
+  color-scheme: light;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #F7F1E7;
+  color: #292724;
+}
+
+/* Elegant scrollbar for brand palette */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F7F1E7;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4BEA2;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8A5A44;
+}
+
+/* Subtle clay texture & organic line utility */
+.font-brand-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-brand-sans {
+  font-family: 'DM Sans', sans-serif;
+}
