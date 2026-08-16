@@ -139,78 +139,97 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
       <div className="space-y-4">
         <h3 className="font-bold text-amber-950 text-base">Lotes de Produção</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {batches.map((b) => (
-            <div key={b.id} className="bg-white border border-amber-200 rounded-2xl p-4 shadow-xs space-y-3">
-              <div className="flex items-center justify-between border-b border-amber-100 pb-2">
-                <div>
-                  <span className="text-xs font-bold text-amber-700">{b.code} • {b.batchNumber}</span>
-                  <h4 className="font-black text-amber-950 text-base">{b.productName}</h4>
-                </div>
-                <div className="flex items-center space-x-1.5">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                    b.stage === 'Pronto' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
-                  }`}>
-                    {b.stage}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteBatch(b)}
-                    className="p-1 text-red-600 hover:bg-red-50 rounded-lg"
-                    title="Excluir Lote"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 text-center text-xs bg-amber-50/60 p-2.5 rounded-xl border border-amber-100">
-                <div>
-                  <span className="text-amber-700 block text-[10px]">Produzidos</span>
-                  <span className="font-bold text-amber-950">{b.quantityProduced} un</span>
-                </div>
-                <div>
-                  <span className="text-red-600 block text-[10px]">Perdas/Quebras</span>
-                  <span className="font-bold text-red-700">{b.quantityLost} un</span>
-                </div>
-                <div>
-                  <span className="text-emerald-700 block text-[10px]">Aproveitados</span>
-                  <span className="font-bold text-emerald-900">{b.quantityGood} un</span>
-                </div>
-              </div>
-
-              {b.stage === 'Pronto' && (
-                <div className="flex items-center space-x-1 text-xs text-emerald-800 font-semibold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Estoque da peça atualizado com +{b.quantityGood} unidades.</span>
-                </div>
-              )}
-
-              {b.notes && (
-                <p className="text-xs text-amber-800/80 italic">Obs: {b.notes}</p>
-              )}
-
-              {/* Stage Progress Selector */}
-              <div className="pt-2 border-t border-amber-100">
-                <label className="text-[11px] font-bold text-amber-800 block mb-1">Mudar Etapa:</label>
-                <div className="flex flex-wrap gap-1">
-                  {STAGES.map((stg) => (
-                    <button
-                      key={stg}
-                      onClick={() => handleUpdateStage(b, stg)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                        b.stage === stg
-                          ? 'bg-amber-800 text-white shadow-xs'
-                          : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
-                      }`}
-                    >
-                      {stg}
-                    </button>
-                  ))}
-                </div>
-              </div>
+        {batches.length === 0 ? (
+          <div className="bg-white border border-amber-200 rounded-2xl p-10 text-center space-y-4 shadow-xs">
+            <Hammer className="w-12 h-12 text-amber-400 mx-auto" />
+            <div className="max-w-md mx-auto space-y-1">
+              <h3 className="font-bold text-amber-950 text-base">Nenhum lote de produção registrado</h3>
+              <p className="text-xs text-amber-700">
+                Inicie um lote para acompanhar a moldagem, secagem, queima e acabamento de vasos e peças cerâmicas.
+              </p>
             </div>
-          ))}
-        </div>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Iniciar Primeiro Lote</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {batches.map((b) => (
+              <div key={b.id} className="bg-white border border-amber-200 rounded-2xl p-4 shadow-xs space-y-3">
+                <div className="flex items-center justify-between border-b border-amber-100 pb-2">
+                  <div>
+                    <span className="text-xs font-bold text-amber-700">{b.code} • {b.batchNumber}</span>
+                    <h4 className="font-black text-amber-950 text-base">{b.productName}</h4>
+                  </div>
+                  <div className="flex items-center space-x-1.5">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      b.stage === 'Pronto' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                    }`}>
+                      {b.stage}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteBatch(b)}
+                      className="p-1 text-red-600 hover:bg-red-50 rounded-lg"
+                      title="Excluir Lote"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center text-xs bg-amber-50/60 p-2.5 rounded-xl border border-amber-100">
+                  <div>
+                    <span className="text-amber-700 block text-[10px]">Produzidos</span>
+                    <span className="font-bold text-amber-950">{b.quantityProduced} un</span>
+                  </div>
+                  <div>
+                    <span className="text-red-600 block text-[10px]">Perdas/Quebras</span>
+                    <span className="font-bold text-red-700">{b.quantityLost} un</span>
+                  </div>
+                  <div>
+                    <span className="text-emerald-700 block text-[10px]">Aproveitados</span>
+                    <span className="font-bold text-emerald-900">{b.quantityGood} un</span>
+                  </div>
+                </div>
+
+                {b.stage === 'Pronto' && (
+                  <div className="flex items-center space-x-1 text-xs text-emerald-800 font-semibold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Estoque da peça atualizado com +{b.quantityGood} unidades.</span>
+                  </div>
+                )}
+
+                {b.notes && (
+                  <p className="text-xs text-amber-800/80 italic">Obs: {b.notes}</p>
+                )}
+
+                {/* Stage Progress Selector */}
+                <div className="pt-2 border-t border-amber-100">
+                  <label className="text-[11px] font-bold text-amber-800 block mb-1">Mudar Etapa:</label>
+                  <div className="flex flex-wrap gap-1">
+                    {STAGES.map((stg) => (
+                      <button
+                        key={stg}
+                        onClick={() => handleUpdateStage(b, stg)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                          b.stage === stg
+                            ? 'bg-amber-800 text-white shadow-xs'
+                            : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
+                        }`}
+                      >
+                        {stg}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* New Batch Modal */}

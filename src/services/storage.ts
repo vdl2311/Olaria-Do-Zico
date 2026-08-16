@@ -305,6 +305,17 @@ export const StorageService = {
     return customer;
   },
 
+  deleteCustomer(id: string) {
+    const customers = this.getCustomers();
+    const target = customers.find(c => c.id === id);
+    if (!target) return;
+
+    const list = customers.filter(c => c.id !== id);
+    setItem(KEYS.CUSTOMERS, list);
+    deleteDocFromFirestore('customers', id).catch(() => {});
+    this.logAudit('Excluir Cliente', 'Cliente', id, `Cliente ${target.name} removido do cadastro.`);
+  },
+
   findOrCreateCustomerByName(name: string): Customer {
     const cleanName = name.trim();
     const customers = this.getCustomers();

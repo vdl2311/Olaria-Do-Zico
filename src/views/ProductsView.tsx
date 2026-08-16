@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PackageSearch, Plus, Search, Filter, Edit3, Image as ImageIcon, X, Camera, Upload } from 'lucide-react';
-import { StorageService } from '../services/storage';
+import { StorageService, subscribeStorage } from '../services/storage';
 import { Product, ProductCategory } from '../types';
 import { CameraModal } from '../components/CameraModal';
 
@@ -33,16 +33,15 @@ export const ProductsView: React.FC = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => {
-    return StorageService.getProducts ? () => {} : undefined;
-  }, []);
-
   const refreshData = () => {
     setProducts(StorageService.getProducts());
   };
 
-  React.useEffect(() => {
-    refreshData();
+  useEffect(() => {
+    const unsub = subscribeStorage(() => {
+      refreshData();
+    });
+    return () => unsub();
   }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

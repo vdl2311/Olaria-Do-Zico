@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Truck, CheckCircle2, Clock, MapPin, Mic, Plus, X } from 'lucide-react';
-import { StorageService } from '../services/storage';
+import { StorageService, subscribeStorage } from '../services/storage';
 import { Delivery } from '../types';
 
 interface DeliveriesViewProps {
@@ -22,6 +22,13 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = ({ onOpenVoiceModal
   const refreshData = () => {
     setDeliveries(StorageService.getDeliveries());
   };
+
+  useEffect(() => {
+    const unsub = subscribeStorage(() => {
+      refreshData();
+    });
+    return () => unsub();
+  }, []);
 
   const handleMarkDelivered = (delivery: Delivery) => {
     const updated: Delivery = {
@@ -89,47 +96,66 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = ({ onOpenVoiceModal
       </div>
 
       {/* Deliveries List Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {deliveries.map((del) => (
-          <div key={del.id} className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-start justify-between border-b border-amber-100 pb-2">
-              <div>
-                <span className="text-xs font-bold text-amber-700">Data Prevista: {del.deliveryDate}</span>
-                <h3 className="font-black text-amber-950 text-base">{del.customerName}</h3>
-              </div>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                del.status === 'Entregue' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'
-              }`}>
-                {del.status}
-              </span>
-            </div>
-
-            <div className="text-xs text-amber-900 space-y-1 bg-amber-50/60 p-3 rounded-xl border border-amber-100">
-              <p className="flex items-center gap-1.5 font-medium">
-                <MapPin className="w-4 h-4 text-amber-700 shrink-0" />
-                <span><strong>Endereço:</strong> {del.address}</span>
-              </p>
-              {del.shippingFee > 0 && <p><strong>Frete:</strong> R$ {del.shippingFee.toFixed(2)}</p>}
-              {del.deliveryPerson && <p><strong>Entregador:</strong> {del.deliveryPerson}</p>}
-              {del.notes && <p className="italic text-amber-800">Obs: {del.notes}</p>}
-            </div>
-
-            {del.status !== 'Entregue' ? (
-              <button
-                onClick={() => handleMarkDelivered(del)}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 transition-all shadow-xs"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>MARCAR COMO ENTREGUE</span>
-              </button>
-            ) : (
-              <div className="text-center py-1 text-xs text-emerald-800 font-bold bg-emerald-50 rounded-xl border border-emerald-200">
-                ✓ Entregue em {del.completedAt ? new Date(del.completedAt).toLocaleDateString('pt-BR') : del.deliveryDate}
-              </div>
-            )}
+      {deliveries.length === 0 ? (
+        <div className="bg-white border border-amber-200 rounded-2xl p-10 text-center space-y-4 shadow-xs">
+          <Truck className="w-12 h-12 text-amber-400 mx-auto" />
+          <div className="max-w-md mx-auto space-y-1">
+            <h3 className="font-bold text-amber-950 text-base">Nenhuma entrega agendada</h3>
+            <p className="text-xs text-amber-700">
+              Agende o transporte e entrega de peças para clientes ou use comandos de voz ao finalizar um pedido.
+            </p>
           </div>
-        ))}
-      </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Agendar Primeira Entrega</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {deliveries.map((del) => (
+            <div key={del.id} className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3">
+              <div className="flex items-start justify-between border-b border-amber-100 pb-2">
+                <div>
+                  <span className="text-xs font-bold text-amber-700">Data Prevista: {del.deliveryDate}</span>
+                  <h3 className="font-black text-amber-950 text-base">{del.customerName}</h3>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                  del.status === 'Entregue' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'
+                }`}>
+                  {del.status}
+                </span>
+              </div>
+
+              <div className="text-xs text-amber-900 space-y-1 bg-amber-50/60 p-3 rounded-xl border border-amber-100">
+                <p className="flex items-center gap-1.5 font-medium">
+                  <MapPin className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span><strong>Endereço:</strong> {del.address}</span>
+                </p>
+                {del.shippingFee > 0 && <p><strong>Frete:</strong> R$ {del.shippingFee.toFixed(2)}</p>}
+                {del.deliveryPerson && <p><strong>Entregador:</strong> {del.deliveryPerson}</p>}
+                {del.notes && <p className="italic text-amber-800">Obs: {del.notes}</p>}
+              </div>
+
+              {del.status !== 'Entregue' ? (
+                <button
+                  onClick={() => handleMarkDelivered(del)}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 transition-all shadow-xs"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>MARCAR COMO ENTREGUE</span>
+                </button>
+              ) : (
+                <div className="text-center py-1 text-xs text-emerald-800 font-bold bg-emerald-50 rounded-xl border border-emerald-200">
+                  ✓ Entregue em {del.completedAt ? new Date(del.completedAt).toLocaleDateString('pt-BR') : del.deliveryDate}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* New Delivery Modal */}
       {isModalOpen && (

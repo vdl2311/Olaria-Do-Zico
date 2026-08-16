@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -12,9 +12,10 @@ import {
   ArrowUpRight, 
   Users, 
   ChevronRight,
-  Flame
+  Flame,
+  Plus
 } from 'lucide-react';
-import { StorageService } from '../services/storage';
+import { StorageService, subscribeStorage } from '../services/storage';
 
 interface DashboardViewProps {
   onOpenVoiceModal: () => void;
@@ -22,13 +23,30 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenVoiceModal, setActiveView }) => {
-  const sales = StorageService.getSales();
-  const products = StorageService.getProducts();
-  const production = StorageService.getProduction();
-  const customOrders = StorageService.getCustomOrders();
-  const deliveries = StorageService.getDeliveries();
-  const receivables = StorageService.getReceivables();
-  const expenses = StorageService.getExpenses();
+  const [sales, setSales] = useState(() => StorageService.getSales());
+  const [products, setProducts] = useState(() => StorageService.getProducts());
+  const [production, setProduction] = useState(() => StorageService.getProduction());
+  const [customOrders, setCustomOrders] = useState(() => StorageService.getCustomOrders());
+  const [deliveries, setDeliveries] = useState(() => StorageService.getDeliveries());
+  const [receivables, setReceivables] = useState(() => StorageService.getReceivables());
+  const [expenses, setExpenses] = useState(() => StorageService.getExpenses());
+
+  const refreshData = () => {
+    setSales(StorageService.getSales());
+    setProducts(StorageService.getProducts());
+    setProduction(StorageService.getProduction());
+    setCustomOrders(StorageService.getCustomOrders());
+    setDeliveries(StorageService.getDeliveries());
+    setReceivables(StorageService.getReceivables());
+    setExpenses(StorageService.getExpenses());
+  };
+
+  useEffect(() => {
+    const unsub = subscribeStorage(() => {
+      refreshData();
+    });
+    return () => unsub();
+  }, []);
 
   // Financial calculations
   const totalSalesValue = sales.reduce((acc, s) => acc + s.totalValue, 0);

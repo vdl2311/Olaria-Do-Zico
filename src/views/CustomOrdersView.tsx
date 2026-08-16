@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ClipboardList, Plus, Mic, Calendar, Palette, DollarSign, CheckCircle2, Clock, X, Camera, Upload } from 'lucide-react';
-import { StorageService } from '../services/storage';
+import { StorageService, subscribeStorage } from '../services/storage';
 import { CustomOrder } from '../types';
 import { CameraModal } from '../components/CameraModal';
 
@@ -34,14 +34,21 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceM
     };
     reader.readAsDataURL(file);
   };
-  const [targetDate, setTargetDate] = useState('2026-08-25');
-  const [totalPrice, setTotalPrice] = useState(500);
-  const [depositPaid, setDepositPaid] = useState(250);
+  const [targetDate, setTargetDate] = useState(() => new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [depositPaid, setDepositPaid] = useState(0);
   const [notes, setNotes] = useState('');
 
   const refreshData = () => {
     setOrders(StorageService.getCustomOrders());
   };
+
+  useEffect(() => {
+    const unsub = subscribeStorage(() => {
+      refreshData();
+    });
+    return () => unsub();
+  }, []);
 
   const handleCreateOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +96,8 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceM
     setSizeSpecs('');
     setColorSpecs('');
     setPhotoUrl('');
+    setTotalPrice(0);
+    setDepositPaid(0);
     setNotes('');
   };
 
@@ -130,62 +139,81 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceM
       </div>
 
       {/* Orders Grid Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {orders.map((ord) => (
-          <div key={ord.id} className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-start justify-between border-b border-amber-100 pb-2">
-              <div>
-                <span className="text-xs font-bold text-amber-700">{ord.code} • Prazo: {ord.targetDate}</span>
-                <h3 className="font-black text-amber-950 text-base">{ord.customerName}</h3>
-              </div>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                ord.status === 'Entregue'
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : ord.status === 'Em Produção'
-                  ? 'bg-amber-200 text-amber-900'
-                  : 'bg-amber-100 text-amber-800'
-              }`}>
-                {ord.status}
-              </span>
-            </div>
-
-            <p className="text-sm font-semibold text-amber-950 bg-amber-50/80 p-3 rounded-xl border border-amber-100">
-              📌 {ord.productDescription}
+      {orders.length === 0 ? (
+        <div className="bg-white border border-amber-200 rounded-2xl p-10 text-center space-y-4 shadow-xs">
+          <ClipboardList className="w-12 h-12 text-amber-400 mx-auto" />
+          <div className="max-w-md mx-auto space-y-1">
+            <h3 className="font-bold text-amber-950 text-base">Nenhum pedido sob encomenda</h3>
+            <p className="text-xs text-amber-700">
+              Cadastre pedidos sob medida, fontes personalizadas com prazos de entrega e valores de sinal.
             </p>
-
-            <div className="grid grid-cols-2 gap-2 text-xs text-amber-800">
-              {ord.sizeSpecs && <p><strong>Tamanho/Medidas:</strong> {ord.sizeSpecs}</p>}
-              {ord.colorSpecs && <p><strong>Cor/Esmalte:</strong> {ord.colorSpecs}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs bg-amber-100/50 p-2.5 rounded-xl border border-amber-200 font-bold">
-              <div>
-                <span className="text-amber-800 block text-[10px]">Valor Total</span>
-                <span className="text-amber-950">R$ {ord.totalPrice.toFixed(2)}</span>
-              </div>
-              <div>
-                <span className="text-emerald-800 block text-[10px]">Sinal Pago</span>
-                <span className="text-emerald-950">R$ {ord.depositPaid.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Status updates */}
-            <div className="pt-2 border-t border-amber-100 flex flex-wrap gap-1.5">
-              {(['Orçamento', 'Aprovado', 'Em Produção', 'Pronto', 'Entregue'] as CustomOrder['status'][]).map(st => (
-                <button
-                  key={st}
-                  onClick={() => handleUpdateStatus(ord, st)}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
-                    ord.status === st ? 'bg-amber-900 text-white' : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
-                  }`}
-                >
-                  {st}
-                </button>
-              ))}
-            </div>
           </div>
-        ))}
-      </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Criar Primeiro Pedido</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {orders.map((ord) => (
+            <div key={ord.id} className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3">
+              <div className="flex items-start justify-between border-b border-amber-100 pb-2">
+                <div>
+                  <span className="text-xs font-bold text-amber-700">{ord.code} • Prazo: {ord.targetDate}</span>
+                  <h3 className="font-black text-amber-950 text-base">{ord.customerName}</h3>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                  ord.status === 'Entregue'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : ord.status === 'Em Produção'
+                    ? 'bg-amber-200 text-amber-900'
+                    : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {ord.status}
+                </span>
+              </div>
+
+              <p className="text-sm font-semibold text-amber-950 bg-amber-50/80 p-3 rounded-xl border border-amber-100">
+                📌 {ord.productDescription}
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-amber-800">
+                {ord.sizeSpecs && <p><strong>Tamanho/Medidas:</strong> {ord.sizeSpecs}</p>}
+                {ord.colorSpecs && <p><strong>Cor/Esmalte:</strong> {ord.colorSpecs}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs bg-amber-100/50 p-2.5 rounded-xl border border-amber-200 font-bold">
+                <div>
+                  <span className="text-amber-800 block text-[10px]">Valor Total</span>
+                  <span className="text-amber-950">R$ {ord.totalPrice.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-emerald-800 block text-[10px]">Sinal Pago</span>
+                  <span className="text-emerald-950">R$ {ord.depositPaid.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Status updates */}
+              <div className="pt-2 border-t border-amber-100 flex flex-wrap gap-1.5">
+                {(['Orçamento', 'Aprovado', 'Em Produção', 'Pronto', 'Entregue'] as CustomOrder['status'][]).map(st => (
+                  <button
+                    key={st}
+                    onClick={() => handleUpdateStatus(ord, st)}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                      ord.status === st ? 'bg-amber-900 text-white' : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
+                    }`}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* New Custom Order Modal */}
       {isModalOpen && (

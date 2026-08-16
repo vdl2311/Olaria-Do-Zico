@@ -153,101 +153,113 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
       {/* Finished Products Inventory */}
       {activeTab === 'finished' && (
         <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-xs">
-          {/* Mobile View: Cards */}
-          <div className="block md:hidden divide-y divide-amber-100">
-            {products.map((p) => {
-              const isLow = p.stock <= p.minStock;
-              return (
-                <div key={p.id} className="p-3.5 space-y-2 hover:bg-amber-50/40">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {p.photoUrl ? (
-                        <img src={p.photoUrl} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-amber-200 shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center font-bold text-amber-900 shrink-0">
-                          {p.code.substring(0, 3)}
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-bold text-amber-950 text-sm">{p.name}</p>
-                        <p className="text-[11px] text-amber-700">{p.code} • {p.category}</p>
-                      </div>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      isLow ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
-                    }`}>
-                      {isLow ? '⚠️ Baixo' : '✓ Normal'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-amber-100">
-                    <span className="font-bold text-amber-900">Preço: R$ {p.price.toFixed(2)}</span>
-                    <span className={`font-black text-sm ${isLow ? 'text-red-600' : 'text-emerald-900'}`}>
-                      Estoque: {p.stock} un (mín: {p.minStock})
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Desktop View: Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-amber-900/10 text-amber-900 font-bold border-b border-amber-200">
-                <tr>
-                  <th className="p-3.5">Código / Foto</th>
-                  <th className="p-3.5">Produto</th>
-                  <th className="p-3.5">Categoria</th>
-                  <th className="p-3.5">Preço Venda</th>
-                  <th className="p-3.5">Estoque Atual</th>
-                  <th className="p-3.5">Estoque Mín.</th>
-                  <th className="p-3.5">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-amber-100">
+          {products.length === 0 ? (
+            <div className="p-10 text-center space-y-3">
+              <Package className="w-12 h-12 text-amber-400 mx-auto" />
+              <p className="font-bold text-amber-950 text-base">Nenhum produto em estoque</p>
+              <p className="text-xs text-amber-700 max-w-sm mx-auto">
+                Cadastre seus vasos e cerâmicas no Catálogo de Produtos para controlar quantidades e alertas.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Mobile View: Cards */}
+              <div className="block md:hidden divide-y divide-amber-100">
                 {products.map((p) => {
                   const isLow = p.stock <= p.minStock;
                   return (
-                    <tr key={p.id} className="hover:bg-amber-50/60">
-                      <td className="p-3.5 flex items-center space-x-3">
-                        {p.photoUrl ? (
-                          <img src={p.photoUrl} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-amber-200" />
-                        ) : (
-                          <div className="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center font-bold text-amber-900">
-                            {p.code.substring(0, 3)}
+                    <div key={p.id} className="p-3.5 space-y-2 hover:bg-amber-50/40">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {p.photoUrl ? (
+                            <img src={p.photoUrl} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-amber-200 shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center font-bold text-amber-900 shrink-0">
+                              {p.code.substring(0, 3)}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-bold text-amber-950 text-sm">{p.name}</p>
+                            <p className="text-[11px] text-amber-700">{p.code} • {p.category}</p>
                           </div>
-                        )}
-                        <div>
-                          <p className="font-bold text-amber-950">{p.code}</p>
-                          <p className="text-[11px] text-amber-700">Tam: {p.size}</p>
                         </div>
-                      </td>
-                      <td className="p-3.5">
-                        <p className="font-bold text-amber-950">{p.name}</p>
-                        <p className="text-[11px] text-amber-700">{p.finish || 'Acabamento padrão'}</p>
-                      </td>
-                      <td className="p-3.5 text-amber-900 font-medium">{p.category}</td>
-                      <td className="p-3.5 font-bold text-amber-950">R$ {p.price.toFixed(2)}</td>
-                      <td className="p-3.5">
-                        <span className={`text-base font-black ${isLow ? 'text-red-600' : 'text-emerald-900'}`}>
-                          {p.stock} un
-                        </span>
-                      </td>
-                      <td className="p-3.5 text-amber-800">{p.minStock} un</td>
-                      <td className="p-3.5">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           isLow ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
                         }`}>
-                          {isLow ? '⚠️ Estoque Baixo' : '✓ Normal'}
+                          {isLow ? '⚠️ Baixo' : '✓ Normal'}
                         </span>
-                      </td>
-                    </tr>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-amber-100">
+                        <span className="font-bold text-amber-900">Preço: R$ {p.price.toFixed(2)}</span>
+                        <span className={`font-black text-sm ${isLow ? 'text-red-600' : 'text-emerald-900'}`}>
+                          Estoque: {p.stock} un (mín: {p.minStock})
+                        </span>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+              </div>
+
+              {/* Desktop View: Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-amber-900/10 text-amber-900 font-bold border-b border-amber-200">
+                    <tr>
+                      <th className="p-3.5">Código / Foto</th>
+                      <th className="p-3.5">Produto</th>
+                      <th className="p-3.5">Categoria</th>
+                      <th className="p-3.5">Preço Venda</th>
+                      <th className="p-3.5">Estoque Atual</th>
+                      <th className="p-3.5">Estoque Mín.</th>
+                      <th className="p-3.5">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100">
+                    {products.map((p) => {
+                      const isLow = p.stock <= p.minStock;
+                      return (
+                        <tr key={p.id} className="hover:bg-amber-50/60">
+                          <td className="p-3.5 flex items-center space-x-3">
+                            {p.photoUrl ? (
+                              <img src={p.photoUrl} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-amber-200" />
+                            ) : (
+                              <div className="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center font-bold text-amber-900">
+                                {p.code.substring(0, 3)}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-bold text-amber-950">{p.code}</p>
+                              <p className="text-[11px] text-amber-700">Tam: {p.size}</p>
+                            </div>
+                          </td>
+                          <td className="p-3.5">
+                            <p className="font-bold text-amber-950">{p.name}</p>
+                            <p className="text-[11px] text-amber-700">{p.finish || 'Acabamento padrão'}</p>
+                          </td>
+                          <td className="p-3.5 text-amber-900 font-medium">{p.category}</td>
+                          <td className="p-3.5 font-bold text-amber-950">R$ {p.price.toFixed(2)}</td>
+                          <td className="p-3.5">
+                            <span className={`text-base font-black ${isLow ? 'text-red-600' : 'text-emerald-900'}`}>
+                              {p.stock} un
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-amber-800">{p.minStock} un</td>
+                          <td className="p-3.5">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                              isLow ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              {isLow ? '⚠️ Estoque Baixo' : '✓ Normal'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       )}
 
