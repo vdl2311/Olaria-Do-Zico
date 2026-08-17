@@ -384,6 +384,7 @@ export interface NluActionPayload {
     materialName?: string;
     materialCategory?: RawMaterialCategory;
     expenseCategory?: string;
+    expenseStatus?: 'Paga' | 'Pendente';
     amount?: number;
 
     // For Query

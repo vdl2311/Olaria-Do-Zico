@@ -891,6 +891,15 @@ export const StorageService = {
     }
   },
 
+  markExpenseAsPaid(id: string, paidDate?: string): Expense | null {
+    const list = getItem<Expense[]>(KEYS.EXPENSES, INITIAL_EXPENSES);
+    const target = list.find(e => e.id === id);
+    if (!target) return null;
+    target.status = 'Paga';
+    target.paidDate = paidDate || new Date().toISOString().split('T')[0];
+    return this.saveExpense(target);
+  },
+
   // Account Receivables
   getReceivables(): AccountReceivable[] {
     ensureDemoDataInitialized();
@@ -1339,15 +1348,17 @@ export const StorageService = {
 
       case 'RECORD_EXPENSE': {
         const amount = Math.max(1, parsed.amount || 50);
+        const expStatus: 'Paga' | 'Pendente' = parsed.expenseStatus === 'Pendente' ? 'Pendente' : 'Paga';
+        const todayStr = new Date().toISOString().split('T')[0];
         const newExp: Expense = {
           id: `exp-${Date.now()}`,
           tenantId: getActiveTenantId(),
           description: parsed.expenseCategory || 'Despesa Geral',
           category: 'Outros',
           amount: amount,
-          dueDate: new Date().toISOString().split('T')[0],
-          paidDate: new Date().toISOString().split('T')[0],
-          status: 'Paga',
+          dueDate: todayStr,
+          paidDate: expStatus === 'Paga' ? todayStr : undefined,
+          status: expStatus,
           notes: 'Registrado via comando de voz'
         };
         this.saveExpense(newExp);
@@ -1356,7 +1367,7 @@ export const StorageService = {
           'Despesa por Voz',
           'Despesa',
           newExp.id,
-          `Despesa ${newExp.description} - R$ ${amount.toFixed(2)}`,
+          `Despesa ${newExp.description} - R$ ${amount.toFixed(2)} (${expStatus})`,
           { actionType: 'RECORD_EXPENSE', expenseId: newExp.id }
         );
 
