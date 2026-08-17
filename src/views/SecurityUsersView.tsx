@@ -29,13 +29,15 @@ import { AuthService } from '../services/authService';
 import { AuthUser, EmployeePermissions, TemporarySupportGrant, SecurityTestResult, TenantInfo } from '../types';
 
 export const SecurityUsersView: React.FC = () => {
-  const currentUser = AuthService.getCurrentUser();
+  const [currentUser] = useState<AuthUser | null>(() => AuthService.getCurrentUser());
   const isOwner = currentUser?.role === 'PROPRIETARIO';
 
   const [activeTab, setActiveTab] = useState<'users' | 'sovereignty' | 'support_grants' | 'security_tests'>('users');
   
   // Users state
-  const [users, setUsers] = useState<AuthUser[]>([]);
+  const [users, setUsers] = useState<AuthUser[]>(() => {
+    return currentUser?.tenantId ? AuthService.getUsers(currentUser.tenantId) : [];
+  });
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
@@ -72,7 +74,9 @@ export const SecurityUsersView: React.FC = () => {
   });
 
   // Temporary Support Grant state
-  const [supportGrants, setSupportGrants] = useState<TemporarySupportGrant[]>([]);
+  const [supportGrants, setSupportGrants] = useState<TemporarySupportGrant[]>(() => {
+    return currentUser?.tenantId ? AuthService.getActiveSupportGrants(currentUser.tenantId) : [];
+  });
   const [showGrantModal, setShowGrantModal] = useState(false);
   const [grantReason, setGrantReason] = useState('Análise de lentidão em sincronização');
   const [grantDurationMinutes, setGrantDurationMinutes] = useState(60);
@@ -98,7 +102,7 @@ export const SecurityUsersView: React.FC = () => {
   useEffect(() => {
     refreshUsers();
     refreshGrants();
-  }, [currentUser]);
+  }, [currentUser?.id, currentUser?.tenantId]);
 
   const handleOpenNewUser = () => {
     setEditingUserId(null);
@@ -266,7 +270,7 @@ export const SecurityUsersView: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-amber-200/80 gap-2 overflow-x-auto">
+      <div className="flex border-b border-amber-200/80 gap-2 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('users')}
           className={`py-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
@@ -504,7 +508,63 @@ export const SecurityUsersView: React.FC = () => {
 
           {/* List of Grants */}
           <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            {/* Mobile View: Cards */}
+            <div className="block lg:hidden divide-y divide-stone-100">
+              {supportGrants.length === 0 ? (
+                <div className="p-8 text-center text-stone-500 text-xs sm:text-sm">
+                  Nenhuma autorização de suporte temporário ativa no momento.
+                </div>
+              ) : (
+                supportGrants.map(grant => (
+                  <div key={grant.id} className="p-4 space-y-2.5 hover:bg-amber-50/40">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] text-stone-500 block">
+                          {new Date(grant.grantedAt).toLocaleString('pt-BR')}
+                        </span>
+                        <p className="font-bold text-amber-950 text-sm">
+                          Por: {grant.grantedByUserName}
+                        </p>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold shrink-0 ${
+                        grant.status === 'ATIVO'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-stone-100 text-stone-600'
+                      }`}>
+                        {grant.status}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-stone-800 bg-stone-50 p-2.5 rounded-lg border border-stone-200/60">
+                      <strong className="text-amber-950 font-semibold">Motivo:</strong> {grant.reason}
+                    </p>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-stone-100 text-stone-800 text-[11px] font-mono font-bold rounded">
+                          {grant.accessScope}
+                        </span>
+                        <span className="text-stone-500 text-[11px]">
+                          Expira: {new Date(grant.expiresAt).toLocaleTimeString('pt-BR')}
+                        </span>
+                      </div>
+
+                      {grant.status === 'ATIVO' && isOwner && (
+                        <button
+                          onClick={() => handleRevokeGrant(grant.id)}
+                          className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-lg text-xs transition-colors cursor-pointer"
+                        >
+                          Revogar Acesso
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop View: Table */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead className="bg-amber-900/10 text-amber-900 font-bold border-b border-amber-200">
                   <tr>
@@ -557,7 +617,7 @@ export const SecurityUsersView: React.FC = () => {
                           {grant.status === 'ATIVO' && isOwner && (
                             <button
                               onClick={() => handleRevokeGrant(grant.id)}
-                              className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-lg text-xs transition-colors"
+                              className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-lg text-xs transition-colors cursor-pointer"
                             >
                               Revogar
                             </button>

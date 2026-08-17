@@ -112,28 +112,28 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
           <p className="text-xs text-amber-800/80">Contas a Receber (Fiado / Clientes) e Contas a Pagar / Despesas.</p>
         </div>
 
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={onOpenVoiceModal}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center space-x-1.5 sm:space-x-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer whitespace-nowrap"
           >
-            <Mic className="w-4 h-4 animate-pulse" />
+            <Mic className="w-4 h-4 animate-pulse shrink-0" />
             <span>Lançar por Voz</span>
           </button>
 
           <button
             onClick={() => handleOpenReceivableModal()}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3.5 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center space-x-1.5 sm:space-x-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer whitespace-nowrap"
           >
-            <ArrowUpRight className="w-4 h-4" />
-            <span>Receber Pagamento</span>
+            <ArrowUpRight className="w-4 h-4 shrink-0" />
+            <span>Receber</span>
           </button>
 
           <button
             onClick={() => setIsExpenseModalOpen(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-red-800 hover:bg-red-700 text-white font-bold px-3.5 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center space-x-1.5 sm:space-x-2 bg-red-800 hover:bg-red-700 text-white font-bold px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer whitespace-nowrap"
           >
-            <ArrowDownRight className="w-4 h-4" />
+            <ArrowDownRight className="w-4 h-4 shrink-0" />
             <span>Nova Despesa</span>
           </button>
         </div>
@@ -160,8 +160,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
         </div>
       </div>
 
-      {/* Receivables Table */}
-      <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3">
+      {/* Receivables Section */}
+      <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-amber-950 text-base flex items-center gap-2">
             <ArrowUpRight className="w-5 h-5 text-emerald-600" />
@@ -169,7 +169,61 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
           </h3>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Cards */}
+        <div className="block md:hidden space-y-3">
+          {receivables.length === 0 ? (
+            <div className="p-6 text-center text-amber-800/60 bg-amber-50/40 rounded-xl border border-dashed border-amber-200">
+              Nenhuma conta a receber registrada.
+            </div>
+          ) : (
+            receivables.map((r) => {
+              const debt = Math.max(0, r.amount - r.amountPaid);
+              return (
+                <div key={r.id} className="p-4 bg-amber-50/40 rounded-xl border border-amber-200/80 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-bold text-amber-950 text-sm">{r.customerName}</p>
+                      <p className="text-xs text-amber-800">{r.description || 'Venda a prazo'}</p>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ${
+                      r.status === 'Pago' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {r.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 py-2 px-3 bg-white rounded-lg border border-amber-100 text-xs">
+                    <div>
+                      <span className="text-[10px] text-amber-700 block uppercase font-bold">Total</span>
+                      <span className="font-bold text-amber-950">R$ {r.amount.toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-emerald-700 block uppercase font-bold">Pago</span>
+                      <span className="font-bold text-emerald-800">R$ {r.amountPaid.toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-red-700 block uppercase font-bold">Restante</span>
+                      <span className="font-black text-red-600">R$ {debt.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {r.status !== 'Pago' && (
+                    <button
+                      onClick={() => handleOpenReceivableModal(r.customerName)}
+                      className="w-full py-2 text-xs font-bold text-emerald-900 bg-emerald-100 hover:bg-emerald-200 active:bg-emerald-300 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <ArrowUpRight className="w-4 h-4 text-emerald-700" />
+                      <span>Dar Baixa no Pagamento</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-amber-900/10 text-amber-900 font-bold border-b border-amber-200">
               <tr>
@@ -210,7 +264,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
                         {r.status !== 'Pago' && (
                           <button
                             onClick={() => handleOpenReceivableModal(r.customerName)}
-                            className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors"
+                            className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors cursor-pointer"
                           >
                             Dar Baixa
                           </button>
@@ -225,14 +279,59 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
         </div>
       </div>
 
-      {/* Expenses Table */}
-      <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3">
+      {/* Expenses Section */}
+      <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-4">
         <h3 className="font-bold text-amber-950 text-base flex items-center gap-2">
           <ArrowDownRight className="w-5 h-5 text-red-600" />
           <span>Despesas e Compras Registradas</span>
         </h3>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Cards */}
+        <div className="block md:hidden space-y-3">
+          {expenses.length === 0 ? (
+            <div className="p-6 text-center text-amber-800/60 bg-amber-50/40 rounded-xl border border-dashed border-amber-200">
+              Nenhuma despesa registrada.
+            </div>
+          ) : (
+            expenses.map((e) => (
+              <div key={e.id} className="p-4 bg-amber-50/40 rounded-xl border border-amber-200/80 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-amber-950 text-sm">{e.description}</p>
+                    <p className="text-xs text-amber-700">
+                      {e.category} {e.supplier ? `• ${e.supplier}` : ''}
+                    </p>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ${
+                    e.status === 'Paga' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'
+                  }`}>
+                    {e.status}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 text-xs">
+                  <div>
+                    <span className="text-[10px] text-amber-700 block uppercase">Vencimento</span>
+                    <span className="font-medium text-amber-900">{e.dueDate}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-black text-sm text-red-700">R$ {e.amount.toFixed(2)}</span>
+                    <button
+                      onClick={() => handleDeleteExpense(e)}
+                      className="p-1.5 text-red-700 hover:bg-red-100 active:bg-red-200 rounded-lg transition-colors"
+                      title="Excluir Despesa"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-amber-900/10 text-amber-900 font-bold border-b border-amber-200">
               <tr>
@@ -270,7 +369,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
                     <td className="p-3 text-right">
                       <button
                         onClick={() => handleDeleteExpense(e)}
-                        className="p-1.5 text-red-700 hover:bg-red-100 rounded-lg transition-colors"
+                        className="p-1.5 text-red-700 hover:bg-red-100 rounded-lg transition-colors cursor-pointer"
                         title="Excluir Despesa"
                       >
                         <Trash2 className="w-4 h-4" />

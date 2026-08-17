@@ -997,7 +997,59 @@ export const BrandKitView: React.FC = () => {
             <h3 className="font-brand-serif text-2xl font-bold text-[#292724] mb-2">Guia de Tom de Voz da Marca</h3>
             <p className="text-xs text-[#8A5A44] mb-6">Como nos comunicamos com clientes, arquitetos, parceiros e em toda a interface.</p>
 
-            <div className="overflow-x-auto">
+            {/* Mobile View: Cards */}
+            <div className="block md:hidden space-y-4">
+              <div className="p-4 bg-white rounded-2xl border border-[#E7D5BE] space-y-3">
+                <h4 className="font-bold text-[#292724] text-sm">Apresentação da Empresa</h4>
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200/80">
+                  <span className="text-[10px] font-bold text-rose-800 uppercase block mb-1">Como Evitar:</span>
+                  <p className="text-xs text-rose-900 line-through">"Comercializamos produtos cerâmicos de alta qualidade e durabilidade."</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase block mb-1">Como Escrever:</span>
+                  <p className="text-xs text-emerald-950 font-medium">"Peças feitas de terra, fogo e cuidado para transformar seu espaço."</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white rounded-2xl border border-[#E7D5BE] space-y-3">
+                <h4 className="font-bold text-[#292724] text-sm">Processo de Fabricação</h4>
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200/80">
+                  <span className="text-[10px] font-bold text-rose-800 uppercase block mb-1">Como Evitar:</span>
+                  <p className="text-xs text-rose-900 line-through">"Linha fabril automatizada com prensas industriais."</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase block mb-1">Como Escrever:</span>
+                  <p className="text-xs text-emerald-950 font-medium">"Modelagem artesanal no torno com queima lenta nos fornos."</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white rounded-2xl border border-[#E7D5BE] space-y-3">
+                <h4 className="font-bold text-[#292724] text-sm">Botão de Voz no Sistema</h4>
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200/80">
+                  <span className="text-[10px] font-bold text-rose-800 uppercase block mb-1">Como Evitar:</span>
+                  <p className="text-xs text-rose-900 line-through">"Executar input de dados por reconhecimento de áudio."</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase block mb-1">Como Escrever:</span>
+                  <p className="text-xs text-emerald-950 font-medium">"Falar • Estou ouvindo... • Entendi"</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white rounded-2xl border border-[#E7D5BE] space-y-3">
+                <h4 className="font-bold text-[#292724] text-sm">Entrega e Prazo</h4>
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200/80">
+                  <span className="text-[10px] font-bold text-rose-800 uppercase block mb-1">Como Evitar:</span>
+                  <p className="text-xs text-rose-900 line-through">"Seu pedido foi despachado via frete terceirizado."</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase block mb-1">Como Escrever:</span>
+                  <p className="text-xs text-emerald-950 font-medium">"Suas peças saíram do forno e estão a caminho do seu endereço."</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop View: Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-[#E7D5BE] text-[#8A5A44]">

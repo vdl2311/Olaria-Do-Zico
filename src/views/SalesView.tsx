@@ -295,10 +295,10 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
               <tr>
                 <th className="p-3.5">Código / Data</th>
                 <th className="p-3.5">Cliente</th>
-                <th className="p-3.5">Produtos</th>
+                <th className="p-3.5 hidden lg:table-cell">Produtos</th>
                 <th className="p-3.5">Total</th>
                 <th className="p-3.5">Pago / Restante</th>
-                <th className="p-3.5">Pagamento</th>
+                <th className="p-3.5 hidden xl:table-cell">Pagamento</th>
                 <th className="p-3.5">Status</th>
                 <th className="p-3.5 text-right">Ações</th>
               </tr>
@@ -317,8 +317,8 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
                       <p className="font-bold text-amber-950">{sale.code}</p>
                       <p className="text-[11px] text-amber-700">{sale.date}</p>
                     </td>
-                    <td className="p-3.5 font-semibold text-amber-900">{sale.customerName}</td>
-                    <td className="p-3.5 text-amber-800 max-w-xs">
+                    <td className="p-3.5 font-semibold text-amber-950">{sale.customerName}</td>
+                    <td className="p-3.5 text-amber-800 max-w-xs truncate hidden lg:table-cell">
                       {sale.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}
                     </td>
                     <td className="p-3.5 font-black text-amber-950">R$ {sale.totalValue.toFixed(2)}</td>
@@ -328,7 +328,7 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
                         <p className="text-red-600 font-bold text-[11px]">Devendo: R$ {sale.pendingValue.toFixed(2)}</p>
                       )}
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-3.5 hidden xl:table-cell">
                       <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-xs">
                         {sale.paymentMethod}
                       </span>

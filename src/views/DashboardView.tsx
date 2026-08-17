@@ -293,42 +293,77 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenVoiceModal, 
             <p className="text-xs text-[#8A5A44] mt-1">Realize a primeira venda pelo botão de voz ("Falar")!</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead>
-                <tr className="border-b border-[#E7D5BE] text-[#8A5A44]">
-                  <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Código</th>
-                  <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Cliente</th>
-                  <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Peças Cerâmicas</th>
-                  <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Valor</th>
-                  <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Pagamento</th>
-                  <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E7D5BE]/60 text-[#292724]">
-                {sales.slice(0, 5).map(s => (
-                  <tr key={s.id} className="hover:bg-[#F7F1E7]/70">
-                    <td className="py-3 font-mono font-bold text-[#B85C38]">{s.code}</td>
-                    <td className="py-3 font-semibold text-[#292724]">{s.customerName}</td>
-                    <td className="py-3 text-[#5C5852]">{s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</td>
-                    <td className="py-3 font-brand-serif font-black text-[#292724]">R$ {s.totalValue.toFixed(2)}</td>
-                    <td className="py-3">
-                      <span className="px-2.5 py-1 rounded-md bg-[#E7D5BE]/50 text-[#8A5A44] font-medium text-xs">
-                        {s.paymentMethod}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        s.status === 'Concluída' ? 'bg-[#667052]/20 text-[#4F583D]' : 'bg-[#B85C38]/15 text-[#9E4A2A]'
-                      }`}>
-                        {s.status}
-                      </span>
-                    </td>
+          <>
+            {/* Mobile View: Cards */}
+            <div className="block sm:hidden space-y-2.5">
+              {sales.slice(0, 5).map(s => (
+                <div key={s.id} className="p-3 bg-[#FAF6EF] rounded-xl border border-[#E7D5BE] space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-mono text-xs font-bold text-[#B85C38] block">{s.code}</span>
+                      <p className="font-bold text-[#292724] text-sm">{s.customerName}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                      s.status === 'Concluída' ? 'bg-[#667052]/20 text-[#4F583D]' : 'bg-[#B85C38]/15 text-[#9E4A2A]'
+                    }`}>
+                      {s.status}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-[#5C5852] line-clamp-1">
+                    {s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-[#E7D5BE]/60 text-xs">
+                    <span className="px-2 py-0.5 rounded bg-[#E7D5BE]/50 text-[#8A5A44] font-medium text-[11px]">
+                      {s.paymentMethod}
+                    </span>
+                    <span className="font-black text-sm text-[#292724]">
+                      R$ {s.totalValue.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop / Tablet View: Table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-[#E7D5BE] text-[#8A5A44]">
+                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Código</th>
+                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Cliente</th>
+                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Peças Cerâmicas</th>
+                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Valor</th>
+                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Pagamento</th>
+                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[#E7D5BE]/60 text-[#292724]">
+                  {sales.slice(0, 5).map(s => (
+                    <tr key={s.id} className="hover:bg-[#F7F1E7]/70">
+                      <td className="py-3 font-mono font-bold text-[#B85C38]">{s.code}</td>
+                      <td className="py-3 font-semibold text-[#292724]">{s.customerName}</td>
+                      <td className="py-3 text-[#5C5852]">{s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</td>
+                      <td className="py-3 font-brand-serif font-black text-[#292724]">R$ {s.totalValue.toFixed(2)}</td>
+                      <td className="py-3">
+                        <span className="px-2.5 py-1 rounded-md bg-[#E7D5BE]/50 text-[#8A5A44] font-medium text-xs">
+                          {s.paymentMethod}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          s.status === 'Concluída' ? 'bg-[#667052]/20 text-[#4F583D]' : 'bg-[#B85C38]/15 text-[#9E4A2A]'
+                        }`}>
+                          {s.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

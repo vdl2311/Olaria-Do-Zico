@@ -32,14 +32,64 @@ export const AuditView: React.FC = () => {
 
       {/* Logs List */}
       <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
+        {/* Mobile View: Cards */}
+        <div className="block md:hidden divide-y divide-amber-100">
+          {logs.length === 0 ? (
+            <div className="p-8 text-center text-amber-800/60">
+              Nenhum registro de comando por voz encontrado.
+            </div>
+          ) : (
+            logs.map((log) => (
+              <div key={log.id} className="p-4 space-y-2.5 hover:bg-amber-50/40 transition-colors">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-amber-800 font-semibold">
+                    {new Date(log.timestamp).toLocaleString('pt-BR')}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    log.status === 'Aplicado' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {log.status}
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold text-amber-950">
+                    "{log.transcript || log.action}"
+                  </p>
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold text-[10px]">
+                    {log.actionType || log.entityType}
+                  </span>
+                </div>
+
+                <div className="text-[11px] text-amber-800 font-mono bg-amber-50/60 p-2 rounded-lg border border-amber-100 truncate">
+                  {typeof log.details === 'string' ? log.details : JSON.stringify(log.details || '')}
+                </div>
+
+                {log.status === 'Aplicado' && (
+                  <div className="flex justify-end pt-1">
+                    <button
+                      onClick={() => handleUndo(log.id)}
+                      className="px-3 py-1.5 bg-amber-100 hover:bg-red-100 hover:text-red-800 text-amber-950 font-bold rounded-lg text-xs transition-colors inline-flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Desfazer Operação</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-amber-900/10 text-amber-900 font-bold border-b border-amber-200">
               <tr>
                 <th className="p-3.5">Horário / Data</th>
                 <th className="p-3.5">Áudio Transcrito ("O que você falou")</th>
                 <th className="p-3.5">Ação Interpretada</th>
-                <th className="p-3.5">Detalhes da Alteração</th>
+                <th className="p-3.5 hidden lg:table-cell">Detalhes da Alteração</th>
                 <th className="p-3.5">Status</th>
                 <th className="p-3.5 text-right">Ação</th>
               </tr>
@@ -58,15 +108,15 @@ export const AuditView: React.FC = () => {
                       {new Date(log.timestamp).toLocaleString('pt-BR')}
                     </td>
                     <td className="p-3.5 font-bold text-amber-950 max-w-xs">
-                      "{log.transcript}"
+                      "{log.transcript || log.action}"
                     </td>
                     <td className="p-3.5">
                       <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-xs">
-                        {log.actionType}
+                        {log.actionType || log.entityType}
                       </span>
                     </td>
-                    <td className="p-3.5 text-amber-800 text-xs font-mono max-w-xs truncate">
-                      {JSON.stringify(log.details)}
+                    <td className="p-3.5 text-amber-800 text-xs font-mono max-w-xs truncate hidden lg:table-cell">
+                      {typeof log.details === 'string' ? log.details : JSON.stringify(log.details || '')}
                     </td>
                     <td className="p-3.5">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -79,7 +129,7 @@ export const AuditView: React.FC = () => {
                       {log.status === 'Aplicado' && (
                         <button
                           onClick={() => handleUndo(log.id)}
-                          className="px-3 py-1.5 bg-amber-200 hover:bg-red-100 hover:text-red-800 text-amber-950 font-bold rounded-lg text-xs transition-colors inline-flex items-center space-x-1"
+                          className="px-3 py-1.5 bg-amber-200 hover:bg-red-100 hover:text-red-800 text-amber-950 font-bold rounded-lg text-xs transition-colors inline-flex items-center space-x-1 cursor-pointer"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           <span>Desfazer</span>

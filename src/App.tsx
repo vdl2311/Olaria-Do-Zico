@@ -3,7 +3,7 @@ import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { VoiceModal } from './components/VoiceModal';
 import { VoiceFloatingButton } from './components/VoiceFloatingButton';
-import { StorageService, subscribeStorage } from './services/storage';
+import { StorageService } from './services/storage';
 import { AuthService } from './services/authService';
 import { AuthUser } from './types';
 
@@ -41,11 +41,6 @@ export default function App() {
   // Initialize real-time cloud database sync with Firebase
   useEffect(() => {
     StorageService.initFirestoreSync();
-    const unsub = subscribeStorage(() => {
-      // Trigger rerender on any storage / Firestore cloud update
-      setActiveView(prev => prev);
-    });
-    return () => unsub();
   }, []);
 
   const handleLoginSuccess = (user: AuthUser) => {
@@ -98,13 +93,13 @@ export default function App() {
   };
 
   const renderAccessDenied = (moduleName: string) => (
-    <div className="bg-[#FAF6EF] border border-[#E7D5BE] rounded-3xl p-8 text-center max-w-lg mx-auto my-12 shadow-xs space-y-4 font-brand-sans">
-      <div className="w-16 h-16 rounded-2xl bg-[#E7D5BE] text-[#8A5A44] mx-auto flex items-center justify-center">
-        <Lock className="w-8 h-8" />
+    <div className="bg-[#FAF6EF] border border-[#E7D5BE] rounded-3xl p-5 sm:p-8 text-center max-w-lg mx-auto my-6 sm:my-12 shadow-xs space-y-4 font-brand-sans w-full">
+      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#E7D5BE] text-[#8A5A44] mx-auto flex items-center justify-center">
+        <Lock className="w-7 h-7 sm:w-8 sm:h-8" />
       </div>
-      <h3 className="font-brand-serif text-xl font-bold text-[#292724]">Acesso Restrito: {moduleName}</h3>
-      <p className="text-sm text-[#5C5852] leading-relaxed">
-        Seu perfil de usuário (<strong>{currentUser.name}</strong>) não possui permissão para visualizar este módulo. Solicite a liberação ao proprietário da olaria.
+      <h3 className="font-brand-serif text-lg sm:text-xl font-bold text-[#292724]">Acesso Restrito: {moduleName}</h3>
+      <p className="text-xs sm:text-sm text-[#5C5852] leading-relaxed">
+        Seu perfil de usuário (<strong>{currentUser?.name || 'Usuário'}</strong>) não possui permissão para visualizar este módulo. Solicite a liberação ao proprietário da olaria.
       </p>
       <button
         onClick={() => setActiveView('dashboard')}
@@ -134,7 +129,7 @@ export default function App() {
       case 'financeiro':
         return checkPermission('financeiro') ? <FinanceView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Financeiro & Contas');
       case 'produtos':
-        return checkPermission('produtos') ? <ProductsView /> : renderAccessDenied('Produtos');
+        return checkPermission('produtos') ? <ProductsView onNavigateToStock={() => setActiveView('estoque')} /> : renderAccessDenied('Produtos');
       case 'brandkit':
         return <BrandKitView />;
       case 'relatorios':
@@ -151,7 +146,7 @@ export default function App() {
   const isDemo = currentUser.tenantId === 'tenant_demo_sandbox_01';
 
   return (
-    <div className="min-h-screen bg-[#F7F1E7] text-[#292724] font-brand-sans flex flex-col antialiased selection:bg-[#E7D5BE] selection:text-[#292724]">
+    <div className="min-h-screen bg-[#F7F1E7] text-[#292724] font-brand-sans flex flex-col antialiased selection:bg-[#E7D5BE] selection:text-[#292724] overflow-x-hidden w-full">
       {/* Top Header */}
       <Header 
         activeView={activeView} 
@@ -195,7 +190,7 @@ export default function App() {
       )}
 
       {/* Main Body with Desktop Sidebar Navigation */}
-      <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 gap-6">
+      <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 gap-6 min-w-0">
         <Navigation 
           activeView={activeView} 
           setActiveView={setActiveView} 
@@ -204,7 +199,7 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-        <main className="flex-1 min-w-0 pb-20 lg:pb-6">
+        <main className="flex-1 min-w-0 w-full pb-20 lg:pb-6">
           {renderActiveView()}
         </main>
       </div>

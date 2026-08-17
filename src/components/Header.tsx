@@ -59,25 +59,25 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="bg-[#8A5A44] text-[#F7F1E7] border-b border-[#6E4533] sticky top-0 z-30 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
         {/* Left: Mobile menu toggle + Brand Logo & Title */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
           {onOpenMobileDrawer && (
             <button
               onClick={onOpenMobileDrawer}
-              className="lg:hidden p-2 rounded-xl bg-[#6E4533] text-[#E7D5BE] hover:text-white hover:bg-[#5C3829] transition-colors cursor-pointer"
+              className="lg:hidden p-2 rounded-xl bg-[#6E4533] text-[#E7D5BE] hover:text-white hover:bg-[#5C3829] transition-colors cursor-pointer shrink-0"
               title="Abrir Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
           )}
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#F7F1E7] flex items-center justify-center p-2 shadow-xs border border-[#E7D5BE] shrink-0">
-              <BrandSymbol variant="terracota" className="w-6 h-6" />
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#F7F1E7] flex items-center justify-center p-1.5 sm:p-2 shadow-xs border border-[#E7D5BE] shrink-0">
+              <BrandSymbol variant="terracota" className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-black tracking-tight text-[#F7F1E7] flex items-center gap-2 truncate">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight text-[#F7F1E7] flex items-center gap-1.5 sm:gap-2 truncate">
                 <span className="font-brand-serif font-black tracking-wider uppercase truncate">
                   {currentUser?.companyName || (isDemo ? 'Olaria (Demo)' : 'OLARIA')}
                 </span>
@@ -87,13 +87,13 @@ export const Header: React.FC<HeaderProps> = ({
                     <span>Sandbox</span>
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#667052] text-[#F7F1E7] border border-[#4F583D] hidden sm:inline-flex items-center gap-1 shrink-0 font-brand-sans">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#667052] text-[#F7F1E7] border border-[#4F583D] hidden md:inline-flex items-center gap-1 shrink-0 font-brand-sans">
                     <Cloud className="w-3 h-3 text-emerald-200" />
-                    <span>Nuvem Ativa</span>
+                    <span>Nuvem</span>
                   </span>
                 )}
               </h1>
-              <p className="text-[11px] text-[#E7D5BE]/80 font-medium truncate hidden xs:block font-brand-sans">
+              <p className="text-[10px] sm:text-[11px] text-[#E7D5BE]/80 font-medium truncate hidden xs:block font-brand-sans">
                 {getViewTitle()}
               </p>
             </div>
@@ -101,19 +101,19 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
+        <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
           {/* Brand Kit Quick Access Button */}
           {onNavigateToBrandKit && (
             <button
               onClick={onNavigateToBrandKit}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer font-brand-sans ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer font-brand-sans shrink-0 ${
                 activeView === 'brandkit'
                   ? 'bg-[#B85C38] text-white border-[#B85C38] shadow-sm'
                   : 'bg-[#6E4533] hover:bg-[#5C3829] text-[#E7D5BE] border-[#A7735B]/40'
               }`}
               title="Acessar Brand Kit & Manual da Marca"
             >
-              <Palette className="w-3.5 h-3.5 text-[#E7D5BE]" />
+              <Palette className="w-3.5 h-3.5 text-[#E7D5BE] shrink-0" />
               <span className="hidden md:inline">Brand Kit</span>
             </button>
           )}
@@ -122,10 +122,10 @@ export const Header: React.FC<HeaderProps> = ({
           {isOwner && onNavigateToSecurity && (
             <button
               onClick={onNavigateToSecurity}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#6E4533] hover:bg-[#5C3829] text-[#E7D5BE] border border-[#A7735B]/40 text-xs font-bold transition-all cursor-pointer font-brand-sans"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#6E4533] hover:bg-[#5C3829] text-[#E7D5BE] border border-[#A7735B]/40 text-xs font-bold transition-all cursor-pointer font-brand-sans shrink-0"
               title="Gerenciar Usuários e Segurança"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#E7D5BE]" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[#E7D5BE] shrink-0" />
               <span>Segurança</span>
             </button>
           )}
@@ -134,10 +134,10 @@ export const Header: React.FC<HeaderProps> = ({
           {onNavigateToTechnical && (
             <button
               onClick={onNavigateToTechnical}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#292724] hover:bg-black text-[#E7D5BE] border border-stone-700 text-xs font-semibold transition-all cursor-pointer font-brand-sans"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#292724] hover:bg-black text-[#E7D5BE] border border-stone-700 text-xs font-semibold transition-all cursor-pointer font-brand-sans shrink-0"
               title="Acessar Console Técnico de Manutenção"
             >
-              <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+              <Cpu className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
               <span>Área Dev</span>
             </button>
           )}
@@ -145,17 +145,17 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Voice Command Button in Header (Section #21 - Terracota #B85C38) */}
           <button
             onClick={onOpenVoiceModal}
-            className="flex items-center space-x-2 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold text-xs sm:text-sm px-3.5 py-2 rounded-xl transition-all shadow-sm active:scale-95 border border-[#CF734E]/60 cursor-pointer font-brand-sans"
+            className="flex items-center space-x-1.5 sm:space-x-2 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold text-xs sm:text-sm px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl transition-all shadow-sm active:scale-95 border border-[#CF734E]/60 cursor-pointer font-brand-sans shrink-0"
             title="Falar / Registrar por Voz"
           >
-            <Mic className="w-4 h-4 animate-pulse text-[#F7F1E7]" />
-            <span className="hidden sm:inline">Falar</span>
+            <Mic className="w-4 h-4 animate-pulse text-[#F7F1E7] shrink-0" />
+            <span className="hidden xs:inline">Falar</span>
           </button>
 
           {/* Reset Demo Data Button */}
           <button
             onClick={handleReset}
-            className="p-2 text-[#E7D5BE]/80 hover:text-[#F7F1E7] hover:bg-[#6E4533] rounded-xl transition-colors shrink-0 cursor-pointer"
+            className="p-1.5 sm:p-2 text-[#E7D5BE]/80 hover:text-[#F7F1E7] hover:bg-[#6E4533] rounded-xl transition-colors shrink-0 cursor-pointer"
             title={isDemo ? 'Restaurar dados da demonstração' : 'Restaurar dados de exemplo'}
           >
             <RefreshCw className="w-4 h-4" />

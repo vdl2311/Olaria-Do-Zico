@@ -86,7 +86,7 @@ export const TechnicalAdminView: React.FC<TechnicalAdminViewProps> = ({ onBackTo
     if (techUser) {
       refreshData();
     }
-  }, [techUser]);
+  }, [techUser?.id]);
 
   const handleTechLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -331,7 +331,7 @@ export const TechnicalAdminView: React.FC<TechnicalAdminViewProps> = ({ onBackTo
       </div>
 
       {/* Tab Navigation */}
-      <nav className="bg-slate-900/60 border-b border-slate-800 px-4 sm:px-6 flex gap-2 overflow-x-auto">
+      <nav className="bg-slate-900/60 border-b border-slate-800 px-4 sm:px-6 flex gap-2 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('telemetry')}
           className={`py-3 px-3.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
@@ -640,9 +640,50 @@ export const TechnicalAdminView: React.FC<TechnicalAdminViewProps> = ({ onBackTo
               </div>
             </div>
 
-            {/* Logs Table */}
+            {/* Logs Section */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-              <div className="overflow-x-auto max-h-[550px] overflow-y-auto">
+              {/* Mobile View: Cards */}
+              <div className="block md:hidden divide-y divide-slate-800/60 font-mono text-[11px] max-h-[550px] overflow-y-auto">
+                {filteredLogs.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500">
+                    Nenhum log técnico encontrado para os filtros selecionados.
+                  </div>
+                ) : (
+                  filteredLogs.map(log => (
+                    <div key={log.id} className="p-3.5 space-y-2 hover:bg-slate-800/40">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            log.severity === 'INFO'
+                              ? 'bg-cyan-950 text-cyan-400 border border-cyan-800/50'
+                              : log.severity === 'WARN'
+                              ? 'bg-amber-950 text-amber-400 border border-amber-800/50'
+                              : 'bg-red-950 text-red-400 border border-red-800/50'
+                          }`}>
+                            {log.severity}
+                          </span>
+                          <span className="text-slate-200 font-bold">{log.errorCode}</span>
+                        </div>
+                        <span className="text-slate-400 text-[10px]">
+                          {new Date(log.timestamp).toLocaleTimeString('pt-BR')}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span className="text-cyan-300 font-semibold">{log.module}</span>
+                        <span>{log.tenantId} • {log.latencyMs ? `${log.latencyMs}ms` : '-'}</span>
+                      </div>
+
+                      <p className="text-slate-300 font-sans text-xs bg-slate-950/60 p-2 rounded border border-slate-800/80 break-words">
+                        {log.message}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop View: Table */}
+              <div className="hidden md:block overflow-x-auto max-h-[550px] overflow-y-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0">
                     <tr>

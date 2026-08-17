@@ -305,7 +305,18 @@ export const AuthService = {
 
     // Check expiry
     if (Date.now() > session.expiresAt) {
-      this.logout();
+      localStorage.removeItem(AUTH_KEYS.SESSION);
+      if (session.user) {
+        this.logTechnicalEvent({
+          errorCode: 'AUTH_SESSION_EXPIRED',
+          module: 'auth',
+          tenantId: session.user.tenantId,
+          userId: session.user.id,
+          severity: 'INFO',
+          component: 'AuthEngine',
+          message: 'Sessão de usuário expirada automaticamente.'
+        });
+      }
       return null;
     }
     return session;
@@ -721,19 +732,19 @@ export const AuthService = {
   },
 
   logout(): void {
-    const current = this.getCurrentUser();
-    if (current) {
+    const session = getStored<AuthSession | null>(AUTH_KEYS.SESSION, null);
+    localStorage.removeItem(AUTH_KEYS.SESSION);
+    if (session?.user) {
       this.logTechnicalEvent({
         errorCode: 'AUTH_LOGOUT',
         module: 'auth',
-        tenantId: current.tenantId,
-        userId: current.id,
+        tenantId: session.user.tenantId,
+        userId: session.user.id,
         severity: 'INFO',
         component: 'AuthEngine',
         message: 'Sessão de usuário finalizada (Logout).'
       });
     }
-    localStorage.removeItem(AUTH_KEYS.SESSION);
   },
 
   // --- Password Recovery ---
