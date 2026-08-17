@@ -17,30 +17,30 @@ export const DEMO_PRODUCTS: Product[] = [
   {
     id: 'prod-demo-1',
     tenantId: DEMO_TENANT_ID,
-    code: 'TIJ-8F',
-    name: 'Tijolo Cerâmico 8 Furos 9x19x19',
-    category: 'Peças especiais',
-    size: 'Padrão',
-    price: 850.00,
-    cost: 420.00,
-    stock: 4500,
-    minStock: 2000,
-    description: 'Tijolo cerâmico estrutural para alvenaria com excelente acabamento e resistência.',
-    finish: 'Natural Terracota'
+    code: 'VAS-COL-60',
+    name: 'Vaso Coluna Canelado 60cm',
+    category: 'Vasos',
+    size: 'G',
+    price: 220.00,
+    cost: 85.00,
+    stock: 42,
+    minStock: 15,
+    description: 'Vaso coluna alto ideal para folhagens e plantas de porte médio.',
+    finish: 'Terracota Natural'
   },
   {
     id: 'prod-demo-2',
     tenantId: DEMO_TENANT_ID,
-    code: 'TEL-COL',
-    name: 'Telha Colonial Tradicional',
-    category: 'Peças especiais',
-    size: 'Padrão',
-    price: 1450.00,
-    cost: 720.00,
-    stock: 3200,
-    minStock: 1500,
-    description: 'Telha cerâmica colonial de alta impermeabilidade e encaixe perfeito.',
-    finish: 'Envernizada Terracota'
+    code: 'FNT-BAC-4',
+    name: 'Fonte Bacia 4 Quedas Artesanal',
+    category: 'Fontes',
+    size: 'G',
+    price: 450.00,
+    cost: 160.00,
+    stock: 12,
+    minStock: 5,
+    description: 'Fonte de água artesanal com bomba bivolt e cascata suave para jardim.',
+    finish: 'Esmaltado Azul Cobalto'
   },
   {
     id: 'prod-demo-3',
@@ -87,16 +87,16 @@ export const DEMO_PRODUCTS: Product[] = [
   {
     id: 'prod-demo-6',
     tenantId: DEMO_TENANT_ID,
-    code: 'TIJ-MAC-REF',
-    name: 'Tijolo Maciço Refratário Forno/Churrasqueira',
-    category: 'Peças especiais',
-    size: 'Padrão',
-    price: 1200.00,
-    cost: 580.00,
-    stock: 1800,
-    minStock: 1000,
-    description: 'Tijolo maciço para alta temperatura, lareiras, fornos e churrasqueiras.',
-    finish: 'Natural Refratário'
+    code: 'VAS-DEC-75',
+    name: 'Vaso Grande de Chão 75cm Esmaltado',
+    category: 'Vasos decorativos',
+    size: 'GG',
+    price: 350.00,
+    cost: 130.00,
+    stock: 18,
+    minStock: 8,
+    description: 'Vaso decorativo de grande porte moldado à mão no torno.',
+    finish: 'Esmalte Reativo Verde'
   }
 ];
 
@@ -155,23 +155,23 @@ export const DEMO_CUSTOMERS: Customer[] = [
   {
     id: 'cli-demo-1',
     tenantId: DEMO_TENANT_ID,
-    name: 'Construtora Horizonte Verde Ltda',
+    name: 'Construtora & Paisagismo Verde Ltda',
     phone: '(11) 98765-4321',
     type: 'Empresa',
     address: 'Av. Paulista 1000 - Cj 52, São Paulo - SP',
     cpfCnpj: '12.345.678/0001-90',
-    notes: 'Cliente preferencial para tijolos 8 furos e maciços.',
+    notes: 'Cliente preferencial para vasos de grande porte e fontes em condomínios.',
     createdAt: '2026-01-15'
   },
   {
     id: 'cli-demo-2',
     tenantId: DEMO_TENANT_ID,
-    name: 'Cerâmica & Obras Paulistana',
+    name: 'Floricultura & Decoração Paulistana',
     phone: '(11) 97654-3210',
     type: 'Revendedor',
     address: 'Rodovia Anhanguera km 65, Jundiaí - SP',
     cpfCnpj: '23.456.789/0001-01',
-    notes: 'Compra mensal de telhas coloniais.',
+    notes: 'Compra mensal de vasos decorativos, fontes e cachepôs.',
     createdAt: '2026-02-01'
   },
   {
@@ -187,7 +187,7 @@ export const DEMO_CUSTOMERS: Customer[] = [
   {
     id: 'cli-demo-4',
     tenantId: DEMO_TENANT_ID,
-    name: 'Depósito São José Materiais para Construção',
+    name: 'Depósito São José Decorações',
     phone: '(11) 95432-1098',
     type: 'Loja',
     address: 'Rua Central 890, Bragança Paulista - SP',
@@ -203,23 +203,23 @@ export const DEMO_SALES: Sale[] = [
     tenantId: DEMO_TENANT_ID,
     code: 'VND-DEMO-701',
     customerId: 'cli-demo-1',
-    customerName: 'Construtora Horizonte Verde Ltda',
+    customerName: 'Construtora & Paisagismo Verde Ltda',
     items: [
       {
         productId: 'prod-demo-1',
-        productName: 'Tijolo Cerâmico 8 Furos 9x19x19',
-        quantity: 2000,
-        unitPrice: 0.85,
-        totalPrice: 1700.00
+        productName: 'Vaso Coluna Canelado 60cm',
+        quantity: 10,
+        unitPrice: 220.00,
+        totalPrice: 2200.00
       }
     ],
-    totalValue: 1700.00,
+    totalValue: 2200.00,
     discount: 0,
-    paidValue: 1700.00,
+    paidValue: 2200.00,
     pendingValue: 0,
     paymentMethod: 'Pix',
     date: '2026-08-14',
-    notes: 'Venda de demonstração - Pago à vista via Pix com entrega agendada.',
+    notes: 'Venda de demonstração - 10x Vasos Coluna pagos à vista via Pix.',
     status: 'Concluída'
   },
   {
@@ -258,23 +258,23 @@ export const DEMO_SALES: Sale[] = [
     tenantId: DEMO_TENANT_ID,
     code: 'VND-DEMO-703',
     customerId: 'cli-demo-4',
-    customerName: 'Depósito São José Materiais para Construção',
+    customerName: 'Depósito São José Decorações',
     items: [
       {
         productId: 'prod-demo-2',
-        productName: 'Telha Colonial Tradicional',
-        quantity: 1000,
-        unitPrice: 1.45,
-        totalPrice: 1450.00
+        productName: 'Fonte Bacia 4 Quedas Artesanal',
+        quantity: 3,
+        unitPrice: 450.00,
+        totalPrice: 1350.00
       }
     ],
-    totalValue: 1450.00,
+    totalValue: 1350.00,
     discount: 0,
-    paidValue: 1450.00,
+    paidValue: 1350.00,
     pendingValue: 0,
     paymentMethod: 'Boleto',
     date: '2026-08-12',
-    notes: 'Venda de demonstração - Retirada pelo próprio cliente no caminhão da loja.',
+    notes: 'Venda de demonstração - 3 Fontes Bacia com entrega própria do cliente.',
     status: 'Concluída'
   }
 ];
@@ -285,31 +285,31 @@ export const DEMO_PRODUCTION_BATCHES: ProductionBatch[] = [
     tenantId: DEMO_TENANT_ID,
     code: 'PRD-DEMO-301',
     productId: 'prod-demo-1',
-    productName: 'Tijolo Cerâmico 8 Furos 9x19x19',
-    quantityPlanned: 3000,
-    quantityProduced: 3000,
-    quantityLost: 80,
-    quantityGood: 2920,
+    productName: 'Vaso Coluna Canelado 60cm',
+    quantityPlanned: 50,
+    quantityProduced: 50,
+    quantityLost: 2,
+    quantityGood: 48,
     stage: 'Pronto',
     startDate: '2026-08-10',
     completedDate: '2026-08-13',
     stockCredited: true,
-    notes: 'Fornada concluída no Forno 1 - Excelente qualidade e queima uniforme.'
+    notes: 'Lote de vasos concluído no Forno 1 - Excelente acabamento e tonalidade terracota.'
   },
   {
     id: 'batch-demo-2',
     tenantId: DEMO_TENANT_ID,
     code: 'PRD-DEMO-302',
     productId: 'prod-demo-2',
-    productName: 'Telha Colonial Tradicional',
-    quantityPlanned: 2000,
-    quantityProduced: 2000,
-    quantityLost: 60,
-    quantityGood: 1940,
+    productName: 'Fonte Bacia 4 Quedas Artesanal',
+    quantityPlanned: 20,
+    quantityProduced: 20,
+    quantityLost: 1,
+    quantityGood: 19,
     stage: 'Queima',
     startDate: '2026-08-14',
     stockCredited: false,
-    notes: 'Forno 2 em regime de queima lenta a 950°C.'
+    notes: 'Forno 2 em regime de queima a 980°C para vitrificação do esmalte azul.'
   },
   {
     id: 'batch-demo-3',
@@ -352,26 +352,26 @@ export const DEMO_DELIVERIES: Delivery[] = [
     id: 'del-demo-1',
     tenantId: DEMO_TENANT_ID,
     saleId: 'sale-demo-1',
-    customerName: 'Construtora Horizonte Verde Ltda',
+    customerName: 'Construtora & Paisagismo Verde Ltda',
     address: 'Obra Residencial Alphaville - Rod. Fernão Dias km 42, Atibaia - SP',
     deliveryDate: '2026-08-16',
     shippingFee: 180.00,
     deliveryPerson: 'Caminhão da Olaria (Marcos)',
     status: 'Pendente',
-    notes: 'Entrega de 2000 tijolos 8 furos agendada para o primeiro horário.'
+    notes: 'Entrega de 10 vasos coluna 60cm agendada para o primeiro horário.'
   },
   {
     id: 'del-demo-2',
     tenantId: DEMO_TENANT_ID,
     saleId: 'sale-demo-3',
-    customerName: 'Depósito São José Materiais para Construção',
+    customerName: 'Depósito São José Decorações',
     address: 'Rua Central 890, Bragança Paulista - SP',
     deliveryDate: '2026-08-12',
     shippingFee: 0,
     deliveryPerson: 'Retirada Própria do Cliente',
     status: 'Entregue',
     completedAt: '2026-08-12T15:30:00.000Z',
-    notes: 'Retirada confirmada e conferida pelo encarregado.'
+    notes: 'Retirada de 3 fontes bacia confirmada e conferida pelo encarregado.'
   }
 ];
 
@@ -379,7 +379,7 @@ export const DEMO_EXPENSES: Expense[] = [
   {
     id: 'exp-demo-1',
     tenantId: DEMO_TENANT_ID,
-    description: 'Carga de Argila Vermelha Especial (15 toneladas)',
+    description: 'Carga de Argila Especial para Vasos e Fontes (15 toneladas)',
     category: 'Matéria-Prima',
     amount: 2100.00,
     supplier: 'Mineradora Vale do Paraíba (Demo)',
@@ -391,14 +391,14 @@ export const DEMO_EXPENSES: Expense[] = [
   {
     id: 'exp-demo-2',
     tenantId: DEMO_TENANT_ID,
-    description: 'Manutenção Preventiva Prensa Maromba Cerâmica',
+    description: 'Manutenção Preventiva Tornos Cerâmicos e Misturador',
     category: 'Manutenção',
     amount: 680.00,
     supplier: 'Mecânica Industrial Paulista (Demo)',
     dueDate: '2026-08-08',
     paidDate: '2026-08-08',
     status: 'Paga',
-    notes: 'Troca de correias e engraxe'
+    notes: 'Troca de correias e rolamentos dos tornos'
   },
   {
     id: 'exp-demo-3',

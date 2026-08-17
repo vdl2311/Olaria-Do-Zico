@@ -18,7 +18,6 @@ export const INITIAL_CATEGORIES: string[] = [
   'Jardineiras',
   'Vasos decorativos',
   'Peças especiais',
-  'Tijolos e Telhas',
   'Outros'
 ];
 

@@ -114,14 +114,18 @@
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
-        "type": { "type": "string", "maxLength": 20 },
+        "type": { "type": "string", "maxLength": 30 },
         "category": { "type": "string", "maxLength": 100 },
         "description": { "type": "string", "maxLength": 300 },
         "amount": { "type": "number" },
         "date": { "type": "string", "maxLength": 50 },
+        "dueDate": { "type": "string", "maxLength": 50 },
+        "paidDate": { "type": "string", "maxLength": 50 },
+        "supplier": { "type": "string", "maxLength": 200 },
+        "notes": { "type": "string", "maxLength": 500 },
         "status": { "type": "string", "maxLength": 50 }
       },
-      "required": ["id", "type", "description", "amount", "date", "status"]
+      "required": ["id", "type", "amount", "status"]
     },
     "AuditLog": {
       "title": "AuditLog",

@@ -100,61 +100,43 @@ function ensureDemoDataInitialized() {
   const tenantId = getActiveTenantId();
   if (tenantId !== DEMO_TENANT_ID) return;
 
-  const demoSeeded = localStorage.getItem('olaria_demo_sandbox_seeded_v2');
+  const demoSeeded = localStorage.getItem('olaria_demo_sandbox_seeded_v3');
   if (demoSeeded === 'true') return;
 
-  // Merge demo data into storage without overwriting production items
+  // Replace demo tenant items with fresh Vasos and Fontes dataset
+  const filterOutDemo = <T extends { tenantId?: string }>(items: T[]) => items.filter(i => i.tenantId !== DEMO_TENANT_ID);
+
   const currentProducts = getItem<Product[]>(KEYS.PRODUCTS, INITIAL_PRODUCTS);
-  if (!currentProducts.some(p => p.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.PRODUCTS, [...DEMO_PRODUCTS, ...currentProducts]);
-  }
+  setItemSilent(KEYS.PRODUCTS, [...DEMO_PRODUCTS, ...filterOutDemo(currentProducts)]);
 
   const currentMaterials = getItem<RawMaterial[]>(KEYS.RAW_MATERIALS, INITIAL_RAW_MATERIALS);
-  if (!currentMaterials.some(m => m.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.RAW_MATERIALS, [...DEMO_RAW_MATERIALS, ...currentMaterials]);
-  }
+  setItemSilent(KEYS.RAW_MATERIALS, [...DEMO_RAW_MATERIALS, ...filterOutDemo(currentMaterials)]);
 
   const currentCustomers = getItem<Customer[]>(KEYS.CUSTOMERS, INITIAL_CUSTOMERS);
-  if (!currentCustomers.some(c => c.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.CUSTOMERS, [...DEMO_CUSTOMERS, ...currentCustomers]);
-  }
+  setItemSilent(KEYS.CUSTOMERS, [...DEMO_CUSTOMERS, ...filterOutDemo(currentCustomers)]);
 
   const currentSales = getItem<Sale[]>(KEYS.SALES, INITIAL_SALES);
-  if (!currentSales.some(s => s.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.SALES, [...DEMO_SALES, ...currentSales]);
-  }
+  setItemSilent(KEYS.SALES, [...DEMO_SALES, ...filterOutDemo(currentSales)]);
 
   const currentProd = getItem<ProductionBatch[]>(KEYS.PRODUCTION, INITIAL_PRODUCTION_BATCHES);
-  if (!currentProd.some(b => b.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.PRODUCTION, [...DEMO_PRODUCTION_BATCHES, ...currentProd]);
-  }
+  setItemSilent(KEYS.PRODUCTION, [...DEMO_PRODUCTION_BATCHES, ...filterOutDemo(currentProd)]);
 
   const currentOrders = getItem<CustomOrder[]>(KEYS.CUSTOM_ORDERS, INITIAL_CUSTOM_ORDERS);
-  if (!currentOrders.some(o => o.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.CUSTOM_ORDERS, [...DEMO_CUSTOM_ORDERS, ...currentOrders]);
-  }
+  setItemSilent(KEYS.CUSTOM_ORDERS, [...DEMO_CUSTOM_ORDERS, ...filterOutDemo(currentOrders)]);
 
   const currentDeliveries = getItem<Delivery[]>(KEYS.DELIVERIES, INITIAL_DELIVERIES);
-  if (!currentDeliveries.some(d => d.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.DELIVERIES, [...DEMO_DELIVERIES, ...currentDeliveries]);
-  }
+  setItemSilent(KEYS.DELIVERIES, [...DEMO_DELIVERIES, ...filterOutDemo(currentDeliveries)]);
 
   const currentExpenses = getItem<Expense[]>(KEYS.EXPENSES, INITIAL_EXPENSES);
-  if (!currentExpenses.some(e => e.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.EXPENSES, [...DEMO_EXPENSES, ...currentExpenses]);
-  }
+  setItemSilent(KEYS.EXPENSES, [...DEMO_EXPENSES, ...filterOutDemo(currentExpenses)]);
 
   const currentReceivables = getItem<AccountReceivable[]>(KEYS.RECEIVABLES, INITIAL_RECEIVABLES);
-  if (!currentReceivables.some(r => r.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.RECEIVABLES, [...DEMO_RECEIVABLES, ...currentReceivables]);
-  }
+  setItemSilent(KEYS.RECEIVABLES, [...DEMO_RECEIVABLES, ...filterOutDemo(currentReceivables)]);
 
   const currentAudit = getItem<AuditLog[]>(KEYS.AUDIT, INITIAL_AUDIT_LOGS);
-  if (!currentAudit.some(a => a.tenantId === DEMO_TENANT_ID)) {
-    setItemSilent(KEYS.AUDIT, [...DEMO_AUDIT_LOGS, ...currentAudit]);
-  }
+  setItemSilent(KEYS.AUDIT, [...DEMO_AUDIT_LOGS, ...filterOutDemo(currentAudit)]);
 
-  localStorage.setItem('olaria_demo_sandbox_seeded_v2', 'true');
+  localStorage.setItem('olaria_demo_sandbox_seeded_v3', 'true');
 }
 
 // Purge any legacy demo mock data from previous sessions
@@ -868,6 +850,7 @@ export const StorageService = {
     if (exp.tenantId !== DEMO_TENANT_ID) {
       syncDocToFirestore('financial_records', exp.id, {
         ...exp,
+        date: exp.paidDate || exp.dueDate || new Date().toISOString().split('T')[0],
         type: 'Despesa'
       }).catch(() => {});
     }
@@ -922,6 +905,7 @@ export const StorageService = {
     if (rec.tenantId !== DEMO_TENANT_ID) {
       syncDocToFirestore('financial_records', rec.id, {
         ...rec,
+        date: rec.dueDate || new Date().toISOString().split('T')[0],
         type: 'Recebível'
       }).catch(() => {});
     }
