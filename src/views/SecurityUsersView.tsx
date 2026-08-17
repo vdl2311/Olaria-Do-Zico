@@ -705,165 +705,168 @@ export const SecurityUsersView: React.FC = () => {
 
       {/* User Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 border border-stone-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h3 className="text-base font-bold text-amber-950 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full border border-stone-200 shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden">
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-stone-100 shrink-0 bg-white">
+              <h3 className="text-base sm:text-lg font-bold text-amber-950 flex items-center gap-2">
                 <Users className="w-5 h-5 text-amber-800" />
                 <span>{editingUserId ? 'Editar Usuário da Olaria' : 'Cadastrar Novo Funcionário'}</span>
               </h3>
               <button
                 onClick={() => setShowUserModal(false)}
-                className="text-stone-400 hover:text-stone-700 text-xl font-bold"
+                className="text-stone-400 hover:text-stone-700 text-2xl font-bold p-1 leading-none cursor-pointer"
+                aria-label="Fechar"
               >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleSaveUser} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Nome Completo</label>
-                <input
-                  type="text"
-                  required
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Ex: Carlos Ferreira"
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm focus:border-amber-700 outline-hidden"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <form onSubmit={handleSaveUser} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain text-xs sm:text-sm">
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">E-mail</label>
-                  <input
-                    type="email"
-                    required
-                    value={userEmail}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                    placeholder="carlos@olaria.com.br"
-                    className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm focus:border-amber-700 outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Telefone / WhatsApp</label>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Nome Completo</label>
                   <input
                     type="text"
-                    value={userPhone}
-                    onChange={(e) => setUserPhone(e.target.value)}
-                    placeholder="(11) 99999-8888"
-                    className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm focus:border-amber-700 outline-hidden"
+                    required
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Ex: Carlos Ferreira"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:border-amber-700 outline-hidden"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Perfil de Acesso</label>
-                  <select
-                    value={userRole}
-                    onChange={(e) => setUserRole(e.target.value as any)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm bg-white font-medium focus:border-amber-700 outline-hidden"
-                  >
-                    <option value="FUNCIONARIO">Funcionário Operacional</option>
-                    <option value="PROPRIETARIO">Proprietário (Acesso Total)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">PIN de Acesso Rápido (4 dígitos)</label>
-                  <input
-                    type="password"
-                    maxLength={4}
-                    value={userPin}
-                    onChange={(e) => setUserPin(e.target.value)}
-                    placeholder="1234"
-                    className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm font-mono focus:border-amber-700 outline-hidden"
-                  />
-                </div>
-              </div>
-
-              {userRole === 'FUNCIONARIO' && (
-                <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
-                  <span className="text-xs font-bold text-stone-800 block">Permissões Específicas do Funcionário:</span>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={permissions.vendas}
-                        onChange={(e) => setPermissions({ ...permissions, vendas: e.target.checked })}
-                        className="rounded text-amber-800 focus:ring-amber-500"
-                      />
-                      <span>Registrar Vendas</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={permissions.producao}
-                        onChange={(e) => setPermissions({ ...permissions, producao: e.target.checked })}
-                        className="rounded text-amber-800 focus:ring-amber-500"
-                      />
-                      <span>Lotes de Produção</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={permissions.estoque}
-                        onChange={(e) => setPermissions({ ...permissions, estoque: e.target.checked })}
-                        className="rounded text-amber-800 focus:ring-amber-500"
-                      />
-                      <span>Consultar Estoque</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={permissions.clientes}
-                        onChange={(e) => setPermissions({ ...permissions, clientes: e.target.checked })}
-                        className="rounded text-amber-800 focus:ring-amber-500"
-                      />
-                      <span>Cadastro de Clientes</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={permissions.pedidos}
-                        onChange={(e) => setPermissions({ ...permissions, pedidos: e.target.checked })}
-                        className="rounded text-amber-800 focus:ring-amber-500"
-                      />
-                      <span>Sob Encomenda</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={permissions.entregas}
-                        onChange={(e) => setPermissions({ ...permissions, entregas: e.target.checked })}
-                        className="rounded text-amber-800 focus:ring-amber-500"
-                      />
-                      <span>Entregas</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer font-bold text-red-900 col-span-2 pt-1 border-t border-stone-200">
-                      <input
-                        type="checkbox"
-                        checked={permissions.financeiro}
-                        onChange={(e) => setPermissions({ ...permissions, financeiro: e.target.checked })}
-                        className="rounded text-red-800 focus:ring-red-500"
-                      />
-                      <span>Acesso a Dados Financeiros (Despesas, Recebíveis & Faturamento)</span>
-                    </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">E-mail</label>
+                    <input
+                      type="email"
+                      required
+                      value={userEmail}
+                      onChange={(e) => setUserEmail(e.target.value)}
+                      placeholder="carlos@olaria.com.br"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:border-amber-700 outline-hidden"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Telefone / WhatsApp</label>
+                    <input
+                      type="text"
+                      value={userPhone}
+                      onChange={(e) => setUserPhone(e.target.value)}
+                      placeholder="(11) 99999-8888"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:border-amber-700 outline-hidden"
+                    />
                   </div>
                 </div>
-              )}
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-stone-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Perfil de Acesso</label>
+                    <select
+                      value={userRole}
+                      onChange={(e) => setUserRole(e.target.value as any)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm bg-white font-medium focus:border-amber-700 outline-hidden"
+                    >
+                      <option value="FUNCIONARIO">Funcionário Operacional</option>
+                      <option value="PROPRIETARIO">Proprietário (Acesso Total)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">PIN de Acesso Rápido (4 dígitos)</label>
+                    <input
+                      type="password"
+                      maxLength={4}
+                      value={userPin}
+                      onChange={(e) => setUserPin(e.target.value)}
+                      placeholder="1234"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm font-mono focus:border-amber-700 outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                {userRole === 'FUNCIONARIO' && (
+                  <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
+                    <span className="text-xs font-bold text-stone-800 block">Permissões Específicas do Funcionário:</span>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={permissions.vendas}
+                          onChange={(e) => setPermissions({ ...permissions, vendas: e.target.checked })}
+                          className="rounded text-amber-800 focus:ring-amber-500"
+                        />
+                        <span>Registrar Vendas</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={permissions.producao}
+                          onChange={(e) => setPermissions({ ...permissions, producao: e.target.checked })}
+                          className="rounded text-amber-800 focus:ring-amber-500"
+                        />
+                        <span>Lotes de Produção</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={permissions.estoque}
+                          onChange={(e) => setPermissions({ ...permissions, estoque: e.target.checked })}
+                          className="rounded text-amber-800 focus:ring-amber-500"
+                        />
+                        <span>Consultar Estoque</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={permissions.clientes}
+                          onChange={(e) => setPermissions({ ...permissions, clientes: e.target.checked })}
+                          className="rounded text-amber-800 focus:ring-amber-500"
+                        />
+                        <span>Cadastro de Clientes</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={permissions.pedidos}
+                          onChange={(e) => setPermissions({ ...permissions, pedidos: e.target.checked })}
+                          className="rounded text-amber-800 focus:ring-amber-500"
+                        />
+                        <span>Sob Encomenda</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={permissions.entregas}
+                          onChange={(e) => setPermissions({ ...permissions, entregas: e.target.checked })}
+                          className="rounded text-amber-800 focus:ring-amber-500"
+                        />
+                        <span>Entregas</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer font-bold text-red-900 col-span-2 pt-1 border-t border-stone-200">
+                        <input
+                          type="checkbox"
+                          checked={permissions.financeiro}
+                          onChange={(e) => setPermissions({ ...permissions, financeiro: e.target.checked })}
+                          className="rounded text-red-800 focus:ring-red-500"
+                        />
+                        <span>Acesso a Dados Financeiros (Despesas, Recebíveis & Faturamento)</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3.5 sm:p-4 border-t border-stone-100 flex justify-end gap-2 bg-stone-50 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowUserModal(false)}
-                  className="px-4 py-2 rounded-xl border border-stone-300 text-xs font-bold text-stone-700 hover:bg-stone-50"
+                  className="px-4 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm font-bold text-stone-700 hover:bg-stone-100 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs font-bold shadow-md cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs sm:text-sm font-bold shadow-md cursor-pointer"
                 >
                   Salvar Usuário
                 </button>
@@ -875,76 +878,78 @@ export const SecurityUsersView: React.FC = () => {
 
       {/* Grant Modal */}
       {showGrantModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-stone-200 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full border border-stone-200 shadow-2xl flex flex-col max-h-[90dvh] sm:max-h-[85vh] overflow-hidden">
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-stone-100 shrink-0 bg-white">
               <h3 className="text-base font-bold text-amber-950 flex items-center gap-2">
                 <Key className="w-5 h-5 text-amber-800" />
                 <span>Autorizar Suporte Técnico Temporário</span>
               </h3>
               <button
                 onClick={() => setShowGrantModal(false)}
-                className="text-stone-400 hover:text-stone-700 text-xl font-bold"
+                className="text-stone-400 hover:text-stone-700 text-2xl font-bold p-1 leading-none cursor-pointer"
               >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleCreateGrant} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Motivo do Suporte</label>
-                <input
-                  type="text"
-                  required
-                  value={grantReason}
-                  onChange={(e) => setGrantReason(e.target.value)}
-                  placeholder="Ex: Diagnóstico de erro na sincronização"
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm focus:border-amber-700 outline-hidden"
-                />
+            <form onSubmit={handleCreateGrant} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 text-xs sm:text-sm">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Motivo do Suporte</label>
+                  <input
+                    type="text"
+                    required
+                    value={grantReason}
+                    onChange={(e) => setGrantReason(e.target.value)}
+                    placeholder="Ex: Diagnóstico de erro na sincronização"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:border-amber-700 outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Duração da Autorização</label>
+                  <select
+                    value={grantDurationMinutes}
+                    onChange={(e) => setGrantDurationMinutes(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm bg-white font-medium focus:border-amber-700 outline-hidden"
+                  >
+                    <option value={30}>30 Minutos (Recomendado)</option>
+                    <option value={60}>1 Hora</option>
+                    <option value={120}>2 Horas</option>
+                    <option value={1440}>24 Horas</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Escopo Técnico Permitido</label>
+                  <select
+                    value={grantScope}
+                    onChange={(e) => setGrantScope(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm bg-white font-medium focus:border-amber-700 outline-hidden"
+                  >
+                    <option value="LOGS_AVANCADOS">Logs Técnicos Avançados (Sem PII)</option>
+                    <option value="ESTRUTURA_DADOS">Verificação de Integridade de Schema</option>
+                    <option value="TESTE_SISTEMA">Teste Completo de Rotinas</option>
+                  </select>
+                </div>
+
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs">
+                  Esta permissão expira automaticamente e não permite ao técnico ler dados comerciais sensíveis.
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Duração da Autorização</label>
-                <select
-                  value={grantDurationMinutes}
-                  onChange={(e) => setGrantDurationMinutes(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm bg-white font-medium focus:border-amber-700 outline-hidden"
-                >
-                  <option value={30}>30 Minutos (Recomendado)</option>
-                  <option value={60}>1 Hora</option>
-                  <option value={120}>2 Horas</option>
-                  <option value={1440}>24 Horas</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Escopo Técnico Permitido</label>
-                <select
-                  value={grantScope}
-                  onChange={(e) => setGrantScope(e.target.value as any)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm bg-white font-medium focus:border-amber-700 outline-hidden"
-                >
-                  <option value="LOGS_AVANCADOS">Logs Técnicos Avançados (Sem PII)</option>
-                  <option value="ESTRUTURA_DADOS">Verificação de Integridade de Schema</option>
-                  <option value="TESTE_SISTEMA">Teste Completo de Rotinas</option>
-                </select>
-              </div>
-
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs">
-                Esta permissão expira automaticamente e não permite ao técnico ler dados comerciais sensíveis.
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="p-3.5 sm:p-4 border-t border-stone-100 flex justify-end gap-2 bg-stone-50 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowGrantModal(false)}
-                  className="px-4 py-2 rounded-xl border border-stone-300 text-xs font-bold text-stone-700 hover:bg-stone-50"
+                  className="px-4 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm font-bold text-stone-700 hover:bg-stone-100 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs font-bold shadow-md cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs sm:text-sm font-bold shadow-md cursor-pointer"
                 >
                   Emitir Autorização
                 </button>
@@ -953,107 +958,111 @@ export const SecurityUsersView: React.FC = () => {
           </div>
         </div>
       )}
+
       {/* Transfer Ownership Modal */}
       {showTransferModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 border border-amber-300 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-amber-100 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full border border-amber-300 shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden">
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-amber-100 shrink-0 bg-white">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-amber-900 text-amber-100 flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 rounded-2xl bg-amber-900 text-amber-100 flex items-center justify-center shadow-md shrink-0">
                   <Key className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-amber-950">Passagem de Titularidade</h3>
-                  <p className="text-xs text-amber-800 font-medium">Transferir a posse da olaria para um novo proprietário</p>
+                  <p className="text-[11px] sm:text-xs text-amber-800 font-medium">Transferir a posse da olaria para um novo proprietário</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowTransferModal(false)}
-                className="text-stone-400 hover:text-stone-700 text-xl font-bold p-1"
+                className="text-stone-400 hover:text-stone-700 text-2xl font-bold p-1 leading-none cursor-pointer"
+                aria-label="Fechar"
               >
                 &times;
               </button>
             </div>
 
-            <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900">
-              <strong className="block mb-1">Aviso Importante:</strong>
-              Esta operação transfere o controle soberano desta olaria para o novo titular cadastrado. O desenvolvedor continua sem acesso à senha.
-            </div>
-
-            {transferMessage && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-800 text-xs font-medium">
-                {transferMessage}
-              </div>
-            )}
-
-            <form onSubmit={handleTransferOwnership} className="space-y-3 text-xs sm:text-sm">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Nome Completo do Novo Titular</label>
-                <input
-                  type="text"
-                  required
-                  value={transferOwnerName}
-                  onChange={(e) => setTransferOwnerName(e.target.value)}
-                  placeholder="Ex: Roberto Zico Filho"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-medium focus:ring-2 focus:ring-amber-300 outline-hidden"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">E-mail do Novo Titular</label>
-                  <input
-                    type="email"
-                    required
-                    value={transferOwnerEmail}
-                    onChange={(e) => setTransferOwnerEmail(e.target.value)}
-                    placeholder="novo.proprietario@olaria.com.br"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-medium focus:ring-2 focus:ring-amber-300 outline-hidden"
-                  />
+            <form onSubmit={handleTransferOwnership} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 text-xs sm:text-sm">
+                <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900">
+                  <strong className="block mb-1 font-bold">Aviso Importante:</strong>
+                  Esta operação transfere o controle soberano desta olaria para o novo titular cadastrado. O desenvolvedor continua sem acesso à senha.
                 </div>
+
+                {transferMessage && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-800 text-xs font-medium">
+                    {transferMessage}
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Telefone / WhatsApp</label>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Nome Completo do Novo Titular</label>
                   <input
                     type="text"
-                    value={transferOwnerPhone}
-                    onChange={(e) => setTransferOwnerPhone(e.target.value)}
-                    placeholder="(11) 98888-0000"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-medium focus:ring-2 focus:ring-amber-300 outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Nova Senha Privada</label>
-                  <input
-                    type="password"
                     required
-                    minLength={4}
-                    value={transferPassword}
-                    onChange={(e) => setTransferPassword(e.target.value)}
-                    placeholder="Mínimo 4 caracteres"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-medium focus:ring-2 focus:ring-amber-300 outline-hidden"
+                    value={transferOwnerName}
+                    onChange={(e) => setTransferOwnerName(e.target.value)}
+                    placeholder="Ex: Roberto Zico Filho"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-medium focus:ring-2 focus:ring-amber-300 outline-hidden text-sm"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Novo PIN (4 dígitos)</label>
-                  <input
-                    type="text"
-                    maxLength={4}
-                    value={transferPin}
-                    onChange={(e) => setTransferPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    placeholder="1234"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-bold text-center tracking-widest focus:ring-2 focus:ring-amber-300 outline-hidden"
-                  />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">E-mail do Novo Titular</label>
+                    <input
+                      type="email"
+                      required
+                      value={transferOwnerEmail}
+                      onChange={(e) => setTransferOwnerEmail(e.target.value)}
+                      placeholder="novo.proprietario@olaria.com.br"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-medium focus:ring-2 focus:ring-amber-300 outline-hidden text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Telefone / WhatsApp</label>
+                    <input
+                      type="text"
+                      value={transferOwnerPhone}
+                      onChange={(e) => setTransferOwnerPhone(e.target.value)}
+                      placeholder="(11) 98888-0000"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-medium focus:ring-2 focus:ring-amber-300 outline-hidden text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Nova Senha Privada</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={4}
+                      value={transferPassword}
+                      onChange={(e) => setTransferPassword(e.target.value)}
+                      placeholder="Mínimo 4 caracteres"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-medium focus:ring-2 focus:ring-amber-300 outline-hidden text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Novo PIN (4 dígitos)</label>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={transferPin}
+                      onChange={(e) => setTransferPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="1234"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 font-bold text-center tracking-widest focus:ring-2 focus:ring-amber-300 outline-hidden text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-stone-100">
+              <div className="p-3.5 sm:p-4 border-t border-amber-100 flex justify-end gap-2 bg-amber-50/60 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowTransferModal(false)}
-                  className="px-4 py-2.5 rounded-xl border border-stone-300 text-xs font-bold text-stone-700 hover:bg-stone-50"
+                  className="px-4 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm font-bold text-stone-700 hover:bg-stone-100 cursor-pointer"
                 >
                   Cancelar
                 </button>
