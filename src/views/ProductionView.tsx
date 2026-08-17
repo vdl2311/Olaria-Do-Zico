@@ -461,6 +461,7 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                       min={1}
                       required
                       value={quantityPlanned}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setQuantityPlanned(parseInt(e.target.value) || 1)}
                       className="w-full bg-white border border-amber-300 rounded-xl p-2.5 text-amber-950 font-bold focus:outline-hidden focus:border-amber-600"
                     />
@@ -476,6 +477,7 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                       min={0}
                       max={quantityPlanned}
                       value={quantityLost}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setQuantityLost(Math.max(0, parseInt(e.target.value) || 0))}
                       className="w-full bg-white border border-red-300 rounded-xl p-2.5 text-red-700 font-black focus:outline-hidden focus:border-red-600"
                     />

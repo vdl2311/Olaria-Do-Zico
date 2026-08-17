@@ -225,6 +225,7 @@ export interface Sale {
   items: SaleItem[];
   totalValue: number;
   discount: number;
+  discountPercent?: number;
   paidValue: number;
   pendingValue: number;
   paymentMethod: PaymentMethod;
@@ -281,7 +282,9 @@ export interface Delivery {
   tenantId?: string;
   orderId?: string;
   saleId?: string;
+  customerId?: string;
   customerName: string;
+  customerPhone?: string;
   address: string;
   deliveryDate: string;
   shippingFee: number;

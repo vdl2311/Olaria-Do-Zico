@@ -309,6 +309,12 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
                   </span>
                 </div>
 
+                {e.notes && (
+                  <p className="text-[11px] text-amber-800 bg-amber-100/50 px-2 py-1 rounded-lg border border-amber-200/60 italic">
+                    <strong className="not-italic text-amber-950">Obs:</strong> {e.notes}
+                  </p>
+                )}
+
                 <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 text-xs">
                   <div>
                     <span className="text-[10px] text-amber-700 block uppercase">Vencimento</span>
@@ -354,7 +360,14 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
               ) : (
                 expenses.map((e) => (
                   <tr key={e.id} className="hover:bg-amber-50/50">
-                    <td className="p-3 font-bold text-amber-950">{e.description}</td>
+                    <td className="p-3">
+                      <p className="font-bold text-amber-950">{e.description}</p>
+                      {e.notes && (
+                        <p className="text-[11px] text-amber-800 italic mt-0.5">
+                          Obs: {e.notes}
+                        </p>
+                      )}
+                    </td>
                     <td className="p-3 text-amber-800">{e.category}</td>
                     <td className="p-3 text-amber-800">{e.supplier || 'N/I'}</td>
                     <td className="p-3 font-black text-red-700">R$ {e.amount.toFixed(2)}</td>
@@ -439,6 +452,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
                   step="0.01"
                   min={1}
                   value={paymentAmount}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
                   className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 font-bold text-emerald-800 focus:outline-none focus:border-amber-600"
                 />
@@ -513,6 +527,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
                     step="0.01"
                     min={1}
                     value={expenseAmount}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setExpenseAmount(parseFloat(e.target.value) || 0)}
                     className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 font-bold text-red-700 focus:outline-none focus:border-amber-600"
                   />

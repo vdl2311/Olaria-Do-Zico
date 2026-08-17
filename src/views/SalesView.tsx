@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Mic, Search, Filter, CheckCircle, Clock, AlertCircle, FileText, X, Trash2, Edit3, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, Plus, Mic, Search, Filter, CheckCircle, Clock, AlertCircle, FileText, X, Trash2, Edit3, AlertTriangle, Users, MessageSquare } from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
-import { Sale, Product, PaymentMethod } from '../types';
+import { Sale, Product, PaymentMethod, Customer } from '../types';
 
 interface SalesViewProps {
   onOpenVoiceModal: () => void;
@@ -10,6 +10,7 @@ interface SalesViewProps {
 export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
   const [sales, setSales] = useState<Sale[]>(() => StorageService.getSales());
   const [products, setProducts] = useState<Product[]>(() => StorageService.getProducts());
+  const [customers, setCustomers] = useState<Customer[]>(() => StorageService.getCustomers());
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
@@ -18,16 +19,17 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
   // Sale Form state
   const [customerName, setCustomerName] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
-  const [quantity, setQuantity] = useState(1);
-  const [unitPrice, setUnitPrice] = useState<number>(0);
-  const [discount, setDiscount] = useState<number>(0);
+  const [quantity, setQuantity] = useState<number | string>(0);
+  const [unitPrice, setUnitPrice] = useState<number | string>(0);
+  const [discountPercent, setDiscountPercent] = useState<number | string>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Pix');
-  const [paidValue, setPaidValue] = useState<number>(0);
+  const [paidValue, setPaidValue] = useState<number | string>(0);
   const [notes, setNotes] = useState('');
 
   const refreshData = () => {
     setSales(StorageService.getSales());
     setProducts(StorageService.getProducts());
+    setCustomers(StorageService.getCustomers());
   };
 
   useEffect(() => {
@@ -37,16 +39,26 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
     return () => unsub();
   }, []);
 
+  const numQuantity = typeof quantity === 'number' ? quantity : (parseInt(String(quantity), 10) || 0);
+  const numUnitPrice = typeof unitPrice === 'number' ? unitPrice : (parseFloat(String(unitPrice)) || 0);
+  const numDiscountPercent = Math.min(100, Math.max(0, typeof discountPercent === 'number' ? discountPercent : (parseFloat(String(discountPercent)) || 0)));
+  const numPaidValue = typeof paidValue === 'number' ? paidValue : (parseFloat(String(paidValue)) || 0);
+
+  const subtotal = numUnitPrice * numQuantity;
+  const discountAmount = (subtotal * numDiscountPercent) / 100;
+  const totalVal = Math.max(0, subtotal - discountAmount);
+
   const openNewSaleModal = () => {
     setEditingSale(null);
     setCustomerName('');
-    setSelectedProductId(products[0]?.id || '');
-    setQuantity(1);
-    const initialPrice = products[0]?.price || 0;
+    const firstProd = products[0];
+    setSelectedProductId(firstProd?.id || '');
+    setQuantity(0); // Starts with 0 as requested
+    const initialPrice = firstProd?.price || 0;
     setUnitPrice(initialPrice);
-    setDiscount(0);
+    setDiscountPercent(0);
     setPaymentMethod('Pix');
-    setPaidValue(initialPrice);
+    setPaidValue(0);
     setNotes('');
     setIsModalOpen(true);
   };
@@ -56,11 +68,20 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
     setCustomerName(sale.customerName);
     const firstItem = sale.items[0];
     setSelectedProductId(firstItem?.productId || '');
-    setQuantity(firstItem?.quantity || 1);
-    setUnitPrice(firstItem?.unitPrice || 0);
-    setDiscount(sale.discount || 0);
+    const itemQty = firstItem?.quantity ?? 0;
+    const itemPrice = firstItem?.unitPrice ?? 0;
+    setQuantity(itemQty);
+    setUnitPrice(itemPrice);
+
+    // Calculate percentage from discount if discountPercent not set
+    let pct = sale.discountPercent ?? 0;
+    const itemSubtotal = itemQty * itemPrice;
+    if (pct === 0 && sale.discount > 0 && itemSubtotal > 0) {
+      pct = Math.round((sale.discount / itemSubtotal) * 100);
+    }
+    setDiscountPercent(pct);
     setPaymentMethod(sale.paymentMethod);
-    setPaidValue(sale.paidValue);
+    setPaidValue(sale.paidValue ?? 0);
     setNotes(sale.notes || '');
     setIsModalOpen(true);
   };
@@ -70,48 +91,93 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
     const prod = products.find(p => p.id === prodId);
     if (prod) {
       setUnitPrice(prod.price);
-      const total = Math.max(0, (prod.price * quantity) - discount);
+      const newSub = prod.price * numQuantity;
+      const newDisc = (newSub * numDiscountPercent) / 100;
+      const newTotal = Math.max(0, newSub - newDisc);
       if (paymentMethod === 'Fiado') {
         setPaidValue(0);
       } else {
-        setPaidValue(total);
+        setPaidValue(newTotal);
       }
     }
   };
 
-  const handleQtyChange = (qty: number) => {
-    const cleanQty = Math.max(1, qty);
-    setQuantity(cleanQty);
-    const total = Math.max(0, (unitPrice * cleanQty) - discount);
+  const handleQuantityChange = (val: string) => {
+    const sanitized = val.replace(/\D/g, '');
+    const newQty = sanitized === '' ? '' : parseInt(sanitized, 10);
+    setQuantity(newQty);
+    const numericQty = sanitized === '' ? 0 : parseInt(sanitized, 10);
+    const newSub = numUnitPrice * numericQty;
+    const newDisc = (newSub * numDiscountPercent) / 100;
+    const newTotal = Math.max(0, newSub - newDisc);
     if (paymentMethod === 'Fiado') {
       setPaidValue(0);
     } else {
-      setPaidValue(total);
+      setPaidValue(newTotal);
     }
   };
 
-  const handleDiscountChange = (disc: number) => {
-    const cleanDisc = Math.max(0, disc);
-    setDiscount(cleanDisc);
-    const total = Math.max(0, (unitPrice * quantity) - cleanDisc);
-    if (paymentMethod !== 'Fiado' && paidValue > total) {
-      setPaidValue(total);
+  const handleIncrementQty = () => {
+    const next = numQuantity + 1;
+    setQuantity(next);
+    const newSub = numUnitPrice * next;
+    const newDisc = (newSub * numDiscountPercent) / 100;
+    const newTotal = Math.max(0, newSub - newDisc);
+    if (paymentMethod === 'Fiado') {
+      setPaidValue(0);
+    } else {
+      setPaidValue(newTotal);
+    }
+  };
+
+  const handleDecrementQty = () => {
+    const next = Math.max(0, numQuantity - 1);
+    setQuantity(next);
+    const newSub = numUnitPrice * next;
+    const newDisc = (newSub * numDiscountPercent) / 100;
+    const newTotal = Math.max(0, newSub - newDisc);
+    if (paymentMethod === 'Fiado') {
+      setPaidValue(0);
+    } else {
+      setPaidValue(newTotal);
+    }
+  };
+
+  const handleUnitPriceChange = (val: string) => {
+    setUnitPrice(val);
+    const parsedPrice = parseFloat(val) || 0;
+    const newSub = parsedPrice * numQuantity;
+    const newDisc = (newSub * numDiscountPercent) / 100;
+    const newTotal = Math.max(0, newSub - newDisc);
+    if (paymentMethod === 'Fiado') {
+      setPaidValue(0);
+    } else {
+      setPaidValue(newTotal);
+    }
+  };
+
+  const handleDiscountPercentChange = (val: string) => {
+    const parsed = val === '' ? '' : Math.min(100, Math.max(0, parseFloat(val) || 0));
+    setDiscountPercent(parsed);
+    const numericPct = typeof parsed === 'number' ? parsed : 0;
+    const newDisc = (subtotal * numericPct) / 100;
+    const newTotal = Math.max(0, subtotal - newDisc);
+    if (paymentMethod !== 'Fiado') {
+      setPaidValue(newTotal);
     }
   };
 
   const handlePaymentMethodChange = (method: PaymentMethod) => {
     setPaymentMethod(method);
-    const total = Math.max(0, (unitPrice * quantity) - discount);
     if (method === 'Fiado') {
       setPaidValue(0);
-    } else if (paidValue === 0) {
-      setPaidValue(total);
+    } else if (numPaidValue === 0 && totalVal > 0) {
+      setPaidValue(totalVal);
     }
   };
 
   const selectedProduct = products.find(p => p.id === selectedProductId);
-  const totalVal = Math.max(0, (unitPrice * quantity) - discount);
-  const isStockLowOrInsufficient = selectedProduct && selectedProduct.stock < quantity;
+  const isStockLowOrInsufficient = selectedProduct && numQuantity > 0 && selectedProduct.stock < numQuantity;
 
   const handleSubmitSale = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,11 +186,16 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
       return;
     }
 
+    if (numQuantity <= 0) {
+      alert('A quantidade deve ser de no mínimo 1 unidade para registrar a venda.');
+      return;
+    }
+
     const prod = products.find(p => p.id === selectedProductId);
     if (!prod) return;
 
     // Validate paidValue
-    const cleanPaidValue = Math.min(totalVal, Math.max(0, paidValue));
+    const cleanPaidValue = Math.min(totalVal, Math.max(0, numPaidValue));
     const pendingVal = Math.max(0, totalVal - cleanPaidValue);
 
     const customer = StorageService.findOrCreateCustomerByName(customerName);
@@ -137,12 +208,13 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
       items: [{
         productId: prod.id,
         productName: prod.name,
-        quantity,
-        unitPrice,
-        totalPrice: unitPrice * quantity
+        quantity: numQuantity,
+        unitPrice: numUnitPrice,
+        totalPrice: numUnitPrice * numQuantity
       }],
       totalValue: totalVal,
-      discount,
+      discount: discountAmount,
+      discountPercent: numDiscountPercent,
       paidValue: cleanPaidValue,
       pendingValue: pendingVal,
       paymentMethod,
@@ -252,6 +324,15 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
                   {sale.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}
                 </p>
 
+                {sale.notes && (
+                  <div className="flex items-start gap-1.5 text-xs text-amber-900 bg-amber-100/60 p-2 rounded-lg border border-amber-200/80">
+                    <MessageSquare className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                    <p className="leading-snug">
+                      <strong className="font-semibold text-amber-950">Obs:</strong> {sale.notes}
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between pt-1 border-t border-amber-100">
                   <div>
                     <span className="text-xs text-emerald-800 font-bold">R$ {sale.paidValue.toFixed(2)} pago</span>
@@ -318,10 +399,23 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
                       <p className="text-[11px] text-amber-700">{sale.date}</p>
                     </td>
                     <td className="p-3.5 font-semibold text-amber-950">{sale.customerName}</td>
-                    <td className="p-3.5 text-amber-800 max-w-xs truncate hidden lg:table-cell">
-                      {sale.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}
+                    <td className="p-3.5 text-amber-800 max-w-xs hidden lg:table-cell">
+                      <p className="font-medium text-amber-950">{sale.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</p>
+                      {sale.notes && (
+                        <p className="text-[11px] text-amber-900/90 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 mt-1 flex items-center gap-1">
+                          <MessageSquare className="w-3 h-3 text-amber-700 shrink-0" />
+                          <span className="truncate"><strong>Obs:</strong> {sale.notes}</span>
+                        </p>
+                      )}
                     </td>
-                    <td className="p-3.5 font-black text-amber-950">R$ {sale.totalValue.toFixed(2)}</td>
+                    <td className="p-3.5">
+                      <p className="font-black text-amber-950">R$ {sale.totalValue.toFixed(2)}</p>
+                      {sale.discount > 0 && (
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 block w-fit mt-0.5">
+                          {sale.discountPercent ? `${sale.discountPercent}% desc.` : `- R$ ${sale.discount.toFixed(2)}`}
+                        </span>
+                      )}
+                    </td>
                     <td className="p-3.5">
                       <p className="text-emerald-700 font-bold">R$ {sale.paidValue.toFixed(2)}</p>
                       {sale.pendingValue > 0 && (
@@ -379,180 +473,284 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
 
       {/* Sale Modal (New & Edit) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-amber-200 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-amber-100 pb-3">
-              <h3 className="font-bold text-amber-950 text-lg">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full border border-amber-200 shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2">
+            {/* Sticky Header */}
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-amber-100 shrink-0 bg-white">
+              <h3 className="font-bold text-amber-950 text-base sm:text-lg">
                 {editingSale ? `Editar Venda ${editingSale.code}` : 'Lançar Nova Venda Manual'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-amber-700 hover:text-amber-950">
-                <X className="w-5 h-5" />
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-stone-400 hover:text-stone-700 text-2xl font-bold p-1 leading-none cursor-pointer shrink-0"
+                aria-label="Fechar modal"
+              >
+                &times;
               </button>
             </div>
 
-            <form onSubmit={handleSubmitSale} className="space-y-4 text-xs sm:text-sm">
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Nome do Cliente:</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: João Silva ou Carlos"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block font-bold text-amber-900">Produto:</label>
-                  {selectedProduct && (
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      selectedProduct.stock <= selectedProduct.minStock ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
-                    }`}>
-                      Estoque disponível: {selectedProduct.stock} un
-                    </span>
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleSubmitSale} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain text-xs sm:text-sm">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-amber-900">Nome do Cliente:</label>
+                    {customers.length > 0 && (
+                      <span className="text-[11px] text-amber-700 font-semibold">
+                        {customers.length} cadastrados
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    list="sales-customers-list"
+                    placeholder="Ex: João Silva, Floricultura ou Carlos..."
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200 font-medium"
+                  />
+                  <datalist id="sales-customers-list">
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.type ? `${c.type}${c.city ? ` - ${c.city}` : ''}` : c.city}
+                      </option>
+                    ))}
+                  </datalist>
+                  {/* Quick selection chips if empty */}
+                  {!customerName && customers.length > 0 && (
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Recentes:</span>
+                      {customers.slice(0, 4).map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setCustomerName(c.name)}
+                          className="px-2 py-0.5 rounded-lg bg-amber-100/80 hover:bg-amber-200 text-amber-900 text-[11px] font-bold transition-colors cursor-pointer"
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
-                <select
-                  required
-                  value={selectedProductId}
-                  onChange={(e) => handleProductSelect(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
-                >
-                  <option value="">Selecione o vaso / fonte...</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} (Estoque: {p.stock} un | R$ {p.price.toFixed(2)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {isStockLowOrInsufficient && (
-                <div className="flex items-center space-x-2 bg-amber-50 border border-amber-300 text-amber-900 p-2.5 rounded-xl text-xs">
-                  <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>
-                    Atenção: A quantidade ({quantity}) é superior ao estoque disponível ({selectedProduct?.stock} un).
-                  </span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-amber-900 mb-1">Quantidade:</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(e) => handleQtyChange(parseInt(e.target.value) || 1)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
-                  />
-                </div>
 
                 <div>
-                  <label className="block font-bold text-amber-900 mb-1">Preço Unitário (R$):</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    value={unitPrice}
-                    onChange={(e) => setUnitPrice(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-amber-900 mb-1">Desconto (R$):</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    value={discount}
-                    onChange={(e) => handleDiscountChange(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-amber-900 mb-1">Forma de Pagamento:</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-amber-900">Produto:</label>
+                    {selectedProduct && (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        selectedProduct.stock <= selectedProduct.minStock ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        Estoque disponível: {selectedProduct.stock} un
+                      </span>
+                    )}
+                  </div>
                   <select
-                    value={paymentMethod}
-                    onChange={(e) => handlePaymentMethodChange(e.target.value as PaymentMethod)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
+                    required
+                    value={selectedProductId}
+                    onChange={(e) => handleProductSelect(e.target.value)}
+                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
                   >
-                    <option value="Pix">Pix</option>
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Cartão">Cartão</option>
-                    <option value="Transferência">Transferência</option>
-                    <option value="Boleto">Boleto</option>
-                    <option value="Fiado">Fiado / A Prazo</option>
+                    <option value="">Selecione o vaso / fonte...</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} (Estoque: {p.stock} un | R$ {p.price.toFixed(2)})
+                      </option>
+                    ))}
                   </select>
                 </div>
-              </div>
 
-              <div className="bg-amber-100/60 p-3 rounded-xl border border-amber-200">
-                <div className="flex items-center justify-between font-bold text-amber-950">
-                  <span>Total da Venda:</span>
-                  <span className="text-base font-black">R$ {totalVal.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block font-bold text-amber-900">Valor Pago Agora (R$):</label>
-                  <button
-                    type="button"
-                    onClick={() => setPaidValue(totalVal)}
-                    className="text-xs text-amber-800 hover:underline font-semibold"
-                  >
-                    Pagar Total
-                  </button>
-                </div>
-                <input
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  max={totalVal}
-                  value={paidValue}
-                  onChange={(e) => setPaidValue(Math.min(totalVal, Math.max(0, parseFloat(e.target.value) || 0)))}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600 font-bold text-emerald-800"
-                />
-                {(totalVal - paidValue) > 0 ? (
-                  <p className="text-xs text-red-600 font-semibold mt-1">
-                    Saldo restante/fiado a receber: R$ {(totalVal - paidValue).toFixed(2)}
-                  </p>
-                ) : (
-                  <p className="text-xs text-emerald-700 font-semibold mt-1">
-                    Venda totalmente quitada à vista.
-                  </p>
+                {isStockLowOrInsufficient && (
+                  <div className="flex items-center space-x-2 bg-amber-50 border border-amber-300 text-amber-900 p-2.5 rounded-xl text-xs">
+                    <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>
+                      Atenção: A quantidade ({numQuantity}) é superior ao estoque disponível ({selectedProduct?.stock} un).
+                    </span>
+                  </div>
                 )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-amber-900 mb-1">Quantidade:</label>
+                    <div className="flex items-center space-x-1.5">
+                      <button
+                        type="button"
+                        onClick={handleDecrementQty}
+                        className="w-10 h-10 rounded-xl bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 font-black text-lg flex items-center justify-center transition-all shrink-0 cursor-pointer border border-amber-300"
+                        aria-label="Diminuir quantidade"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={quantity}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => handleQuantityChange(e.target.value)}
+                        placeholder="0"
+                        className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-center font-black text-base text-amber-950 focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleIncrementQty}
+                        className="w-10 h-10 rounded-xl bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 font-black text-lg flex items-center justify-center transition-all shrink-0 cursor-pointer border border-amber-300"
+                        aria-label="Aumentar quantidade"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-amber-900 mb-1">Preço Unitário (R$):</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={unitPrice}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => handleUnitPriceChange(e.target.value)}
+                      className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm font-semibold focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-bold text-amber-900">Desconto (%):</label>
+                      {numDiscountPercent > 0 && (
+                        <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          - R$ {discountAmount.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="1"
+                        min={0}
+                        max={100}
+                        value={discountPercent}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => handleDiscountPercentChange(e.target.value)}
+                        placeholder="0"
+                        className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 pr-8 text-amber-950 text-sm font-semibold focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
+                      />
+                      <span className="absolute right-3 top-2.5 text-amber-800 font-bold text-sm pointer-events-none">%</span>
+                    </div>
+                    {/* Quick percentage presets */}
+                    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                      {[0, 5, 10, 15, 20, 25].map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => handleDiscountPercentChange(String(pct))}
+                          className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                            numDiscountPercent === pct
+                              ? 'bg-amber-800 text-white shadow-2xs'
+                              : 'bg-amber-100/80 hover:bg-amber-200 text-amber-900'
+                          }`}
+                        >
+                          {pct}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-amber-900 mb-1">Forma de Pagamento:</label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => handlePaymentMethodChange(e.target.value as PaymentMethod)}
+                      className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
+                    >
+                      <option value="Pix">Pix</option>
+                      <option value="Dinheiro">Dinheiro</option>
+                      <option value="Cartão">Cartão</option>
+                      <option value="Transferência">Transferência</option>
+                      <option value="Boleto">Boleto</option>
+                      <option value="Fiado">Fiado / A Prazo</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="bg-amber-100/70 p-3.5 rounded-xl border border-amber-200 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-amber-800">
+                    <span>Subtotal ({numQuantity} un × R$ {numUnitPrice.toFixed(2)}):</span>
+                    <span className="font-semibold">R$ {subtotal.toFixed(2)}</span>
+                  </div>
+                  {numDiscountPercent > 0 && (
+                    <div className="flex items-center justify-between text-xs text-emerald-800 font-medium">
+                      <span>Desconto ({numDiscountPercent}%):</span>
+                      <span className="font-bold">- R$ {discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between font-bold text-amber-950 pt-1.5 border-t border-amber-200/80">
+                    <span>Total da Venda:</span>
+                    <span className="text-base sm:text-lg font-black text-amber-900">R$ {totalVal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-amber-900">Valor Pago Agora (R$):</label>
+                    <button
+                      type="button"
+                      onClick={() => setPaidValue(totalVal)}
+                      className="text-xs text-amber-800 hover:underline font-bold cursor-pointer"
+                    >
+                      Pagar Total
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={totalVal}
+                    value={paidValue}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setPaidValue(e.target.value)}
+                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200 font-bold text-emerald-800 text-sm"
+                  />
+                  {(totalVal - numPaidValue) > 0 ? (
+                    <p className="text-xs text-red-600 font-semibold mt-1">
+                      Saldo restante/fiado a receber: R$ {(totalVal - numPaidValue).toFixed(2)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-emerald-700 font-semibold mt-1">
+                      {numPaidValue > 0 ? 'Venda totalmente quitada à vista.' : 'Aguardando pagamento ou venda fiada.'}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block font-bold text-amber-900 mb-1">Observações:</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Entregar no sábado, cliente regular"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Observações:</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Entregar no sábado, cliente regular"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-none focus:border-amber-600"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end space-x-2">
+              {/* Sticky Footer */}
+              <div className="p-3.5 sm:p-4 border-t border-amber-100 flex items-center justify-end gap-2 bg-amber-50/60 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-amber-300 text-amber-900 font-semibold hover:bg-amber-50"
+                  className="px-4 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm font-bold text-stone-700 hover:bg-stone-100 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-amber-50 font-bold shadow-md"
+                  className="px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs sm:text-sm font-bold shadow-md cursor-pointer"
                 >
                   {editingSale ? 'Salvar Alterações' : 'Salvar Venda'}
                 </button>
@@ -591,7 +789,19 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
                 ))}
               </div>
               <hr className="border-amber-200 my-2" />
-              <p className="flex justify-between font-bold">
+              {selectedReceiptSale.discount > 0 && (
+                <div className="space-y-1 text-xs">
+                  <p className="flex justify-between text-amber-800">
+                    <span>Subtotal:</span>
+                    <span>R$ {(selectedReceiptSale.totalValue + selectedReceiptSale.discount).toFixed(2)}</span>
+                  </p>
+                  <p className="flex justify-between text-emerald-800 font-semibold">
+                    <span>Desconto ({selectedReceiptSale.discountPercent ? `${selectedReceiptSale.discountPercent}%` : ''}):</span>
+                    <span>- R$ {selectedReceiptSale.discount.toFixed(2)}</span>
+                  </p>
+                </div>
+              )}
+              <p className="flex justify-between font-black text-amber-950 text-sm pt-1 border-t border-amber-200">
                 <span>Total:</span>
                 <span>R$ {selectedReceiptSale.totalValue.toFixed(2)}</span>
               </p>
@@ -604,6 +814,14 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
                   <span>Pendente (Fiado):</span>
                   <span>R$ {selectedReceiptSale.pendingValue.toFixed(2)}</span>
                 </p>
+              )}
+              {selectedReceiptSale.notes && (
+                <div className="pt-2 border-t border-amber-200 text-xs text-amber-900 bg-amber-100/40 p-2 rounded-lg">
+                  <p className="flex items-start gap-1">
+                    <strong className="text-amber-950 font-bold">Obs:</strong>
+                    <span>{selectedReceiptSale.notes}</span>
+                  </p>
+                </div>
               )}
             </div>
 

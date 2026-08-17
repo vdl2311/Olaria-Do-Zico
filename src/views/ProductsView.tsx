@@ -362,6 +362,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
                       step="0.01"
                       min={0}
                       value={cost}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setCost(parseFloat(e.target.value) || 0)}
                       className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
                     />
@@ -375,6 +376,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
                       min={0}
                       required
                       value={price}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
                       className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] font-bold focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
                     />
@@ -388,6 +390,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
                       type="number"
                       min={0}
                       value={stock}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setStock(parseInt(e.target.value) || 0)}
                       className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
                     />
@@ -399,6 +402,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
                       type="number"
                       min={0}
                       value={minStock}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setMinStock(parseInt(e.target.value) || 0)}
                       className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
                     />

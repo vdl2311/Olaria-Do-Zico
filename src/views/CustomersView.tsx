@@ -229,7 +229,11 @@ export const CustomersView: React.FC = () => {
                     </div>
                   </div>
 
-                  {cust.notes && <p className="text-xs text-amber-800/80 italic">Obs: {cust.notes}</p>}
+                  {cust.notes && (
+                    <div className="text-xs text-amber-900 bg-amber-100/60 px-2.5 py-1.5 rounded-lg border border-amber-200/80">
+                      <strong className="font-semibold text-amber-950">Obs:</strong> {cust.notes}
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-amber-100 flex items-center gap-2">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ClipboardList, Plus, Mic, Calendar, Palette, DollarSign, CheckCircle2, Clock, X, Camera, Upload } from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
-import { CustomOrder } from '../types';
+import { CustomOrder, Customer } from '../types';
 import { CameraModal } from '../components/CameraModal';
 
 interface CustomOrdersViewProps {
@@ -10,6 +10,7 @@ interface CustomOrdersViewProps {
 
 export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceModal }) => {
   const [orders, setOrders] = useState<CustomOrder[]>(() => StorageService.getCustomOrders());
+  const [customers, setCustomers] = useState<Customer[]>(() => StorageService.getCustomers());
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State
@@ -41,6 +42,7 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceM
 
   const refreshData = () => {
     setOrders(StorageService.getCustomOrders());
+    setCustomers(StorageService.getCustomers());
   };
 
   useEffect(() => {
@@ -196,6 +198,12 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceM
                 </div>
               </div>
 
+              {ord.notes && (
+                <p className="text-xs text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200/60">
+                  <strong className="font-semibold text-amber-950">Obs:</strong> {ord.notes}
+                </p>
+              )}
+
               {/* Status updates */}
               <div className="pt-2 border-t border-amber-100 flex flex-wrap gap-1.5">
                 {(['Orçamento', 'Aprovado', 'Em Produção', 'Pronto', 'Entregue'] as CustomOrder['status'][]).map(st => (
@@ -228,15 +236,45 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceM
 
             <form onSubmit={handleCreateOrder} className="space-y-3 text-xs sm:text-sm">
               <div>
-                <label className="block font-bold text-amber-900 mb-1">Cliente:</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-amber-900">Cliente:</label>
+                  {customers.length > 0 && (
+                    <span className="text-[11px] text-amber-700 font-semibold">
+                      {customers.length} cadastrados
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Maria Oliveira"
+                  list="orders-customers-list"
+                  placeholder="Ex: Maria Oliveira ou Floricultura..."
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
+                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200 font-medium"
                 />
+                <datalist id="orders-customers-list">
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.type ? `${c.type}${c.city ? ` - ${c.city}` : ''}` : c.city}
+                    </option>
+                  ))}
+                </datalist>
+                {!customerName && customers.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Recentes:</span>
+                    {customers.slice(0, 4).map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setCustomerName(c.name)}
+                        className="px-2 py-0.5 rounded-lg bg-amber-100/80 hover:bg-amber-200 text-amber-900 text-[11px] font-bold transition-colors cursor-pointer"
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -349,6 +387,7 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceM
                   <input
                     type="number"
                     value={totalPrice}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setTotalPrice(parseFloat(e.target.value) || 0)}
                     className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
                   />
@@ -359,6 +398,7 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceM
                   <input
                     type="number"
                     value={depositPaid}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setDepositPaid(parseFloat(e.target.value) || 0)}
                     className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 font-bold text-emerald-800"
                   />
