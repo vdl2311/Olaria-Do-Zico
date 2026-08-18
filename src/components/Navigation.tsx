@@ -10,14 +10,14 @@ import {
   DollarSign, 
   Box, 
   BarChart3, 
-  History,
-  Menu,
-  X,
-  ShieldCheck,
-  LogOut,
-  UserCheck,
-  Palette,
-  Sparkles
+  History, 
+  Menu, 
+  X, 
+  ShieldCheck, 
+  LogOut, 
+  UserCheck, 
+  Palette, 
+  Cpu
 } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { AuthService } from '../services/authService';
@@ -28,6 +28,7 @@ interface NavigationProps {
   isMobileDrawerOpen?: boolean;
   setIsMobileDrawerOpen?: (open: boolean) => void;
   onLogout?: () => void;
+  onNavigateToTechnical?: () => void;
 }
 
 export interface NavGroup {
@@ -39,6 +40,7 @@ export interface NavGroup {
     badge?: string | number;
     requiredPermission?: string;
     ownerOnly?: boolean;
+    isTechnical?: boolean;
   }[];
 }
 
@@ -47,7 +49,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   setActiveView,
   isMobileDrawerOpen = false,
   setIsMobileDrawerOpen,
-  onLogout
+  onLogout,
+  onNavigateToTechnical
 }) => {
   const currentUser = AuthService.getCurrentUser();
   const isOwner = currentUser?.role === 'PROPRIETARIO';
@@ -81,7 +84,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       items: [
         { id: 'financeiro', label: 'Financeiro', icon: DollarSign, requiredPermission: 'financeiro' },
         { id: 'produtos', label: 'Catálogo de Peças', icon: Box, requiredPermission: 'produtos' },
-        { id: 'brandkit', label: 'Brand Kit & Identidade', icon: Palette },
+        { id: 'brandkit', label: 'Brand Kit & Manual', icon: Palette },
         { id: 'relatorios', label: 'Relatórios e Busca', icon: BarChart3, requiredPermission: 'relatorios' },
         { id: 'auditoria', label: 'Histórico & Auditoria', icon: History, requiredPermission: 'auditoria' },
         { id: 'seguranca', label: 'Segurança & Acessos', icon: ShieldCheck, ownerOnly: true },
@@ -128,7 +131,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <>
       {/* Desktop Sidebar Navigation */}
-      <aside className="hidden lg:flex flex-col justify-between w-64 bg-[#8A5A44] text-[#F7F1E7] border-r border-[#6E4533] p-4 shrink-0 min-h-[calc(100vh-4.5rem)] rounded-2xl shadow-md my-2">
+      <aside className="hidden lg:flex flex-col justify-between w-64 bg-[#8A5A44] dark:bg-[#252320] text-[#F7F1E7] dark:text-[#F2EBDD] border-r border-[#6E4533] dark:border-[#3D3833] p-4 shrink-0 min-h-[calc(100vh-4.5rem)] rounded-2xl shadow-md my-2 transition-colors" aria-label="Navegação Principal Desktop">
         <div className="space-y-6">
           {NAV_GROUPS.map((group, idx) => (
             <div key={idx} className="space-y-1.5">
@@ -142,10 +145,13 @@ export const Navigation: React.FC<NavigationProps> = ({
                   return (
                     <button
                       key={item.id}
+                      type="button"
                       onClick={() => handleSelectView(item.id)}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer font-brand-sans ${
+                      aria-label={`Navegar para módulo ${item.label}`}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer font-brand-sans focus-visible:outline-2 focus-visible:outline-[#FAF6EF] ${
                         isActive
-                          ? 'bg-[#B85C38] text-white font-bold shadow-sm translate-x-1'
+                          ? 'bg-[#B85C38] text-white shadow-sm translate-x-1'
                           : 'text-[#E7D5BE] hover:bg-[#6E4533] hover:text-white'
                       }`}
                     >
@@ -170,7 +176,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
         {/* User Card at Sidebar Bottom */}
         <div className="pt-4 border-t border-[#6E4533] mt-4 font-brand-sans">
-          <div className="p-3 bg-[#6E4533]/60 rounded-xl border border-[#A7735B]/30 mb-2">
+          <div className="p-3 bg-[#6E4533]/80 rounded-xl border border-[#A7735B]/40 mb-2">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-[#B85C38] flex items-center justify-center text-white font-bold text-xs shrink-0">
                 <UserCheck className="w-4 h-4" />
@@ -179,7 +185,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <p className="text-xs font-bold text-[#F7F1E7] truncate">
                   {currentUser?.name || 'Oleiro'}
                 </p>
-                <p className="text-[10px] text-[#E7D5BE] truncate">
+                <p className="text-[10px] text-[#E7D5BE] font-bold truncate">
                   {currentUser?.role === 'PROPRIETARIO' ? '👑 Proprietário' : '👷 Operacional'}
                 </p>
               </div>
@@ -187,8 +193,10 @@ export const Navigation: React.FC<NavigationProps> = ({
           </div>
 
           <button
+            type="button"
             onClick={handleLogoutClick}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#6E4533]/40 hover:bg-rose-950/80 text-[#E7D5BE] hover:text-rose-200 text-xs font-bold transition-colors cursor-pointer border border-transparent hover:border-rose-800/40"
+            aria-label="Sair do sistema de gestão"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#6E4533] hover:bg-rose-900 text-[#FAF6EF] hover:text-white text-xs font-bold transition-colors cursor-pointer border border-[#A7735B]/40 hover:border-rose-700/60 focus-visible:outline-2 focus-visible:outline-[#FAF6EF]"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sair do Sistema</span>
@@ -197,7 +205,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       </aside>
 
       {/* Mobile Bottom Quick Bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#8A5A44] border-t border-[#6E4533] z-30 px-3 py-1.5 shadow-2xl">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#8A5A44] dark:bg-[#252320] border-t border-[#6E4533] dark:border-[#3D3833] z-30 px-3 py-2 shadow-2xl transition-colors" aria-label="Navegação Mobile Inferior">
         <div className="flex items-center justify-around max-w-md mx-auto font-brand-sans">
           {PRIMARY_MOBILE_NAV.map((item) => {
             const Icon = item.icon;
@@ -205,15 +213,18 @@ export const Navigation: React.FC<NavigationProps> = ({
             return (
               <button
                 key={item.id}
+                type="button"
                 onClick={() => handleSelectView(item.id)}
-                className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-all relative cursor-pointer ${
+                aria-label={`Acessar ${item.label}`}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[11px] font-bold transition-all relative cursor-pointer focus-visible:outline-2 focus-visible:outline-[#FAF6EF] ${
                   isActive
-                    ? 'text-[#F7F1E7] font-bold scale-105'
-                    : 'text-[#E7D5BE]/80 hover:text-white'
+                    ? 'text-[#FAF6EF] bg-[#6E4533] dark:bg-[#C66B48] scale-105'
+                    : 'text-[#E7D5BE] dark:text-[#C9BFA8] hover:text-white dark:hover:text-[#F2EBDD]'
                 }`}
               >
                 <div className="relative">
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-[#F7F1E7]' : 'text-[#E7D5BE]/80'}`} />
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-[#FAF6EF]' : 'text-[#E7D5BE] dark:text-[#C9BFA8]'}`} />
                   {item.badge !== undefined && (
                     <span className="absolute -top-1 -right-2 bg-rose-600 text-white text-[9px] font-bold px-1 rounded-full">
                       {item.badge}
@@ -227,12 +238,14 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* More Menu Trigger */}
           <button
+            type="button"
             onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(true)}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${
-              isMobileDrawerOpen ? 'text-[#F7F1E7] font-bold' : 'text-[#E7D5BE]/80 hover:text-white'
+            aria-label="Abrir gaveta de navegação com todos os módulos"
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#FAF6EF] ${
+              isMobileDrawerOpen ? 'text-[#FAF6EF] bg-[#6E4533] dark:bg-[#C66B48]' : 'text-[#E7D5BE] dark:text-[#C9BFA8] hover:text-white'
             }`}
           >
-            <Menu className="w-5 h-5 text-[#E7D5BE]/80" />
+            <Menu className="w-5 h-5 text-[#E7D5BE] dark:text-[#C9BFA8]" />
             <span className="mt-0.5">Mais</span>
           </button>
         </div>
@@ -240,19 +253,22 @@ export const Navigation: React.FC<NavigationProps> = ({
 
       {/* Mobile Slide-Up Navigation Drawer */}
       {isMobileDrawerOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-xs animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-label="Menu Completo de Navegação">
           <div 
             className="fixed inset-0" 
             onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(false)} 
+            aria-hidden="true"
           />
-          <div className="relative bg-[#8A5A44] text-[#F7F1E7] rounded-t-3xl border-t border-[#6E4533] p-5 shadow-2xl max-h-[85vh] overflow-y-auto z-10 space-y-5 font-brand-sans">
+          <div className="relative bg-[#8A5A44] dark:bg-[#252320] text-[#F7F1E7] dark:text-[#F2EBDD] rounded-t-3xl border-t border-[#6E4533] dark:border-[#3D3833] p-5 shadow-2xl max-h-[85vh] overflow-y-auto z-10 space-y-5 font-brand-sans">
             <div className="flex items-center justify-between border-b border-[#6E4533] pb-3">
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-5 h-5 text-[#E7D5BE]" />
-                <h3 className="font-brand-serif font-bold text-white text-base">Menu Olaria</h3>
+                <h3 className="font-brand-serif font-bold text-white text-base">Menu Completo da Olaria</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(false)}
+                aria-label="Fechar menu"
                 className="p-1 rounded-full bg-[#6E4533] text-[#E7D5BE] hover:text-white"
               >
                 <X className="w-5 h-5" />
@@ -272,11 +288,13 @@ export const Navigation: React.FC<NavigationProps> = ({
                       return (
                         <button
                           key={item.id}
+                          type="button"
                           onClick={() => handleSelectView(item.id)}
-                          className={`flex items-center space-x-2.5 p-3 rounded-xl text-xs font-semibold text-left transition-all cursor-pointer ${
+                          aria-label={`Acessar ${item.label}`}
+                          className={`flex items-center space-x-2.5 p-3 rounded-xl text-xs font-bold text-left transition-all cursor-pointer ${
                             isActive
                               ? 'bg-[#B85C38] text-white shadow-md'
-                              : 'bg-[#6E4533]/60 text-[#E7D5BE] hover:bg-[#6E4533]'
+                              : 'bg-[#6E4533]/80 text-[#FAF6EF] hover:bg-[#6E4533]'
                           }`}
                         >
                           <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-[#E7D5BE]'}`} />
@@ -294,17 +312,19 @@ export const Navigation: React.FC<NavigationProps> = ({
               ))}
             </div>
 
-            <div className="pt-2 flex flex-col gap-2">
+            <div className="pt-2 flex flex-col gap-2 border-t border-[#6E4533]">
               <button
+                type="button"
                 onClick={handleLogoutClick}
-                className="w-full py-2.5 bg-rose-950/80 text-rose-200 hover:bg-rose-900 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 bg-rose-950 text-rose-100 hover:bg-rose-900 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sair do Sistema</span>
               </button>
               <button
+                type="button"
                 onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(false)}
-                className="w-full py-2.5 bg-[#6E4533] text-[#E7D5BE] font-bold rounded-xl text-center text-xs"
+                className="w-full py-2.5 bg-[#6E4533] text-[#FAF6EF] font-bold rounded-xl text-center text-xs cursor-pointer"
               >
                 Fechar Menu
               </button>

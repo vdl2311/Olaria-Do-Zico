@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PackageSearch, Plus, Search, Filter, Edit3, Image as ImageIcon, X, Camera, Upload, Tag, QrCode, Layers, ArrowRight } from 'lucide-react';
+import { PackageSearch, Plus, Search, Filter, Edit3, Camera, Upload, Layers, ArrowRight, X } from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
 import { Product, ProductCategory } from '../types';
 import { CameraModal } from '../components/CameraModal';
 import { BrandSymbol } from '../components/BrandLogo';
+import {
+  Button,
+  Card,
+  Modal,
+  FormField,
+  Input,
+  Select,
+  EmptyState,
+  useToast
+} from '../components/ui';
 
 export const PRODUCT_CATEGORIES: ProductCategory[] = [
   'Vaso',
@@ -19,6 +29,7 @@ interface ProductsViewProps {
 }
 
 export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock }) => {
+  const { showSuccess } = useToast();
   const [products, setProducts] = useState<Product[]>(() => StorageService.getProducts());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -110,7 +121,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
     };
 
     StorageService.saveProduct(newProd);
+    refreshData();
     setIsModalOpen(false);
+    showSuccess(
+      editingProduct ? 'Peça Atualizada' : 'Peça Cadastrada',
+      `Peça ${newProd.name} salva no catálogo!`
+    );
   };
 
   const filteredProducts = products.filter(p => {
@@ -136,19 +152,21 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
           </p>
         </div>
 
-        <button
+        <Button
           onClick={handleOpenCreateModal}
-          className="flex items-center justify-center space-x-2 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+          variant="primary"
+          size="md"
+          icon={Plus}
+          className="shrink-0"
         >
-          <Plus className="w-4 h-4" />
-          <span>Cadastrar Nova Peça</span>
-        </button>
+          Cadastrar Nova Peça
+        </Button>
       </div>
 
       {/* Raw Materials Tip Callout */}
-      <div className="bg-[#FAF6EF] border border-[#E7D5BE] p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm shadow-xs">
+      <Card variant="flat" className="p-3.5 sm:p-4 flex items-center justify-between gap-3 text-xs sm:text-sm">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-amber-100 text-amber-900 rounded-xl shrink-0">
+          <div className="p-2 bg-[#E7D5BE] text-[#8A5A44] rounded-xl shrink-0">
             <Layers className="w-4 h-4" />
           </div>
           <div>
@@ -159,32 +177,37 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
           </div>
         </div>
         {onNavigateToStock && (
-          <button
+          <Button
             onClick={onNavigateToStock}
-            className="px-3 py-1.5 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold text-xs rounded-xl flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+            variant="secondary"
+            size="sm"
+            icon={ArrowRight}
+            className="shrink-0"
           >
-            <span>Ver Matérias-Primas</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+            Ver Matérias-Primas
+          </Button>
         )}
-      </div>
+      </Card>
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-[#8A5A44]" />
-          <input
+          <Input
+            id="search-products-input"
             type="text"
             placeholder="Buscar por nome da peça ou código (ex: VS-101)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-[#FAF6EF] border border-[#E7D5BE] rounded-2xl text-xs sm:text-sm text-[#292724] placeholder-[#8A5A44]/60 focus:outline-none focus:border-[#B85C38]"
+            className="pl-10"
+            aria-label="Buscar peça por nome ou código"
           />
         </div>
 
         <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           <Filter className="w-4 h-4 text-[#8A5A44] shrink-0" />
           <button
+            type="button"
             onClick={() => setSelectedCategory('all')}
             className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
               selectedCategory === 'all'
@@ -197,6 +220,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
           {PRODUCT_CATEGORIES.map(cat => (
             <button
               key={cat}
+              type="button"
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
                 selectedCategory === cat
@@ -210,21 +234,23 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
         </div>
       </div>
 
-      {/* Products Grid conforming to Section #15 */}
+      {/* Products Grid */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-[#FAF6EF] border border-[#E7D5BE] rounded-3xl p-12 text-center text-[#8A5A44] space-y-3">
-          <PackageSearch className="w-12 h-12 mx-auto text-[#8A5A44]/40" />
-          <h4 className="font-brand-serif font-bold text-lg text-[#292724]">Nenhuma peça cerâmica encontrada</h4>
-          <p className="text-xs">Tente ajustar os termos da busca ou limpe os filtros de categoria.</p>
-        </div>
+        <EmptyState
+          title="Nenhuma peça cerâmica encontrada"
+          description="Tente ajustar os termos da busca ou limpe os filtros de categoria."
+          actionLabel="Cadastrar Peça"
+          onAction={handleOpenCreateModal}
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {filteredProducts.map(p => {
             const isLow = p.stock <= p.minStock;
             return (
-              <div 
-                key={p.id} 
-                className="bg-[#FAF6EF] border border-[#E7D5BE] rounded-3xl overflow-hidden shadow-xs hover:border-[#B85C38] transition-all flex flex-col justify-between"
+              <Card
+                key={p.id}
+                variant="default"
+                className="p-0 overflow-hidden flex flex-col justify-between"
               >
                 <div>
                   {/* Image / Ceramic Visual */}
@@ -270,15 +296,17 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
                 </div>
 
                 <div className="p-4 pt-0">
-                  <button
+                  <Button
                     onClick={() => handleOpenEditModal(p)}
-                    className="w-full py-2 bg-[#F7F1E7] hover:bg-[#E7D5BE] text-[#292724] border border-[#E7D5BE] font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+                    variant="ghost"
+                    size="sm"
+                    icon={Edit3}
+                    className="w-full border border-[#E7D5BE]"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-[#8A5A44]" />
-                    <span>Editar Peça</span>
-                  </button>
+                    Editar Peça
+                  </Button>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -286,195 +314,174 @@ export const ProductsView: React.FC<ProductsViewProps> = ({ onNavigateToStock })
 
       {/* Modal Product */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
-          <div className="bg-[#FAF6EF] w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl border border-[#E7D5BE] flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2">
-            <div className="p-4 sm:p-5 border-b border-[#E7D5BE] flex items-center justify-between shrink-0 bg-[#FAF6EF]">
-              <div>
-                <h3 className="font-brand-serif font-bold text-[#292724] text-base sm:text-lg">
-                  {editingProduct ? 'Editar Peça Cerâmica' : 'Cadastrar Nova Peça'}
-                </h3>
-                <p className="text-[11px] sm:text-xs text-[#8A5A44]">
-                  Preencha os detalhes da peça para catálogo e controle de estoque.
-                </p>
-              </div>
-              <button 
-                onClick={() => setIsModalOpen(false)} 
-                className="p-2 text-[#8A5A44] hover:bg-[#E7D5BE]/60 rounded-xl transition-colors cursor-pointer shrink-0"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title={editingProduct ? 'Editar Peça Cerâmica' : 'Cadastrar Nova Peça'}
+          description="Preencha os detalhes da peça para catálogo e controle de estoque."
+          size="md"
+        >
+          <form onSubmit={handleSaveProduct} className="space-y-4 font-brand-sans">
+            <FormField label="Nome da Peça" htmlFor="prod-name-input" required>
+              <Input
+                id="prod-name-input"
+                type="text"
+                required
+                placeholder="Ex: Vaso Terracota Bojudo 45cm"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </FormField>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Categoria" htmlFor="prod-category-select" required>
+                <Select
+                  id="prod-category-select"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                >
+                  {PRODUCT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </Select>
+              </FormField>
+
+              <FormField label="Dimensões" htmlFor="prod-size-input">
+                <Input
+                  id="prod-size-input"
+                  type="text"
+                  placeholder="Ex: 45cm alt x 30cm boca"
+                  value={size}
+                  onChange={(e) => setSize(e.target.value)}
+                />
+              </FormField>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="flex flex-col flex-1 overflow-hidden">
-              <div className="p-4 sm:p-6 overflow-y-auto space-y-3.5 flex-1 overscroll-contain text-xs sm:text-sm">
-                <div>
-                  <label className="block font-bold text-[#292724] mb-1">Nome da Peça: <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Vaso Terracota Bojudo 45cm"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
-                  />
-                </div>
+            <FormField label="Acabamento / Cor" htmlFor="prod-finish-input">
+              <Input
+                id="prod-finish-input"
+                type="text"
+                placeholder="Ex: Terracota Natural, Hidrorrepelente, Esmalte Verde"
+                value={finish}
+                onChange={(e) => setFinish(e.target.value)}
+              />
+            </FormField>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#292724] mb-1">Categoria:</label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value as ProductCategory)}
-                      className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white cursor-pointer text-sm"
-                    >
-                      {PRODUCT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Custo de Produção (R$)" htmlFor="prod-cost-input">
+                <Input
+                  id="prod-cost-input"
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={cost}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setCost(parseFloat(e.target.value) || 0)}
+                />
+              </FormField>
 
-                  <div>
-                    <label className="block font-bold text-[#292724] mb-1">Dimensões:</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: 45cm alt x 30cm boca"
-                      value={size}
-                      onChange={(e) => setSize(e.target.value)}
-                      className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
-                    />
-                  </div>
-                </div>
+              <FormField label="Preço de Venda (R$)" htmlFor="prod-price-input" required>
+                <Input
+                  id="prod-price-input"
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  required
+                  value={price}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+                  className="font-bold"
+                />
+              </FormField>
+            </div>
 
-                <div>
-                  <label className="block font-bold text-[#292724] mb-1">Acabamento / Cor:</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Terracota Natural, Hidrorrepelente, Esmalte Verde Oliva"
-                    value={finish}
-                    onChange={(e) => setFinish(e.target.value)}
-                    className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Estoque Inicial" htmlFor="prod-stock-input">
+                <Input
+                  id="prod-stock-input"
+                  type="number"
+                  min={0}
+                  value={stock}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setStock(parseInt(e.target.value) || 0)}
+                />
+              </FormField>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#292724] mb-1">Custo de Produção (R$):</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      value={cost}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setCost(parseFloat(e.target.value) || 0)}
-                      className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
-                    />
-                  </div>
+              <FormField label="Estoque Mínimo (Alerta)" htmlFor="prod-min-stock-input">
+                <Input
+                  id="prod-min-stock-input"
+                  type="number"
+                  min={0}
+                  value={minStock}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setMinStock(parseInt(e.target.value) || 0)}
+                />
+              </FormField>
+            </div>
 
-                  <div>
-                    <label className="block font-bold text-[#292724] mb-1">Preço de Venda (R$):</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      required
-                      value={price}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                      className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] font-bold focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-[#292724] mb-1">Estoque Inicial:</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={stock}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setStock(parseInt(e.target.value) || 0)}
-                      className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-[#292724] mb-1">Estoque Mínimo (Alerta):</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={minStock}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setMinStock(parseInt(e.target.value) || 0)}
-                      className="w-full bg-[#F7F1E7] border border-[#E7D5BE] rounded-xl p-3 text-[#292724] focus:outline-none focus:border-[#B85C38] focus:bg-white text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#292724] mb-1">Foto da Peça:</label>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsCameraOpen(true)}
-                      className="flex-1 py-2.5 px-3 bg-[#F7F1E7] border border-[#E7D5BE] hover:bg-[#E7D5BE] text-[#292724] rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer text-xs font-semibold"
-                    >
-                      <Camera className="w-4 h-4 text-[#B85C38]" />
-                      <span>Tirar Foto</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex-1 py-2.5 px-3 bg-[#F7F1E7] border border-[#E7D5BE] hover:bg-[#E7D5BE] text-[#292724] rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer text-xs font-semibold"
-                    >
-                      <Upload className="w-4 h-4 text-[#8A5A44]" />
-                      <span>Upload</span>
-                    </button>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </div>
-                  {photoUrl && (
-                    <div className="mt-2 relative w-20 h-20 rounded-xl overflow-hidden border border-[#D4BEA2]">
-                      <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setPhotoUrl('')}
-                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-3.5 sm:p-4 border-t border-[#E7D5BE] flex items-center justify-end gap-2 bg-[#F7F1E7]/70 shrink-0">
-                <button
+            <FormField label="Foto da Peça" htmlFor="prod-photo-upload">
+              <div className="flex items-center space-x-2">
+                <Button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 border border-[#E7D5BE] rounded-xl text-[#8A5A44] hover:text-[#292724] hover:bg-[#E7D5BE]/50 font-bold text-xs sm:text-sm cursor-pointer"
+                  onClick={() => setIsCameraOpen(true)}
+                  variant="secondary"
+                  size="sm"
+                  icon={Camera}
+                  className="flex-1"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold rounded-xl text-xs sm:text-sm shadow-sm cursor-pointer"
+                  Tirar Foto
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="secondary"
+                  size="sm"
+                  icon={Upload}
+                  className="flex-1"
                 >
-                  Salvar Peça
-                </button>
+                  Upload
+                </Button>
+
+                <input
+                  type="file"
+                  id="prod-photo-upload"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
               </div>
-            </form>
-          </div>
-        </div>
+
+              {photoUrl && (
+                <div className="mt-2 relative w-20 h-20 rounded-xl overflow-hidden border border-[#D4BEA2]">
+                  <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setPhotoUrl('')}
+                    aria-label="Remover foto"
+                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </FormField>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#E7D5BE]">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" size="md">
+                Salvar Peça
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* Camera Modal */}
       {isCameraOpen && (
         <CameraModal
+          isOpen={isCameraOpen}
           onCapture={(dataUrl) => {
             setPhotoUrl(dataUrl);
             setIsCameraOpen(false);

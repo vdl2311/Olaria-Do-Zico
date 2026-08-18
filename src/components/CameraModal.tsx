@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, Check, X, Upload, AlertCircle, SwitchCamera } from 'lucide-react';
+import { Camera, RefreshCw, Check, Upload, AlertCircle, SwitchCamera } from 'lucide-react';
+import { Modal } from './ui/Modal';
+import { Button } from './ui/Button';
 
 interface CameraModalProps {
   isOpen: boolean;
@@ -71,7 +73,6 @@ export const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onCap
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
-    // Scale canvas to max 800px width/height to optimize performance and localStorage
     let width = video.videoWidth || 640;
     let height = video.videoHeight || 480;
     const maxDim = 800;
@@ -130,31 +131,28 @@ export const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onCap
     reader.readAsDataURL(file);
   };
 
+  const handleModalClose = () => {
+    stopCamera();
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
-      <div className="bg-amber-950 text-amber-50 rounded-3xl max-w-lg w-full p-5 shadow-2xl border border-amber-800 flex flex-col space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-amber-800/80 pb-3">
-          <div className="flex items-center space-x-2">
-            <Camera className="w-5 h-5 text-amber-400" />
-            <h3 className="font-black text-amber-100 text-base">Tirar Foto do Vaso / Peça</h3>
-          </div>
-          <button
-            onClick={() => { stopCamera(); onClose(); }}
-            className="p-1 rounded-full hover:bg-amber-900/60 text-amber-300"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
+    <Modal
+      isOpen={isOpen}
+      onClose={handleModalClose}
+      title="Capturar Foto do Produto / Peça"
+      description="Use a câmera ou selecione um arquivo de imagem"
+      size="lg"
+    >
+      <div className="space-y-4 font-brand-sans">
         {/* Viewport Area */}
-        <div className="relative bg-black rounded-2xl overflow-hidden aspect-4/3 flex items-center justify-center border border-amber-800/50 shadow-inner">
+        <div className="relative bg-[#292724] rounded-2xl overflow-hidden aspect-4/3 flex items-center justify-center border border-[#E7D5BE] shadow-inner">
           {capturedImage ? (
             <img
               src={capturedImage}
-              alt="Foto capturada"
+              alt="Foto capturada da peça"
               className="w-full h-full object-contain"
             />
           ) : (
@@ -168,30 +166,32 @@ export const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onCap
               />
 
               {isStartingCamera && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-amber-950/80 text-amber-200 text-xs space-y-2">
-                  <RefreshCw className="w-6 h-6 animate-spin text-amber-400" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#292724]/80 text-[#FAF6EF] text-xs space-y-2">
+                  <RefreshCw className="w-6 h-6 animate-spin text-[#B85C38]" />
                   <span>Iniciando câmera...</span>
                 </div>
               )}
 
               {error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-amber-950/95 text-center space-y-3">
-                  <AlertCircle className="w-10 h-10 text-amber-400" />
-                  <p className="text-xs text-amber-200 font-medium">{error}</p>
-                  <button
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-[#292724]/95 text-center space-y-3">
+                  <AlertCircle className="w-10 h-10 text-[#B85C38]" />
+                  <p className="text-xs text-[#FAF6EF] font-medium">{error}</p>
+                  <Button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2 bg-amber-700 hover:bg-amber-600 text-amber-50 font-bold text-xs rounded-xl flex items-center space-x-2"
+                    variant="primary"
+                    size="sm"
+                    icon={Upload}
                   >
-                    <Upload className="w-4 h-4" />
-                    <span>Carregar do Dispositivo</span>
-                  </button>
+                    Carregar do Dispositivo
+                  </Button>
                 </div>
               )}
 
               {/* Camera viewfinder overlay grid lines */}
               {!error && !isStartingCamera && (
-                <div className="absolute inset-0 border-2 border-amber-400/20 rounded-2xl pointer-events-none flex items-center justify-center">
-                  <div className="w-20 h-20 border border-amber-300/40 rounded-full"></div>
+                <div className="absolute inset-0 border-2 border-[#E7D5BE]/30 rounded-2xl pointer-events-none flex items-center justify-center">
+                  <div className="w-20 h-20 border border-[#E7D5BE]/50 rounded-full"></div>
                 </div>
               )}
             </>
@@ -201,40 +201,38 @@ export const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onCap
         </div>
 
         {/* Controls */}
-        <div className="pt-1 flex items-center justify-between">
+        <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#E7D5BE]">
           {!capturedImage ? (
             <>
-              {/* Toggle switch front/back camera */}
-              <button
+              <Button
                 type="button"
                 onClick={handleSwitchCamera}
                 disabled={!!error}
-                className="p-3 bg-amber-900/80 hover:bg-amber-800 text-amber-200 rounded-2xl disabled:opacity-40 transition-colors"
-                title="Alternar Câmera"
-              >
-                <SwitchCamera className="w-5 h-5" />
-              </button>
+                variant="secondary"
+                size="sm"
+                icon={SwitchCamera}
+                ariaLabel="Alternar câmera frontal e traseira"
+              />
 
-              {/* Shutter Button */}
-              <button
+              <Button
                 type="button"
                 onClick={handleTakeSnapshot}
                 disabled={!!error || isStartingCamera}
-                className="flex items-center space-x-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-sm rounded-2xl shadow-lg disabled:opacity-40 transition-transform active:scale-95"
+                variant="primary"
+                size="md"
+                icon={Camera}
               >
-                <Camera className="w-5 h-5" />
-                <span>Capturar Foto</span>
-              </button>
+                Capturar Foto
+              </Button>
 
-              {/* Choose File Fallback */}
-              <button
+              <Button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 bg-amber-900/80 hover:bg-amber-800 text-amber-200 rounded-2xl transition-colors"
-                title="Escolher do Arquivo/Galeria"
-              >
-                <Upload className="w-5 h-5" />
-              </button>
+                variant="secondary"
+                size="sm"
+                icon={Upload}
+                ariaLabel="Carregar foto do dispositivo"
+              />
 
               <input
                 ref={fileInputRef}
@@ -243,31 +241,34 @@ export const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onCap
                 capture="environment"
                 onChange={handleFileUpload}
                 className="hidden"
+                id="camera-file-upload"
               />
             </>
           ) : (
             <>
-              <button
+              <Button
                 type="button"
                 onClick={handleRetake}
-                className="flex items-center space-x-2 px-4 py-2.5 bg-amber-900 hover:bg-amber-800 text-amber-200 font-bold text-xs rounded-xl"
+                variant="secondary"
+                size="sm"
+                icon={RefreshCw}
               >
-                <RefreshCw className="w-4 h-4" />
-                <span>Tirar Outra</span>
-              </button>
+                Tirar Outra
+              </Button>
 
-              <button
+              <Button
                 type="button"
                 onClick={handleConfirm}
-                className="flex items-center space-x-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md"
+                variant="primary"
+                size="sm"
+                icon={Check}
               >
-                <Check className="w-4 h-4" />
-                <span>Usar Esta Foto</span>
-              </button>
+                Usar Esta Foto
+              </Button>
             </>
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };

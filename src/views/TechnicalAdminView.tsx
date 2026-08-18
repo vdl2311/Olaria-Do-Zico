@@ -192,15 +192,15 @@ export const TechnicalAdminView: React.FC<TechnicalAdminViewProps> = ({ onBackTo
   // If not logged in as technical admin, show technical login screen
   if (!techUser) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-4 sm:p-6 font-mono selection:bg-cyan-500 selection:text-black">
-        <header className="max-w-4xl w-full mx-auto flex items-center justify-between py-2">
-          <div className="flex items-center gap-2 text-cyan-400">
+      <div className="min-h-screen bg-[#1C1A17] text-[#F2EBDD] flex flex-col justify-between p-4 sm:p-6 font-brand-sans selection:bg-[#C66B48] selection:text-white">
+        <header className="max-w-4xl w-full mx-auto flex items-center justify-between py-2 border-b border-[#3D3833]">
+          <div className="flex items-center gap-2 text-[#C66B48]">
             <Terminal className="w-6 h-6" />
-            <span className="font-bold text-sm tracking-wider">DEV_OPS :: CONSOLE TÉCNICO</span>
+            <span className="font-bold text-sm tracking-wider text-[#F2EBDD]">CONSOLE TÉCNICO &bull; OLARIA</span>
           </div>
           <button
             onClick={onBackToCommercial}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900 text-xs text-slate-400 hover:text-slate-200 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#3D3833] hover:border-[#4D4640] bg-[#252320] text-xs text-[#C9BFA8] hover:text-[#F2EBDD] transition-all"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Voltar ao Sistema Comercial</span>
@@ -208,61 +208,61 @@ export const TechnicalAdminView: React.FC<TechnicalAdminViewProps> = ({ onBackTo
         </header>
 
         <main className="max-w-md w-full mx-auto my-auto py-8">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="bg-[#252320] border border-[#3D3833] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-800/60 text-cyan-400 mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-[#3D2418] border border-[#C66B48]/40 text-[#C66B48] mx-auto flex items-center justify-center">
                 <Lock className="w-6 h-6" />
               </div>
-              <h2 className="text-lg font-bold text-slate-100">Portal do Administrador Técnico</h2>
-              <p className="text-xs text-slate-400 font-sans">
+              <h2 className="text-lg font-bold text-[#F2EBDD]">Portal do Administrador Técnico</h2>
+              <p className="text-xs text-[#C9BFA8] font-sans">
                 Acesso restrito para manutenção de infraestrutura, logs sanitizados e diagnósticos de sistema.
               </p>
             </div>
 
             {/* Strict Notice */}
-            <div className="p-3.5 bg-amber-950/30 border border-amber-800/40 rounded-xl text-amber-300 text-xs font-sans space-y-1">
+            <div className="p-3.5 bg-[#3D3220] border border-[#52442C] rounded-xl text-[#E0B366] text-xs font-sans space-y-1">
               <div className="flex items-center gap-1.5 font-bold">
-                <ShieldAlert className="w-4 h-4 text-amber-400" />
+                <ShieldAlert className="w-4 h-4 text-[#E0B366]" />
                 <span>Restrição de Privacidade & LGPD:</span>
               </div>
-              <p className="text-[11px] text-amber-200/80 leading-relaxed">
+              <p className="text-[11px] text-[#C9BFA8] leading-relaxed">
                 Este portal NÃO possui acesso a dados pessoais de clientes, CPFs, telefones, faturamento ou vendas. O acesso comercial é estritamente bloqueado por arquitetura.
               </p>
             </div>
 
             {loginError && (
-              <div className="p-3 bg-red-950/50 border border-red-800 rounded-xl text-red-300 text-xs">
+              <div className="p-3 bg-[#3D2620] border border-[#54332B] rounded-xl text-[#E07A6E] text-xs">
                 {loginError}
               </div>
             )}
 
             <form onSubmit={handleTechLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">E-mail Técnico</label>
+                <label className="block text-xs font-bold text-[#C9BFA8] mb-1">E-mail Técnico</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-cyan-300 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-hidden"
+                  className="w-full px-3 py-2 bg-[#1C1A17] border border-[#3D3833] rounded-xl text-sm text-[#F2EBDD] focus:border-[#C66B48] focus:ring-1 focus:ring-[#C66B48] outline-hidden"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">Senha de Infraestrutura</label>
+                <label className="block text-xs font-bold text-[#C9BFA8] mb-1">Senha de Infraestrutura</label>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-cyan-300 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-hidden"
+                  className="w-full px-3 py-2 bg-[#1C1A17] border border-[#3D3833] rounded-xl text-sm text-[#F2EBDD] focus:border-[#C66B48] focus:ring-1 focus:ring-[#C66B48] outline-hidden"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 mt-2"
+                className="w-full py-2.5 bg-[#C66B48] hover:bg-[#D67855] text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 mt-2"
               >
                 <Key className="w-4 h-4" />
                 <span>Autenticar no Console</span>
@@ -271,7 +271,7 @@ export const TechnicalAdminView: React.FC<TechnicalAdminViewProps> = ({ onBackTo
           </div>
         </main>
 
-        <footer className="max-w-md w-full mx-auto text-center py-2 text-slate-600 text-xs">
+        <footer className="max-w-md w-full mx-auto text-center py-2 text-[#8B8475] text-xs">
           Olaria Engine v2.4-Technical &bull; Zero Commercial Data Exposure
         </footer>
       </div>
@@ -279,21 +279,21 @@ export const TechnicalAdminView: React.FC<TechnicalAdminViewProps> = ({ onBackTo
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-mono selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen bg-[#1C1A17] text-[#F2EBDD] flex flex-col font-sans selection:bg-[#C66B48] selection:text-white">
       {/* Top Console Bar */}
-      <header className="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between">
+      <header className="bg-[#252320] border-b border-[#3D3833] px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-800/80 text-cyan-400 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-[#3D2418] border border-[#C66B48]/40 text-[#C66B48] flex items-center justify-center">
             <Terminal className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-cyan-400">DEV_CONSOLE</span>
-              <span className="px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/50 text-cyan-300 text-[10px]">
+              <span className="font-bold text-sm text-[#C66B48]">DEV_CONSOLE</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#3D2418] border border-[#C66B48]/40 text-[#D67855] text-[10px] font-bold">
                 ENV: PRODUCTION
               </span>
             </div>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-[#C9BFA8]">
               Operador: {techUser.name} &bull; Escopo: Infraestrutura & Diagnóstico
             </span>
           </div>

@@ -5,18 +5,27 @@ import {
   Mic, 
   Flame, 
   AlertTriangle, 
-  X, 
-  Trash2, 
   CheckCircle2, 
   Edit3, 
   PlusCircle, 
   MinusCircle,
-  Info,
-  Layers,
-  Sparkles
+  Layers
 } from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
 import { ProductionBatch, Product, ProductionStage } from '../types';
+import {
+  Button,
+  Card,
+  Modal,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  ConfirmModal,
+  StatusBadge,
+  EmptyState,
+  useToast
+} from '../components/ui';
 
 interface ProductionViewProps {
   onOpenVoiceModal: () => void;
@@ -35,12 +44,14 @@ const LOSS_REASONS = [
 ];
 
 export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal }) => {
+  const { showSuccess } = useToast();
   const [batches, setBatches] = useState<ProductionBatch[]>(() => StorageService.getProduction());
   const [products, setProducts] = useState<Product[]>(() => StorageService.getProducts());
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<ProductionBatch | null>(null);
+  const [batchToDelete, setBatchToDelete] = useState<ProductionBatch | null>(null);
 
   // Quick Breakage Modal state
   const [quickLossBatch, setQuickLossBatch] = useState<ProductionBatch | null>(null);
@@ -97,29 +108,27 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
     };
     StorageService.saveProduction(updated);
     refreshData();
+    showSuccess('Etapa Atualizada', `Lote ${batch.code} avançou para ${newStage}.`);
   };
 
-  const handleDeleteBatch = (batch: ProductionBatch) => {
-    if (confirm(`Deseja excluir o lote ${batch.code} (${batch.productName})? Se este lote já tiver enviado peças para o estoque, elas serão estornadas automaticamente.`)) {
-      StorageService.deleteProduction(batch.id);
-      refreshData();
-    }
+  const confirmDeleteBatch = () => {
+    if (!batchToDelete) return;
+    StorageService.deleteProduction(batchToDelete.id);
+    refreshData();
+    showSuccess('Lote Removido', `O lote ${batchToDelete.code} foi excluído.`);
+    setBatchToDelete(null);
   };
 
   const handleSaveBatch = (e: React.FormEvent) => {
     e.preventDefault();
     const prod = products.find(p => p.id === selectedProductId);
-    if (!prod) {
-      alert('Selecione um produto.');
-      return;
-    }
+    if (!prod) return;
 
     const safePlanned = Math.max(1, Number(quantityPlanned) || 1);
     const safeLost = Math.max(0, Number(quantityLost) || 0);
     const safeGood = Math.max(0, safePlanned - safeLost);
 
     if (editingBatch) {
-      // Editing existing batch
       const updatedBatch: ProductionBatch = {
         ...editingBatch,
         productId: prod.id,
@@ -135,8 +144,8 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
       };
 
       StorageService.saveProduction(updatedBatch);
+      showSuccess('Lote Atualizado', `Lote ${updatedBatch.code} salvo com sucesso!`);
     } else {
-      // Creating new batch
       const newBatch: ProductionBatch = {
         id: `batch-${Date.now()}`,
         code: `PRD-${Math.floor(100 + Math.random() * 900)}`,
@@ -154,13 +163,13 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
       };
 
       StorageService.saveProduction(newBatch);
+      showSuccess('Novo Lote Iniciado', `Lote ${newBatch.code} registrado em ${stage}.`);
     }
 
     refreshData();
     setIsModalOpen(false);
   };
 
-  // Quick breakage / loss handler
   const handleOpenQuickLoss = (batch: ProductionBatch) => {
     setQuickLossBatch(batch);
     setQuickLossAmount(1);
@@ -189,6 +198,7 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
 
     StorageService.saveProduction(updated);
     refreshData();
+    showSuccess('Quebra Registrada', `+${additionalLost} quebra(s) registrada(s) no lote ${quickLossBatch.code}.`);
     setQuickLossBatch(null);
   };
 
@@ -200,35 +210,39 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20 font-brand-sans">
       {/* Header & Voice Callout */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-amber-950 flex items-center gap-2">
-            <Hammer className="w-6 h-6 text-amber-800" />
+          <h2 className="text-xl font-black text-[#292724] font-brand-serif flex items-center gap-2">
+            <Hammer className="w-6 h-6 text-[#B85C38]" />
             <span>Controle de Produção & Queima de Cerâmica</span>
           </h2>
-          <p className="text-xs text-amber-800/80">
+          <p className="text-xs text-[#5C5852]">
             Acompanhe lotes nas etapas de Produção, Secagem, Queima no Forno, Acabamento e Entrada em Estoque.
           </p>
         </div>
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <button
+          <Button
             onClick={onOpenVoiceModal}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer whitespace-nowrap"
+            variant="secondary"
+            size="md"
+            icon={Mic}
+            className="flex-1 sm:flex-none"
           >
-            <Mic className="w-4 h-4 animate-pulse" />
-            <span>Registrar por Voz</span>
-          </button>
+            Registrar por Voz
+          </Button>
 
-          <button
+          <Button
             onClick={handleOpenNewBatch}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer whitespace-nowrap"
+            variant="primary"
+            size="md"
+            icon={Plus}
+            className="flex-1 sm:flex-none"
           >
-            <Plus className="w-4 h-4" />
-            <span>Novo Lote</span>
-          </button>
+            Novo Lote
+          </Button>
         </div>
       </div>
 
@@ -238,18 +252,17 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
           const count = batches.filter(b => b.stage === stg).length;
           const isKiln = stg === 'Queima';
           return (
-            <div 
-              key={stg} 
-              className={`p-3 rounded-xl border text-center shadow-xs transition-all ${
-                isKiln ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-400/30' : 'bg-white border-amber-200'
-              }`}
+            <Card
+              key={stg}
+              variant="flat"
+              className={`p-3 text-center ${isKiln ? 'bg-[#B85C38]/10 border-[#B85C38]/40' : ''}`}
             >
               <div className="flex items-center justify-center gap-1">
-                {isKiln && <Flame className="w-3.5 h-3.5 text-amber-600 animate-pulse" />}
-                <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">{stg}</p>
+                {isKiln && <Flame className="w-3.5 h-3.5 text-[#B85C38] animate-pulse" />}
+                <p className="text-[11px] font-bold text-[#8A5A44] uppercase tracking-wider">{stg}</p>
               </div>
-              <p className="text-xl font-black text-amber-950 mt-1">{count} Lote{count !== 1 ? 's' : ''}</p>
-            </div>
+              <p className="text-xl font-black text-[#292724] mt-1">{count} Lote{count !== 1 ? 's' : ''}</p>
+            </Card>
           );
         })}
       </div>
@@ -257,32 +270,22 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
       {/* Production Batches List */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-amber-950 text-base flex items-center gap-2">
-            <Layers className="w-4 h-4 text-amber-800" />
+          <h3 className="font-bold text-[#292724] text-base flex items-center gap-2 font-brand-serif">
+            <Layers className="w-4 h-4 text-[#8A5A44]" />
             <span>Lotes de Produção ({batches.length})</span>
           </h3>
-          <span className="text-xs text-amber-800/80">
-            Dica: Clique em <strong>Editar</strong> ou <strong>Quebra</strong> para ajustar vasos quebrados na queima ou secagem.
+          <span className="text-xs text-[#5C5852]">
+            Dica: Clique em <strong>Editar</strong> ou <strong>Quebra</strong> para registrar trincas de forno.
           </span>
         </div>
 
         {batches.length === 0 ? (
-          <div className="bg-white border border-amber-200 rounded-2xl p-10 text-center space-y-4 shadow-xs">
-            <Hammer className="w-12 h-12 text-amber-400 mx-auto" />
-            <div className="max-w-md mx-auto space-y-1">
-              <h3 className="font-bold text-amber-950 text-base">Nenhum lote de produção registrado</h3>
-              <p className="text-xs text-amber-700">
-                Inicie um lote para acompanhar a moldagem, secagem, queima e acabamento de vasos e peças cerâmicas.
-              </p>
-            </div>
-            <button
-              onClick={handleOpenNewBatch}
-              className="inline-flex items-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Iniciar Primeiro Lote</span>
-            </button>
-          </div>
+          <EmptyState
+            title="Nenhum lote de produção registrado"
+            description="Inicie um lote para acompanhar a moldagem, secagem, queima e acabamento das peças."
+            actionLabel="Iniciar Primeiro Lote"
+            onAction={handleOpenNewBatch}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {batches.map((b) => {
@@ -290,118 +293,108 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
               const isKiln = b.stage === 'Queima';
 
               return (
-                <div 
-                  key={b.id} 
-                  className={`bg-white border rounded-2xl p-4 shadow-xs space-y-3 transition-all ${
-                    isKiln ? 'border-amber-400 bg-amber-50/20' : 'border-amber-200'
-                  }`}
+                <Card
+                  key={b.id}
+                  variant="default"
+                  className={`p-4 space-y-3 ${isKiln ? 'border-[#B85C38]/50 bg-[#FAF6EF]' : ''}`}
                 >
-                  {/* Top Bar: Code, Name, Stage & Action Buttons */}
-                  <div className="flex items-start justify-between border-b border-amber-100 pb-2.5 gap-2">
+                  {/* Top Bar */}
+                  <div className="flex items-start justify-between border-b border-[#E7D5BE] pb-2.5 gap-2">
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-amber-800 font-mono">{b.code}</span>
-                        <span className="text-xs text-stone-400">•</span>
-                        <span className="text-xs text-stone-600 font-medium">{b.batchNumber || 'Lote sem nome'}</span>
+                        <span className="text-xs font-bold text-[#8A5A44] font-mono">{b.code}</span>
+                        <span className="text-xs text-[#5C5852]">•</span>
+                        <span className="text-xs text-[#5C5852] font-medium">{b.batchNumber || 'Lote sem nome'}</span>
                       </div>
-                      <h4 className="font-black text-amber-950 text-base mt-0.5">{b.productName}</h4>
+                      <h4 className="font-black text-[#292724] text-base mt-0.5">{b.productName}</h4>
                     </div>
 
-                    <div className="flex items-center space-x-1.5 shrink-0">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${
-                        b.stage === 'Pronto' 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : b.stage === 'Queima' 
-                          ? 'bg-amber-500 text-white shadow-xs' 
-                          : 'bg-amber-100 text-amber-900'
-                      }`}>
-                        {b.stage === 'Queima' && <Flame className="w-3 h-3 animate-pulse" />}
-                        <span>{b.stage}</span>
-                      </span>
+                    <div className="flex items-center space-x-1 shrink-0">
+                      <StatusBadge status={b.stage} />
 
-                      {/* Edit Button */}
-                      <button
+                      <Button
                         onClick={() => handleOpenEditBatch(b)}
-                        className="p-1.5 text-amber-900 bg-amber-100/70 hover:bg-amber-200 rounded-lg transition-colors cursor-pointer"
-                        title="Editar lote (quantidade, perdas, observações)"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
+                        variant="ghost"
+                        size="sm"
+                        icon={Edit3}
+                        ariaLabel={`Editar lote ${b.code}`}
+                      />
 
-                      {/* Delete Button */}
-                      <button
-                        onClick={() => handleDeleteBatch(b)}
-                        className="p-1.5 text-stone-400 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                        title="Excluir Lote"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <Button
+                        onClick={() => setBatchToDelete(b)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-rose-700"
+                        ariaLabel={`Excluir lote ${b.code}`}
+                      />
                     </div>
                   </div>
 
-                  {/* Quantity Stats with Breakage Focus */}
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs bg-amber-50/60 p-2.5 rounded-xl border border-amber-100">
+                  {/* Quantity Stats */}
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs bg-[#FAF6EF] p-2.5 rounded-2xl border border-[#E7D5BE]">
                     <div>
-                      <span className="text-stone-500 block text-[10px] uppercase font-bold">Produzidos</span>
-                      <span className="font-black text-amber-950 text-sm">{b.quantityProduced || b.quantityPlanned} un</span>
+                      <span className="text-[#5C5852] block text-[10px] uppercase font-bold">Produzidos</span>
+                      <span className="font-black text-[#292724] text-sm">{b.quantityProduced || b.quantityPlanned} un</span>
                     </div>
 
-                    <div className={`rounded-lg py-0.5 ${hasLoss ? 'bg-red-50 text-red-700' : ''}`}>
-                      <span className="text-red-600 block text-[10px] uppercase font-bold flex items-center justify-center gap-0.5">
+                    <div className={`rounded-xl py-0.5 ${hasLoss ? 'bg-rose-500/10 text-rose-700' : ''}`}>
+                      <span className="text-rose-700 block text-[10px] uppercase font-bold flex items-center justify-center gap-0.5">
                         <Flame className="w-2.5 h-2.5" />
-                        <span>Quebras/Perdas</span>
+                        <span>Quebras</span>
                       </span>
-                      <span className="font-black text-red-700 text-sm">{b.quantityLost || 0} un</span>
+                      <span className="font-black text-rose-700 text-sm">{b.quantityLost || 0} un</span>
                     </div>
 
-                    <div className="bg-emerald-50 rounded-lg py-0.5 text-emerald-900">
-                      <span className="text-emerald-700 block text-[10px] uppercase font-bold">Aproveitados</span>
-                      <span className="font-black text-emerald-900 text-sm">{b.quantityGood} un</span>
+                    <div className="bg-[#667052]/10 rounded-xl py-0.5 text-[#4F583D]">
+                      <span className="text-[#4F583D] block text-[10px] uppercase font-bold">Aproveitados</span>
+                      <span className="font-black text-[#4F583D] text-sm">{b.quantityGood} un</span>
                     </div>
                   </div>
 
                   {/* Quick Breakage Registration Action */}
-                  <div className="flex items-center justify-between bg-stone-50 px-3 py-2 rounded-xl border border-stone-200/80 text-xs">
-                    <span className="text-stone-600 font-medium flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Quebrou algum vaso na queima/manuseio?</span>
+                  <div className="flex items-center justify-between bg-[#FAF6EF] px-3 py-2 rounded-xl border border-[#E7D5BE] text-xs">
+                    <span className="text-[#5C5852] font-medium flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-[#B85C38]" />
+                      <span>Quebrou peça no forno ou secagem?</span>
                     </span>
 
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleOpenQuickLoss(b)}
-                      className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-lg text-xs flex items-center gap-1 transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
+                      variant="danger"
+                      size="sm"
+                      icon={PlusCircle}
                     >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>Registrar Quebra</span>
-                    </button>
+                      Quebra
+                    </Button>
                   </div>
 
                   {b.stage === 'Pronto' && (
-                    <div className="flex items-center space-x-1.5 text-xs text-emerald-800 font-semibold bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div className="flex items-center space-x-1.5 text-xs text-[#4F583D] font-semibold bg-[#667052]/10 px-2.5 py-1.5 rounded-xl border border-[#667052]/30">
+                      <CheckCircle2 className="w-4 h-4 text-[#4F583D] shrink-0" />
                       <span>Estoque atualizado com +{b.quantityGood} peças aproveitadas.</span>
                     </div>
                   )}
 
                   {b.notes && (
-                    <div className="text-xs text-amber-900/90 bg-amber-50/40 p-2 rounded-lg border border-amber-100 whitespace-pre-line font-mono text-[11px]">
+                    <div className="text-xs text-[#292724] bg-[#FAF6EF] p-2 rounded-xl border border-[#E7D5BE] whitespace-pre-line font-mono text-[11px]">
                       {b.notes}
                     </div>
                   )}
 
                   {/* Stage Progress Selector */}
-                  <div className="pt-2 border-t border-amber-100">
-                    <label className="text-[11px] font-bold text-amber-800 block mb-1.5">Avançar Etapa:</label>
+                  <div className="pt-2 border-t border-[#E7D5BE]">
+                    <label className="text-[11px] font-bold text-[#8A5A44] block mb-1.5">Avançar Etapa:</label>
                     <div className="flex flex-wrap gap-1">
                       {STAGES.map((stg) => (
                         <button
                           key={stg}
+                          type="button"
                           onClick={() => handleUpdateStage(b, stg)}
                           className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             b.stage === stg
-                              ? 'bg-amber-900 text-white shadow-xs'
-                              : 'bg-amber-100/80 text-amber-900 hover:bg-amber-200'
+                              ? 'bg-[#B85C38] text-white shadow-xs'
+                              : 'bg-[#E7D5BE]/50 text-[#292724] hover:bg-[#E7D5BE]'
                           }`}
                         >
                           {stg}
@@ -409,7 +402,7 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                       ))}
                     </div>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
@@ -418,282 +411,222 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
 
       {/* Main Create / Edit Batch Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-amber-200 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-amber-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Hammer className="w-5 h-5 text-amber-800" />
-                <h3 className="font-bold text-amber-950 text-base sm:text-lg">
-                  {editingBatch ? `Editar Lote: ${editingBatch.code}` : 'Registrar Novo Lote de Produção'}
-                </h3>
-              </div>
-              <button 
-                onClick={() => setIsModalOpen(false)} 
-                className="text-stone-400 hover:text-stone-700 p-1 rounded-lg cursor-pointer"
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title={editingBatch ? `Editar Lote: ${editingBatch.code}` : 'Registrar Novo Lote de Produção'}
+          description="Controle a quantidade moldada, trincas de secagem e quebras de forno."
+          size="md"
+        >
+          <form onSubmit={handleSaveBatch} className="space-y-4 font-brand-sans">
+            <FormField label="Produto / Peça" htmlFor="batch-product-select" required>
+              <Select
+                id="batch-product-select"
+                required
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
               >
-                <X className="w-5 h-5" />
-              </button>
+                <option value="">Selecione a peça...</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.category}) — Estoque: {p.stock} un</option>
+                ))}
+              </Select>
+            </FormField>
+
+            <div className="p-4 bg-[#FAF6EF] border border-[#E7D5BE] rounded-2xl space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Total Produzido" htmlFor="batch-planned-input" required>
+                  <Input
+                    id="batch-planned-input"
+                    type="number"
+                    min={1}
+                    required
+                    value={quantityPlanned}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setQuantityPlanned(parseInt(e.target.value) || 1)}
+                    className="font-bold"
+                  />
+                </FormField>
+
+                <FormField label="Perdas / Quebras" htmlFor="batch-lost-input">
+                  <Input
+                    id="batch-lost-input"
+                    type="number"
+                    min={0}
+                    max={quantityPlanned}
+                    value={quantityLost}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setQuantityLost(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="font-bold text-rose-700"
+                  />
+                </FormField>
+              </div>
+
+              <div>
+                <span className="text-[11px] font-bold text-[#8A5A44] block mb-1">Ajuste Rápido de Quebras (Queima/Forno):</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => calculateQuickIncrement(1)}
+                    className="px-2.5 py-1 bg-rose-500/15 text-rose-800 font-bold rounded-lg text-xs cursor-pointer hover:bg-rose-500/25"
+                  >
+                    +1 Quebrado
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => calculateQuickIncrement(2)}
+                    className="px-2.5 py-1 bg-rose-500/15 text-rose-800 font-bold rounded-lg text-xs cursor-pointer hover:bg-rose-500/25"
+                  >
+                    +2 Quebrados
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => calculateQuickIncrement(5)}
+                    className="px-2.5 py-1 bg-rose-500/15 text-rose-800 font-bold rounded-lg text-xs cursor-pointer hover:bg-rose-500/25"
+                  >
+                    +5 Quebrados
+                  </button>
+                  {quantityLost > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setQuantityLost(0)}
+                      className="px-2 py-1 bg-[#E7D5BE]/60 text-[#292724] font-bold rounded-lg text-xs cursor-pointer"
+                    >
+                      Zerar
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white p-3 rounded-xl border border-[#E7D5BE] flex items-center justify-between">
+                <span className="font-bold text-[#292724]">Peças Aproveitadas (Boas):</span>
+                <span className="text-[#4F583D] font-black text-base sm:text-lg">
+                  {Math.max(0, quantityPlanned - quantityLost)} unidades
+                </span>
+              </div>
             </div>
 
-            <form onSubmit={handleSaveBatch} className="space-y-4 text-xs sm:text-sm">
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Produto da Olaria / Peça:</label>
-                <select
-                  required
-                  value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-hidden focus:border-amber-600 font-medium"
-                >
-                  <option value="">Selecione o vaso / peça...</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.category}) — Estoque atual: {p.stock} un</option>
-                  ))}
-                </select>
-              </div>
+            <FormField label="Etapa Atual do Lote" htmlFor="batch-stage-select" required>
+              <Select
+                id="batch-stage-select"
+                value={stage}
+                onChange={(e) => setStage(e.target.value as ProductionStage)}
+              >
+                {STAGES.map(s => (
+                  <option key={s} value={s}>
+                    {s === 'Queima' ? '🔥 Queima (No Forno)' : s === 'Pronto' ? '✅ Pronto (Disponível no Estoque)' : s}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
 
-              {/* Quantities & Breakages Controls */}
-              <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-amber-900 mb-1">Total Produzido / Planejado:</label>
-                    <input
-                      type="number"
-                      min={1}
-                      required
-                      value={quantityPlanned}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setQuantityPlanned(parseInt(e.target.value) || 1)}
-                      className="w-full bg-white border border-amber-300 rounded-xl p-2.5 text-amber-950 font-bold focus:outline-hidden focus:border-amber-600"
-                    />
-                  </div>
+            <FormField label="Identificação / Nome do Lote" htmlFor="batch-identifier-input">
+              <Input
+                id="batch-identifier-input"
+                type="text"
+                value={batchNumber}
+                onChange={(e) => setBatchNumber(e.target.value)}
+                placeholder="Ex: Fornada 04 - Argila Vermelha"
+              />
+            </FormField>
 
-                  <div>
-                    <label className="block font-bold text-red-700 mb-1 flex items-center gap-1">
-                      <Flame className="w-3.5 h-3.5" />
-                      <span>Perdas / Quebras:</span>
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={quantityPlanned}
-                      value={quantityLost}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setQuantityLost(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-full bg-white border border-red-300 rounded-xl p-2.5 text-red-700 font-black focus:outline-hidden focus:border-red-600"
-                    />
-                  </div>
-                </div>
+            <FormField label="Observações (detalhes da queima, forno, motivos de quebra)" htmlFor="batch-notes-textarea">
+              <Textarea
+                id="batch-notes-textarea"
+                placeholder="Ex: Queima a 950°C no forno 2. 2 vasos trincaram."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </FormField>
 
-                {/* Quick Breakage Buttons */}
-                <div>
-                  <span className="text-[11px] font-bold text-amber-900 block mb-1">Ajuste Rápido de Quebras (Queima/Forno):</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => calculateQuickIncrement(1)}
-                      className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-lg text-xs cursor-pointer"
-                    >
-                      +1 Quebrado
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => calculateQuickIncrement(2)}
-                      className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-lg text-xs cursor-pointer"
-                    >
-                      +2 Quebrados
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => calculateQuickIncrement(5)}
-                      className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-lg text-xs cursor-pointer"
-                    >
-                      +5 Quebrados
-                    </button>
-                    {quantityLost > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => calculateQuickIncrement(-1)}
-                        className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-lg text-xs cursor-pointer"
-                      >
-                        -1 Correção
-                      </button>
-                    )}
-                    {quantityLost > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setQuantityLost(0)}
-                        className="px-2 py-1 bg-stone-100 hover:bg-stone-200 text-stone-500 font-bold rounded-lg text-xs cursor-pointer"
-                      >
-                        Zerar
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Summary Box */}
-                <div className="bg-white p-3 rounded-xl border border-amber-200 flex items-center justify-between">
-                  <span className="font-bold text-stone-700">Vasos Aproveitados (Boas):</span>
-                  <span className="text-emerald-800 font-black text-base sm:text-lg">
-                    {Math.max(0, quantityPlanned - quantityLost)} unidades
-                  </span>
-                </div>
-              </div>
-
-              {/* Stage Selection */}
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Etapa Atual do Lote:</label>
-                <select
-                  value={stage}
-                  onChange={(e) => setStage(e.target.value as ProductionStage)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 font-bold focus:outline-hidden focus:border-amber-600"
-                >
-                  {STAGES.map(s => (
-                    <option key={s} value={s}>
-                      {s === 'Queima' ? '🔥 Queima (No Forno)' : s === 'Pronto' ? '✅ Pronto (Disponível no Estoque)' : s}
-                    </option>
-                  ))}
-                </select>
-                {stage === 'Pronto' && (
-                  <p className="text-[11px] text-emerald-800 font-semibold mt-1 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Ao salvar como "Pronto", o estoque do vaso será creditado com as peças boas.</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Batch Identification */}
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Identificação / Nome do Lote:</label>
-                <input
-                  type="text"
-                  value={batchNumber}
-                  onChange={(e) => setBatchNumber(e.target.value)}
-                  placeholder="Ex: Fornada 04 - Argila Vermelha"
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-hidden focus:border-amber-600"
-                />
-              </div>
-
-              {/* Notes & Loss Details */}
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Observações (detalhes da queima, forno, motivos de quebra):</label>
-                <textarea
-                  rows={3}
-                  placeholder="Ex: Queima a 950°C no forno 2. 2 vasos trincaram devido à temperatura rápida."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 focus:outline-hidden focus:border-amber-600 text-xs"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end space-x-2 border-t border-amber-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 border border-stone-300 rounded-xl text-stone-700 font-bold hover:bg-stone-50 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-amber-900 hover:bg-amber-950 text-white rounded-xl font-bold shadow-md cursor-pointer flex items-center gap-1.5"
-                >
-                  <Hammer className="w-4 h-4" />
-                  <span>{editingBatch ? 'Salvar Alterações' : 'Criar Lote'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#E7D5BE]">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" size="md" icon={Hammer}>
+                {editingBatch ? 'Salvar Alterações' : 'Criar Lote'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* Quick Loss Registration Modal */}
       {quickLossBatch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-red-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-red-100 pb-3">
-              <div className="flex items-center gap-2 text-red-900">
-                <Flame className="w-5 h-5 text-red-600 animate-pulse" />
-                <h3 className="font-bold text-base">Registrar Quebra de Vaso</h3>
-              </div>
-              <button 
-                onClick={() => setQuickLossBatch(null)} 
-                className="text-stone-400 hover:text-stone-700 p-1 rounded-lg cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs text-amber-950 space-y-1">
-              <p><strong>Lote:</strong> {quickLossBatch.code} • {quickLossBatch.productName}</p>
-              <p><strong>Etapa Atual:</strong> {quickLossBatch.stage}</p>
-              <p><strong>Total Produzido:</strong> {quickLossBatch.quantityPlanned} un | <strong>Quebras Anteriores:</strong> {quickLossBatch.quantityLost || 0} un</p>
-            </div>
-
-            <form onSubmit={handleApplyQuickLoss} className="space-y-4 text-xs sm:text-sm">
-              <div>
-                <label className="block font-bold text-stone-800 mb-1">Quantidade de vasos quebrados / perdidos agora:</label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setQuickLossAmount(prev => Math.max(1, prev - 1))}
-                    className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold"
-                  >
-                    <MinusCircle className="w-5 h-5" />
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={Math.max(1, quickLossBatch.quantityPlanned - (quickLossBatch.quantityLost || 0))}
-                    value={quickLossAmount}
-                    onChange={(e) => setQuickLossAmount(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full text-center bg-red-50 border border-red-300 rounded-xl p-2 text-red-900 font-black text-lg focus:outline-hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setQuickLossAmount(prev => prev + 1)}
-                    className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold"
-                  >
-                    <PlusCircle className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-stone-800 mb-1">Motivo da Quebra / Ocorrência:</label>
-                <select
-                  value={quickLossReason}
-                  onChange={(e) => setQuickLossReason(e.target.value)}
-                  className="w-full bg-white border border-stone-300 rounded-xl p-2.5 text-stone-900 font-medium focus:outline-hidden focus:border-amber-700"
-                >
-                  {LOSS_REASONS.map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="p-3 bg-red-50 rounded-xl border border-red-200 text-red-900 text-xs">
-                As perdas serão computadas no lote e o total de vasos aproveitados será recalculado automaticamente para {Math.max(0, quickLossBatch.quantityPlanned - (quickLossBatch.quantityLost || 0) - quickLossAmount)} unidades.
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-stone-100">
-                <button
+        <Modal
+          isOpen={!!quickLossBatch}
+          onClose={() => setQuickLossBatch(null)}
+          title="Registrar Quebra de Vaso"
+          description={`Lote ${quickLossBatch.code} • ${quickLossBatch.productName}`}
+          size="sm"
+        >
+          <form onSubmit={handleApplyQuickLoss} className="space-y-4 font-brand-sans">
+            <FormField label="Vasos quebrados / perdidos agora" htmlFor="quick-loss-amount-input" required>
+              <div className="flex items-center gap-2">
+                <Button
                   type="button"
-                  onClick={() => setQuickLossBatch(null)}
-                  className="px-4 py-2 rounded-xl border border-stone-300 text-xs font-bold text-stone-700 hover:bg-stone-50 cursor-pointer"
+                  onClick={() => setQuickLossAmount(prev => Math.max(1, prev - 1))}
+                  variant="outline"
+                  size="sm"
+                  icon={MinusCircle}
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-red-800 hover:bg-red-900 text-white text-xs font-bold shadow-md cursor-pointer"
+                  Diminuir
+                </Button>
+                <Input
+                  id="quick-loss-amount-input"
+                  type="number"
+                  min={1}
+                  max={Math.max(1, quickLossBatch.quantityPlanned - (quickLossBatch.quantityLost || 0))}
+                  value={quickLossAmount}
+                  onChange={(e) => setQuickLossAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="text-center font-black text-lg text-rose-700"
+                />
+                <Button
+                  type="button"
+                  onClick={() => setQuickLossAmount(prev => prev + 1)}
+                  variant="outline"
+                  size="sm"
+                  icon={PlusCircle}
                 >
-                  Confirmar Quebra
-                </button>
+                  Aumentar
+                </Button>
               </div>
-            </form>
-          </div>
-        </div>
+            </FormField>
+
+            <FormField label="Motivo da Quebra / Ocorrência" htmlFor="quick-loss-reason-select" required>
+              <Select
+                id="quick-loss-reason-select"
+                value={quickLossReason}
+                onChange={(e) => setQuickLossReason(e.target.value)}
+              >
+                {LOSS_REASONS.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </Select>
+            </FormField>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#E7D5BE]">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setQuickLossBatch(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant="danger" size="md">
+                Confirmar Quebra
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={!!batchToDelete}
+        onClose={() => setBatchToDelete(null)}
+        onConfirm={confirmDeleteBatch}
+        title="Excluir Lote de Produção"
+        message={`Deseja excluir o lote ${batchToDelete?.code} (${batchToDelete?.productName})? Se este lote já tiver enviado peças para o estoque, elas serão estornadas.`}
+        confirmLabel="Excluir Lote"
+        variant="danger"
+      />
     </div>
   );
 };

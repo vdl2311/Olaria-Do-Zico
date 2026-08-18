@@ -22,6 +22,13 @@ import {
 } from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
 import { Delivery, Customer, Sale } from '../types';
+import {
+  Button,
+  Card,
+  Modal,
+  FormField,
+  Input
+} from '../components/ui';
 
 interface DeliveriesViewProps {
   onOpenVoiceModal: () => void;
@@ -568,382 +575,365 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = ({ onOpenVoiceModal
 
       {/* New / Edit Delivery Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl sm:rounded-2xl max-w-lg w-full border border-amber-200 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden my-auto animate-in slide-in-from-bottom-4">
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-amber-100 bg-white shrink-0">
-              <div className="flex items-center gap-2">
-                <Truck className="w-5 h-5 text-amber-800" />
-                <h3 className="font-bold text-amber-950 text-base sm:text-lg">
-                  {editingDelivery ? 'Editar Agendamento de Entrega' : 'Agendar Nova Entrega'}
-                </h3>
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title={editingDelivery ? 'Editar Agendamento de Entrega' : 'Agendar Nova Entrega'}
+          description="Preencha os detalhes para organizar o frete e rota de entrega."
+          size="lg"
+        >
+          <form onSubmit={handleSaveDelivery} className="space-y-4 font-brand-sans">
+            {/* Customer Mode Selection Tabs */}
+            <div>
+              <span className="block text-xs font-bold text-[#292724] mb-1.5">
+                Cliente da Entrega:
+              </span>
+
+              {/* Toggle between Registered Customers vs New Customer */}
+              <div className="grid grid-cols-2 gap-1.5 bg-[#FAF6EF] p-1 rounded-xl border border-[#E7D5BE] mb-2">
+                <button
+                  type="button"
+                  onClick={() => setCustomerMode('select')}
+                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                    customerMode === 'select'
+                      ? 'bg-[#B85C38] text-white shadow-2xs'
+                      : 'text-[#292724] hover:bg-[#E7D5BE]'
+                  }`}
+                >
+                  <UserCheck className="w-4 h-4" />
+                  <span>Selecionar Cadastrado ({customers.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomerMode('manual');
+                    setSelectedCustomerId('');
+                  }}
+                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                    customerMode === 'manual'
+                      ? 'bg-[#B85C38] text-white shadow-2xs'
+                      : 'text-[#292724] hover:bg-[#E7D5BE]'
+                  }`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>+ Novo Cliente</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-stone-400 hover:text-stone-700 text-2xl font-bold p-1 leading-none cursor-pointer"
-                aria-label="Fechar modal"
-              >
-                &times;
-              </button>
-            </div>
 
-            {/* Modal Body Form */}
-            <form onSubmit={handleSaveDelivery} className="flex flex-col flex-1 overflow-hidden">
-              <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 text-xs sm:text-sm">
-                
-                {/* Customer Mode Selection Tabs */}
-                <div>
-                  <label className="block font-bold text-amber-900 mb-1.5">
-                    Cliente da Entrega:
-                  </label>
-
-                  {/* Toggle between Registered Customers vs New Customer */}
-                  <div className="grid grid-cols-2 gap-1.5 bg-amber-100/70 p-1 rounded-xl border border-amber-200 mb-2">
-                    <button
-                      type="button"
-                      onClick={() => setCustomerMode('select')}
-                      className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                        customerMode === 'select'
-                          ? 'bg-amber-900 text-white shadow-2xs'
-                          : 'text-amber-900 hover:bg-amber-200/60'
-                      }`}
-                    >
-                      <UserCheck className="w-4 h-4" />
-                      <span>Selecionar Cadastrado ({customers.length})</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCustomerMode('manual');
-                        setSelectedCustomerId('');
-                      }}
-                      className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                        customerMode === 'manual'
-                          ? 'bg-amber-900 text-white shadow-2xs'
-                          : 'text-amber-900 hover:bg-amber-200/60'
-                      }`}
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      <span>+ Novo Cliente</span>
-                    </button>
+              {/* Mode 1: Select from Registered Customers */}
+              {customerMode === 'select' ? (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-[#8A5A44] pointer-events-none" />
+                    <Input
+                      id="del-cust-search"
+                      type="text"
+                      placeholder="Buscar cliente por nome, telefone ou cidade..."
+                      value={customerSearchQuery}
+                      onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
                   </div>
 
-                  {/* Mode 1: Select from Registered Customers */}
-                  {customerMode === 'select' ? (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-3 text-amber-700 pointer-events-none" />
-                        <input
-                          type="text"
-                          placeholder="Buscar cliente por nome, telefone ou cidade..."
-                          value={customerSearchQuery}
-                          onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                          className="w-full bg-amber-50/50 border border-amber-300 rounded-xl pl-9 pr-3 py-2 text-xs sm:text-sm text-amber-950 font-medium focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
-                        />
+                  {/* Customer Selector Dropdown / Scroll Area */}
+                  <div className="max-h-40 overflow-y-auto rounded-xl border border-[#E7D5BE] divide-y divide-[#E7D5BE] bg-white">
+                    {filteredCustomers.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-[#8A5A44]">
+                        Nenhum cliente cadastrado encontrado com "{customerSearchQuery}".
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomerMode('manual');
+                            setCustomerName(customerSearchQuery);
+                          }}
+                          className="block mx-auto mt-1.5 text-xs font-bold text-[#B85C38] underline hover:text-[#9E4A2A]"
+                        >
+                          Digitar como novo cliente
+                        </button>
                       </div>
-
-                      {/* Customer Selector Dropdown / Scroll Area */}
-                      <div className="max-h-40 overflow-y-auto rounded-xl border border-amber-200 divide-y divide-amber-100 bg-white">
-                        {filteredCustomers.length === 0 ? (
-                          <div className="p-3 text-center text-xs text-amber-800">
-                            Nenhum cliente cadastrado encontrado com "{customerSearchQuery}".
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCustomerMode('manual');
-                                setCustomerName(customerSearchQuery);
-                              }}
-                              className="block mx-auto mt-1.5 text-xs font-bold text-amber-900 underline"
-                            >
-                              Digitar como novo cliente
-                            </button>
-                          </div>
-                        ) : (
-                          filteredCustomers.map((cust) => {
-                            const isSelected = selectedCustomerId === cust.id || (customerName.toLowerCase() === cust.name.toLowerCase() && !selectedCustomerId);
-                            return (
-                              <button
-                                key={cust.id}
-                                type="button"
-                                onClick={() => handleSelectCustomer(cust)}
-                                className={`w-full text-left p-2.5 transition-colors flex items-center justify-between gap-2 cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-amber-100/90 text-amber-950 font-bold border-l-4 border-amber-800'
-                                    : 'hover:bg-amber-50 text-amber-900'
-                                }`}
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-bold text-sm truncate">{cust.name}</span>
-                                    {cust.type && (
-                                      <span className="text-[10px] px-1.5 py-0.2 bg-amber-200 text-amber-900 rounded font-semibold shrink-0">
-                                        {cust.type}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-[11px] text-amber-800/80 flex items-center gap-2 truncate">
-                                    {cust.city && <span>📍 {cust.city}</span>}
-                                    {(cust.phone || cust.whatsapp) && <span>📞 {cust.phone || cust.whatsapp}</span>}
-                                    {cust.address && <span className="truncate max-w-[140px]">🏠 {cust.address}</span>}
-                                  </div>
-                                </div>
-                                {isSelected && (
-                                  <CheckCircle2 className="w-4 h-4 text-amber-800 shrink-0" />
+                    ) : (
+                      filteredCustomers.map((cust) => {
+                        const isSelected = selectedCustomerId === cust.id || (customerName.toLowerCase() === cust.name.toLowerCase() && !selectedCustomerId);
+                        return (
+                          <button
+                            key={cust.id}
+                            type="button"
+                            onClick={() => handleSelectCustomer(cust)}
+                            className={`w-full text-left p-2.5 transition-colors flex items-center justify-between gap-2 cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#FAF6EF] text-[#292724] font-bold border-l-4 border-[#B85C38]'
+                                : 'hover:bg-[#FAF6EF]/60 text-[#292724]'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-sm truncate">{cust.name}</span>
+                                {cust.type && (
+                                  <span className="text-[10px] px-1.5 py-0.2 bg-[#E7D5BE] text-[#292724] rounded font-semibold shrink-0">
+                                    {cust.type}
+                                  </span>
                                 )}
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
+                              </div>
+                              <div className="text-[11px] text-[#8A5A44] flex items-center gap-2 truncate">
+                                {cust.city && <span>📍 {cust.city}</span>}
+                                {(cust.phone || cust.whatsapp) && <span>📞 {cust.phone || cust.whatsapp}</span>}
+                                {cust.address && <span className="truncate max-w-[140px]">🏠 {cust.address}</span>}
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <CheckCircle2 className="w-4 h-4 text-[#B85C38] shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
 
-                      {/* Selected Customer Confirmation Tag */}
-                      {customerName && (
-                        <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900">
-                          <div className="flex items-center gap-1.5 font-bold">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                            <span>Cliente selecionado: <strong>{customerName}</strong></span>
-                          </div>
-                          <span className="text-[11px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-medium">
-                            Endereço auto-preenchido
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    /* Mode 2: Manual Customer Input */
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ex: Carlos Mendes ou Floricultura São José"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm font-medium focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
-                      />
-                      <p className="text-[11px] text-amber-700">
-                        O cliente será salvo automaticamente no seu cadastro de clientes ao salvar a entrega.
-                      </p>
+                  {/* Selected Customer Confirmation Tag */}
+                  {customerName && (
+                    <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                        <span>Cliente selecionado: <strong>{customerName}</strong></span>
+                      </div>
+                      <span className="text-[11px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-medium">
+                        Endereço auto-preenchido
+                      </span>
                     </div>
                   )}
                 </div>
-
-                {/* Optional Recent Sales Link Section */}
-                {customerRecentSales.length > 0 && (
-                  <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-2">
-                    <p className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                      <Package className="w-4 h-4 text-amber-800" />
-                      <span>Vincular itens de venda recente deste cliente (opcional):</span>
-                    </p>
-                    <div className="grid grid-cols-1 gap-1.5">
-                      {customerRecentSales.map((s) => {
-                        const isSelected = selectedSaleId === s.id;
-                        const itemsText = s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ');
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => handleSelectSaleLink(s)}
-                            className={`p-2 rounded-lg text-left text-xs transition-colors border flex items-center justify-between gap-2 cursor-pointer ${
-                              isSelected
-                                ? 'bg-amber-200/90 border-amber-700 text-amber-950 font-bold'
-                                : 'bg-white border-amber-200 hover:bg-amber-100/60 text-amber-900'
-                            }`}
-                          >
-                            <div className="truncate">
-                              <span className="font-black mr-1.5">{s.code}</span>
-                              <span className="text-amber-800 font-medium">({s.date.split('-').reverse().join('/')}): </span>
-                              <span className="truncate">{itemsText}</span>
-                            </div>
-                            <span className="text-emerald-800 font-bold shrink-0">R$ {s.totalValue.toFixed(2)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Delivery Address */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block font-bold text-amber-900">Endereço de Entrega:</label>
-                    {address && (
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] font-bold text-amber-800 hover:underline flex items-center gap-1"
-                      >
-                        <MapPin className="w-3 h-3 text-amber-700" />
-                        <span>Abrir no Maps</span>
-                      </a>
-                    )}
-                  </div>
-                  <input
+              ) : (
+                /* Mode 2: Manual Customer Input */
+                <FormField label="Nome do Novo Cliente" htmlFor="del-cust-manual" required hint="Salvo automaticamente no cadastro de clientes.">
+                  <Input
+                    id="del-cust-manual"
                     type="text"
                     required
-                    placeholder="Ex: Rua das Palmeiras, 140 - Bairro Jardim, Campinas - SP"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm font-medium focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
+                    placeholder="Ex: Carlos Mendes ou Floricultura São José"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
                   />
-                </div>
+                </FormField>
+              )}
+            </div>
 
-                {/* Phone & Date */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-amber-900 mb-1">Telefone / WhatsApp:</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: (19) 99876-5432"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-amber-900 mb-1">Data Prevista:</label>
-                    <input
-                      type="date"
-                      required
-                      value={deliveryDate}
-                      onChange={(e) => setDeliveryDate(e.target.value)}
-                      className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm font-medium focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
-                    />
-                  </div>
-                </div>
-
-                {/* Shipping Fee & Courier */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-amber-900 mb-1">Valor do Frete (R$):</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      value={shippingFee}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setShippingFee(e.target.value)}
-                      placeholder="0.00"
-                      className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm font-semibold focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-amber-900 mb-1">Entregador / Veículo:</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Furgão do Zico / Carlos"
-                      value={deliveryPerson}
-                      onChange={(e) => setDeliveryPerson(e.target.value)}
-                      className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
-                    />
-                  </div>
-                </div>
-
-                {/* Status Selection */}
-                <div>
-                  <label className="block font-bold text-amber-900 mb-1">Status da Entrega:</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['Pendente', 'A caminho', 'Entregue'] as const).map((st) => (
+            {/* Optional Recent Sales Link Section */}
+            {customerRecentSales.length > 0 && (
+              <div className="p-3 bg-[#FAF6EF] rounded-xl border border-[#E7D5BE] space-y-2">
+                <p className="text-xs font-bold text-[#292724] flex items-center gap-1.5">
+                  <Package className="w-4 h-4 text-[#8A5A44]" />
+                  <span>Vincular itens de venda recente deste cliente (opcional):</span>
+                </p>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {customerRecentSales.map((s) => {
+                    const isSelected = selectedSaleId === s.id;
+                    const itemsText = s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ');
+                    return (
                       <button
-                        key={st}
+                        key={s.id}
                         type="button"
-                        onClick={() => setStatus(st)}
-                        className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                          status === st
-                            ? st === 'Entregue'
-                              ? 'bg-emerald-700 border-emerald-800 text-white shadow-2xs'
-                              : st === 'A caminho'
-                              ? 'bg-blue-700 border-blue-800 text-white shadow-2xs'
-                              : 'bg-amber-800 border-amber-900 text-white shadow-2xs'
-                            : 'bg-amber-50 border-amber-200 text-amber-900 hover:bg-amber-100'
+                        onClick={() => handleSelectSaleLink(s)}
+                        className={`p-2 rounded-lg text-left text-xs transition-colors border flex items-center justify-between gap-2 cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#E7D5BE] border-[#B85C38] text-[#292724] font-bold'
+                            : 'bg-white border-[#E7D5BE] hover:bg-[#FAF6EF] text-[#292724]'
                         }`}
                       >
-                        {st === 'Pendente' && '⏳ Pendente'}
-                        {st === 'A caminho' && '🚚 A caminho'}
-                        {st === 'Entregue' && '✓ Entregue'}
+                        <div className="truncate">
+                          <span className="font-black mr-1.5">{s.code}</span>
+                          <span className="text-[#8A5A44] font-medium">({s.date.split('-').reverse().join('/')}): </span>
+                          <span className="truncate">{itemsText}</span>
+                        </div>
+                        <span className="text-emerald-800 font-bold shrink-0">R$ {s.totalValue.toFixed(2)}</span>
                       </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Notes */}
-                <div>
-                  <label className="block font-bold text-amber-900 mb-1">Observações / Itens a Entregar:</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Ex: 2x Vaso Bojudo Terracota, 1x Fonte Cascata. Cuidado: Peças frágeis."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950 text-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200"
-                  />
-                  {/* Preset observation buttons */}
-                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    {['Cuidado: Frágil', 'Ligar 30 min antes', 'Entregar na portaria', 'Receber restante no local'].map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => setNotes(prev => prev ? `${prev} | ${tag}` : tag)}
-                        className="text-[11px] bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-md cursor-pointer transition-colors"
-                      >
-                        + {tag}
-                      </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
+            )}
 
-              {/* Modal Footer Actions */}
-              <div className="p-4 sm:p-5 border-t border-amber-100 bg-amber-50/40 flex items-center justify-end space-x-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 border border-amber-300 hover:bg-amber-100/60 rounded-xl text-amber-900 font-semibold text-xs sm:text-sm cursor-pointer transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-amber-900 hover:bg-amber-800 text-amber-50 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
-                >
-                  {editingDelivery ? 'Salvar Alterações' : 'Confirmar Agendamento'}
-                </button>
+            {/* Delivery Address */}
+            <FormField
+              label="Endereço de Entrega"
+              htmlFor="del-address"
+              required
+              hint={
+                address ? (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-bold text-[#B85C38] hover:underline flex items-center gap-1"
+                  >
+                    <MapPin className="w-3 h-3 text-[#B85C38]" />
+                    <span>Abrir no Maps</span>
+                  </a>
+                ) : undefined
+              }
+            >
+              <Input
+                id="del-address"
+                type="text"
+                required
+                placeholder="Ex: Rua das Palmeiras, 140 - Bairro Jardim, Campinas - SP"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+            </FormField>
+
+            {/* Phone & Date */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Telefone / WhatsApp" htmlFor="del-phone">
+                <Input
+                  id="del-phone"
+                  type="text"
+                  placeholder="Ex: (19) 99876-5432"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="Data Prevista" htmlFor="del-date" required>
+                <Input
+                  id="del-date"
+                  type="date"
+                  required
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                />
+              </FormField>
+            </div>
+
+            {/* Shipping Fee & Courier */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Valor do Frete (R$)" htmlFor="del-shipping">
+                <Input
+                  id="del-shipping"
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={shippingFee}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setShippingFee(e.target.value)}
+                  placeholder="0.00"
+                  className="font-semibold"
+                />
+              </FormField>
+
+              <FormField label="Entregador / Veículo" htmlFor="del-courier">
+                <Input
+                  id="del-courier"
+                  type="text"
+                  placeholder="Ex: Furgão do Zico / Carlos"
+                  value={deliveryPerson}
+                  onChange={(e) => setDeliveryPerson(e.target.value)}
+                />
+              </FormField>
+            </div>
+
+            {/* Status Selection */}
+            <div>
+              <span className="block text-xs font-bold text-[#292724] mb-1.5">Status da Entrega:</span>
+              <div className="grid grid-cols-3 gap-2">
+                {(['Pendente', 'A caminho', 'Entregue'] as const).map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => setStatus(st)}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                      status === st
+                        ? st === 'Entregue'
+                          ? 'bg-emerald-700 border-emerald-800 text-white shadow-2xs'
+                          : st === 'A caminho'
+                          ? 'bg-blue-700 border-blue-800 text-white shadow-2xs'
+                          : 'bg-[#B85C38] border-[#9E4A2A] text-white shadow-2xs'
+                        : 'bg-[#FAF6EF] border-[#E7D5BE] text-[#292724] hover:bg-[#E7D5BE]'
+                    }`}
+                  >
+                    {st === 'Pendente' && '⏳ Pendente'}
+                    {st === 'A caminho' && '🚚 A caminho'}
+                    {st === 'Entregue' && '✓ Entregue'}
+                  </button>
+                ))}
               </div>
-            </form>
-          </div>
-        </div>
+            </div>
+
+            {/* Notes */}
+            <FormField label="Observações / Itens a Entregar" htmlFor="del-notes">
+              <textarea
+                id="del-notes"
+                rows={2}
+                placeholder="Ex: 2x Vaso Bojudo Terracota, 1x Fonte Cascata. Cuidado: Peças frágeis."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full bg-white border border-[#D4BEA2] rounded-xl p-2.5 text-[#292724] text-sm focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 outline-hidden transition-all"
+              />
+              {/* Preset observation buttons */}
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                {['Cuidado: Frágil', 'Ligar 30 min antes', 'Entregar na portaria', 'Receber restante no local'].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setNotes(prev => prev ? `${prev} | ${tag}` : tag)}
+                    className="text-[11px] bg-[#FAF6EF] hover:bg-[#E7D5BE] text-[#292724] font-bold px-2 py-0.5 rounded-md cursor-pointer transition-colors"
+                  >
+                    + {tag}
+                  </button>
+                ))}
+              </div>
+            </FormField>
+
+            {/* Modal Footer Actions */}
+            <div className="p-3.5 border-t border-[#E7D5BE] flex items-center justify-end gap-2 shrink-0">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+              >
+                {editingDelivery ? 'Salvar Alterações' : 'Confirmar Agendamento'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* Delete Confirmation Modal */}
       {deliveryToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-red-200 space-y-4">
-            <h3 className="font-bold text-amber-950 text-base">Excluir Agendamento de Entrega?</h3>
-            <p className="text-xs text-amber-800">
-              Tem certeza que deseja remover o agendamento de entrega para{' '}
-              <strong>{deliveryToDelete.customerName}</strong> ({deliveryToDelete.address})?
-            </p>
-            <div className="flex justify-end space-x-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setDeliveryToDelete(null)}
-                className="px-4 py-2 border border-amber-300 rounded-xl text-amber-900 font-semibold text-xs cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs cursor-pointer"
-              >
-                Sim, Excluir
-              </button>
-            </div>
+        <Modal
+          isOpen={!!deliveryToDelete}
+          onClose={() => setDeliveryToDelete(null)}
+          title="Excluir Agendamento de Entrega?"
+          description={`Tem certeza que deseja remover o agendamento de entrega para ${deliveryToDelete.customerName} (${deliveryToDelete.address})?`}
+          size="sm"
+        >
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setDeliveryToDelete(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={confirmDelete}
+            >
+              Sim, Excluir
+            </Button>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

@@ -1,7 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Phone, MessageSquare, MapPin, Building, Search, X, UserPlus, Trash2, Edit3, AlertTriangle } from 'lucide-react';
+import { 
+  Users, 
+  Plus, 
+  MessageSquare, 
+  MapPin, 
+  Search, 
+  Trash2, 
+  Edit3 
+} from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
 import { Customer, CustomerType } from '../types';
+import {
+  Button,
+  Card,
+  Modal,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+  ConfirmModal,
+  StatusBadge,
+  EmptyState,
+  useToast
+} from '../components/ui';
 
 export const CUSTOMER_TYPES: CustomerType[] = [
   'Cliente final',
@@ -14,6 +35,7 @@ export const CUSTOMER_TYPES: CustomerType[] = [
 ];
 
 export const CustomersView: React.FC = () => {
+  const { showSuccess } = useToast();
   const [customers, setCustomers] = useState<Customer[]>(() => StorageService.getCustomers());
   const [sales, setSales] = useState(() => StorageService.getSales());
   const [receivables, setReceivables] = useState(() => StorageService.getReceivables());
@@ -93,8 +115,11 @@ export const CustomersView: React.FC = () => {
     refreshData();
     setIsModalOpen(false);
     setEditingCustomer(null);
+    showSuccess(
+      editingCustomer ? 'Cliente Atualizado' : 'Cliente Cadastrado',
+      `O cadastro de ${customerData.name} foi salvo.`
+    );
 
-    // Update selected customer if in view mode
     if (selectedCustomer && selectedCustomer.id === customerData.id) {
       setSelectedCustomer(customerData);
     }
@@ -107,6 +132,7 @@ export const CustomersView: React.FC = () => {
     if (selectedCustomer?.id === customerToDelete.id) {
       setSelectedCustomer(null);
     }
+    showSuccess('Cliente Removido', `O cadastro de ${customerToDelete.name} foi excluído.`);
     setCustomerToDelete(null);
   };
 
@@ -117,56 +143,49 @@ export const CustomersView: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20 font-brand-sans">
       {/* Top Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-amber-950 flex items-center gap-2">
-            <Users className="w-6 h-6 text-amber-800" />
+          <h2 className="text-xl font-black text-[#292724] font-brand-serif flex items-center gap-2">
+            <Users className="w-6 h-6 text-[#B85C38]" />
             <span>Cadastro e Histórico de Clientes</span>
           </h2>
-          <p className="text-xs text-amber-800/80">Acompanhe compras, contatos, WhatsApp e débitos em aberto.</p>
+          <p className="text-xs text-[#5C5852]">Acompanhe compras, contatos, WhatsApp e débitos em aberto.</p>
         </div>
 
-        <button
+        <Button
           onClick={handleOpenCreateModal}
-          className="flex items-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
+          variant="primary"
+          size="md"
+          icon={Plus}
         >
-          <Plus className="w-4 h-4" />
-          <span>Novo Cliente</span>
-        </button>
+          Novo Cliente
+        </Button>
       </div>
 
-      {/* Search */}
-      <div className="bg-white p-3.5 rounded-2xl border border-amber-200 flex items-center space-x-3 shadow-xs">
-        <Search className="w-5 h-5 text-amber-700 shrink-0" />
-        <input
+      {/* Search Bar */}
+      <Card variant="flat" className="p-3.5 flex items-center space-x-3">
+        <Search className="w-5 h-5 text-[#8A5A44] shrink-0" />
+        <Input
+          id="customer-search-input"
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Buscar por nome, cidade ou tipo (ex: Paisagista, Loja)..."
-          className="w-full bg-transparent text-sm text-amber-950 placeholder-amber-400 focus:outline-none"
+          className="border-none bg-transparent focus:ring-0 p-0 text-sm"
+          aria-label="Buscar clientes"
         />
-      </div>
+      </Card>
 
       {/* Customer Grid Cards */}
       {filteredCustomers.length === 0 ? (
-        <div className="bg-white border border-amber-200 rounded-2xl p-10 text-center space-y-4 shadow-xs">
-          <Users className="w-12 h-12 text-amber-400 mx-auto" />
-          <div className="max-w-md mx-auto space-y-1">
-            <h3 className="font-bold text-amber-950 text-base">Nenhum cliente cadastrado</h3>
-            <p className="text-xs text-amber-700">
-              Cadastre compradores, lojas, paisagistas e arquitetos para controle de histórico, vendas e fiado.
-            </p>
-          </div>
-          <button
-            onClick={handleOpenCreateModal}
-            className="inline-flex items-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Cadastrar Primeiro Cliente</span>
-          </button>
-        </div>
+        <EmptyState
+          title="Nenhum cliente cadastrado"
+          description="Cadastre compradores, lojas, paisagistas e arquitetos para controle de histórico, vendas e fiado."
+          actionLabel="Cadastrar Primeiro Cliente"
+          onAction={handleOpenCreateModal}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredCustomers.map((cust) => {
@@ -176,15 +195,20 @@ export const CustomersView: React.FC = () => {
             const totalSpent = custSales.reduce((acc, s) => acc + s.totalValue, 0);
 
             return (
-              <div key={cust.id} className="bg-white border border-amber-200 rounded-2xl p-4 shadow-xs space-y-3 hover:border-amber-400 transition-all flex flex-col justify-between">
+              <Card key={cust.id} variant="default" className="p-4 space-y-3 flex flex-col justify-between">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] uppercase font-bold text-[#8A5A44] bg-[#E7D5BE]/60 px-2 py-0.5 rounded-full">
                         {cust.type}
                       </span>
-                      <h3 className="font-bold text-amber-950 text-base mt-1">{cust.name}</h3>
-                      {cust.city && <p className="text-xs text-amber-800 flex items-center gap-1"><MapPin className="w-3 h-3 text-amber-600" />{cust.city}</p>}
+                      <h3 className="font-bold text-[#292724] text-base mt-1">{cust.name}</h3>
+                      {cust.city && (
+                        <p className="text-xs text-[#5C5852] flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-[#B85C38]" />
+                          {cust.city}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center space-x-1 shrink-0">
@@ -193,66 +217,68 @@ export const CustomersView: React.FC = () => {
                           href={`https://wa.me/${cust.whatsapp.replace(/\D/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded-xl transition-colors"
+                          className="p-2 bg-[#667052]/10 text-[#4F583D] hover:bg-[#667052]/20 rounded-xl transition-colors"
                           title="Abrir WhatsApp"
+                          aria-label={`Abrir WhatsApp de ${cust.name}`}
                         >
                           <MessageSquare className="w-4 h-4" />
                         </a>
                       )}
-                      <button
+                      <Button
                         onClick={() => handleOpenEditModal(cust)}
-                        className="p-2 bg-amber-100 text-amber-800 hover:bg-amber-200 rounded-xl transition-colors"
-                        title="Editar Cliente"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
+                        variant="ghost"
+                        size="sm"
+                        icon={Edit3}
+                        ariaLabel={`Editar ${cust.name}`}
+                      />
+                      <Button
                         onClick={() => setCustomerToDelete(cust)}
-                        className="p-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl transition-colors"
-                        title="Excluir Cliente"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        variant="ghost"
+                        size="sm"
+                        className="text-rose-700"
+                        ariaLabel={`Excluir ${cust.name}`}
+                      />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-amber-50/60 p-2.5 rounded-xl border border-amber-100">
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-[#FAF6EF] p-2.5 rounded-xl border border-[#E7D5BE]">
                     <div>
-                      <span className="text-amber-700 block text-[10px]">Total Comprado</span>
-                      <span className="font-bold text-amber-950">R$ {totalSpent.toFixed(2)}</span>
+                      <span className="text-[#8A5A44] block text-[10px] font-bold uppercase">Total Comprado</span>
+                      <span className="font-bold text-[#292724]">R$ {totalSpent.toFixed(2)}</span>
                     </div>
                     <div>
-                      <span className="text-amber-700 block text-[10px]">Débito (Fiado)</span>
-                      <span className={`font-bold ${pendingDebt > 0 ? 'text-red-600' : 'text-emerald-800'}`}>
+                      <span className="text-[#8A5A44] block text-[10px] font-bold uppercase">Débito (Fiado)</span>
+                      <span className={`font-bold ${pendingDebt > 0 ? 'text-rose-700' : 'text-[#4F583D]'}`}>
                         R$ {pendingDebt.toFixed(2)}
                       </span>
                     </div>
                   </div>
 
                   {cust.notes && (
-                    <div className="text-xs text-amber-900 bg-amber-100/60 px-2.5 py-1.5 rounded-lg border border-amber-200/80">
-                      <strong className="font-semibold text-amber-950">Obs:</strong> {cust.notes}
+                    <div className="text-xs text-[#292724] bg-[#FAF6EF] px-2.5 py-1.5 rounded-lg border border-[#E7D5BE]">
+                      <strong className="font-semibold text-[#8A5A44]">Obs:</strong> {cust.notes}
                     </div>
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-amber-100 flex items-center gap-2">
-                  <button
+                <div className="pt-2 border-t border-[#E7D5BE] flex items-center gap-2">
+                  <Button
                     onClick={() => setSelectedCustomer(cust)}
-                    className="flex-1 py-2 bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold rounded-xl text-xs transition-colors"
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1"
                   >
                     Histórico ({custSales.length})
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setCustomerToDelete(cust)}
-                    className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold rounded-xl text-xs transition-colors flex items-center space-x-1"
-                    title="Excluir Cliente"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Excluir</span>
-                  </button>
+                    variant="ghost"
+                    size="sm"
+                    icon={Trash2}
+                    className="text-rose-700"
+                  />
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -260,237 +286,175 @@ export const CustomersView: React.FC = () => {
 
       {/* Customer Modal (Create & Edit) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-amber-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-amber-100 pb-3">
-              <h3 className="font-bold text-amber-950 text-base">
-                {editingCustomer ? 'Editar Cliente' : 'Cadastrar Novo Cliente'}
-              </h3>
-              <button onClick={() => { setIsModalOpen(false); setEditingCustomer(null); }} className="text-amber-700">
-                <X className="w-5 h-5" />
-              </button>
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => { setIsModalOpen(false); setEditingCustomer(null); }}
+          title={editingCustomer ? 'Editar Cliente' : 'Cadastrar Novo Cliente'}
+          description="Acompanhe contatos, categoria do comprador e preferências."
+          size="md"
+        >
+          <form onSubmit={handleSaveCustomer} className="space-y-3 font-brand-sans">
+            <FormField label="Nome do Cliente" htmlFor="cust-name-input" required>
+              <Input
+                id="cust-name-input"
+                type="text"
+                required
+                placeholder="Ex: Carlos Mendes"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </FormField>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Telefone / WhatsApp" htmlFor="cust-whatsapp-input">
+                <Input
+                  id="cust-whatsapp-input"
+                  type="text"
+                  placeholder="(11) 99999-9999"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="Tipo de Cliente" htmlFor="cust-type-select" required>
+                <Select
+                  id="cust-type-select"
+                  value={type}
+                  onChange={(e) => setType(e.target.value as CustomerType)}
+                >
+                  {CUSTOMER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </Select>
+              </FormField>
             </div>
 
-            <form onSubmit={handleSaveCustomer} className="space-y-3 text-xs sm:text-sm">
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Nome do Cliente:</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Carlos Mendes"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
-                />
-              </div>
+            <FormField label="Cidade / Estado" htmlFor="cust-city-input">
+              <Input
+                id="cust-city-input"
+                type="text"
+                placeholder="Ex: Campinas / SP"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+            </FormField>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-amber-900 mb-1">Telefone / WhatsApp:</label>
-                  <input
-                    type="text"
-                    placeholder="(11) 99999-9999"
-                    value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
-                  />
-                </div>
+            <FormField label="Endereço" htmlFor="cust-address-input">
+              <Input
+                id="cust-address-input"
+                type="text"
+                placeholder="Ex: Rua das Flores, 120"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+            </FormField>
 
-                <div>
-                  <label className="block font-bold text-amber-900 mb-1">Tipo de Cliente:</label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value as CustomerType)}
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
-                  >
-                    {CUSTOMER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
+            <FormField label="CPF ou CNPJ (opcional)" htmlFor="cust-cpf-input">
+              <Input
+                id="cust-cpf-input"
+                type="text"
+                placeholder="000.000.000-00"
+                value={cpfCnpj}
+                onChange={(e) => setCpfCnpj(e.target.value)}
+              />
+            </FormField>
 
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Cidade:</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Campinas / SP"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
-                />
-              </div>
+            <FormField label="Observações" htmlFor="cust-notes-textarea">
+              <Textarea
+                id="cust-notes-textarea"
+                placeholder="Ex: Compra em lote para loja de plantas"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </FormField>
 
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Endereço:</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Rua das Flores, 120"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">CPF ou CNPJ (opcional):</label>
-                <input
-                  type="text"
-                  placeholder="000.000.000-00"
-                  value={cpfCnpj}
-                  onChange={(e) => setCpfCnpj(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Observações:</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Compra em lote para loja de plantas"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-2.5 text-amber-950"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => { setIsModalOpen(false); setEditingCustomer(null); }}
-                  className="px-4 py-2 border border-amber-300 rounded-xl text-amber-900 font-semibold"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-amber-800 hover:bg-amber-700 text-amber-50 rounded-xl font-bold"
-                >
-                  {editingCustomer ? 'Salvar Alterações' : 'Salvar Cliente'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#E7D5BE]">
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setIsModalOpen(false); setEditingCustomer(null); }}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" size="md">
+                {editingCustomer ? 'Salvar Alterações' : 'Salvar Cliente'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* Delete Confirmation Modal */}
-      {customerToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-red-200 space-y-4">
-            <div className="flex items-center space-x-3 text-red-600">
-              <div className="p-2.5 bg-red-100 rounded-xl">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-bold text-amber-950 text-base">Excluir Cliente</h3>
-                <p className="text-xs text-amber-800">Esta ação removerá o cliente do cadastro.</p>
-              </div>
-            </div>
-
-            <div className="bg-amber-50/80 p-3.5 rounded-xl border border-amber-200 text-xs space-y-2 text-amber-950">
-              <p>
-                Tem certeza que deseja excluir o cliente <strong>{customerToDelete.name}</strong>?
-              </p>
-              {(() => {
-                const custSales = sales.filter(s => s.customerId === customerToDelete.id || s.customerName.toLowerCase().includes(customerToDelete.name.toLowerCase()));
-                const custReceivables = receivables.filter(r => r.customerId === customerToDelete.id || r.customerName.toLowerCase().includes(customerToDelete.name.toLowerCase()));
-                const pendingDebt = custReceivables.filter(r => r.status !== 'Pago').reduce((acc, r) => acc + (r.amount - r.amountPaid), 0);
-
-                if (custSales.length > 0 || pendingDebt > 0) {
-                  return (
-                    <div className="p-2 bg-red-50 text-red-800 rounded-lg border border-red-200 space-y-1">
-                      <p className="font-bold">⚠️ Atenção:</p>
-                      <p>• {custSales.length} venda(s) registrada(s) no histórico.</p>
-                      {pendingDebt > 0 && <p className="font-bold">• Débito pendente: R$ {pendingDebt.toFixed(2)}</p>}
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCustomerToDelete(null)}
-                className="px-4 py-2 border border-amber-300 rounded-xl text-amber-900 font-semibold text-xs"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs flex items-center space-x-1.5 shadow-xs"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Sim, Excluir Cliente</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!customerToDelete}
+        onClose={() => setCustomerToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir Cliente"
+        message={`Tem certeza que deseja excluir o cliente "${customerToDelete?.name}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Sim, Excluir Cliente"
+        variant="danger"
+      />
 
       {/* Customer Details History Modal */}
       {selectedCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-amber-200 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-amber-100 pb-3">
-              <div>
-                <h3 className="font-bold text-amber-950 text-base">{selectedCustomer.name}</h3>
-                <p className="text-xs text-amber-800">{selectedCustomer.type} • {selectedCustomer.city || 'Cidade N/I'}</p>
-              </div>
-              <button onClick={() => setSelectedCustomer(null)} className="text-amber-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="font-bold text-amber-900 text-xs uppercase tracking-wider">Histórico de Compras</h4>
-              {sales
-                .filter(s => s.customerId === selectedCustomer.id || s.customerName.toLowerCase().includes(selectedCustomer.name.toLowerCase()))
-                .map((s) => (
-                  <div key={s.id} className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs space-y-1">
-                    <div className="flex justify-between font-bold text-amber-950">
-                      <span>{s.code} ({s.date})</span>
-                      <span>R$ {s.totalValue.toFixed(2)}</span>
-                    </div>
-                    <p className="text-amber-800">{s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</p>
-                    <p className="text-amber-700 font-medium">Pago: R$ {s.paidValue.toFixed(2)} | Status: {s.status}</p>
+        <Modal
+          isOpen={!!selectedCustomer}
+          onClose={() => setSelectedCustomer(null)}
+          title={selectedCustomer.name}
+          description={`${selectedCustomer.type} • ${selectedCustomer.city || 'Cidade N/I'}`}
+          size="md"
+        >
+          <div className="space-y-4 font-brand-sans">
+            <h4 className="font-bold text-[#8A5A44] text-xs uppercase tracking-wider font-brand-serif">
+              Histórico de Compras
+            </h4>
+            {sales
+              .filter(s => s.customerId === selectedCustomer.id || s.customerName.toLowerCase().includes(selectedCustomer.name.toLowerCase()))
+              .map((s) => (
+                <div key={s.id} className="p-3 bg-[#FAF6EF] rounded-xl border border-[#E7D5BE] text-xs space-y-1">
+                  <div className="flex justify-between font-bold text-[#292724]">
+                    <span>{s.code} ({s.date})</span>
+                    <span>R$ {s.totalValue.toFixed(2)}</span>
                   </div>
-                ))}
-            </div>
+                  <p className="text-[#5C5852]">{s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</p>
+                  <p className="text-[#8A5A44] font-medium">
+                    Pago: R$ {s.paidValue.toFixed(2)} | Status: <StatusBadge status={s.status} />
+                  </p>
+                </div>
+              ))}
 
-            <div className="flex items-center justify-between pt-3 border-t border-amber-100">
-              <button
+            <div className="flex items-center justify-between pt-3 border-t border-[#E7D5BE]">
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                icon={Trash2}
                 onClick={() => {
                   const cust = selectedCustomer;
                   setCustomerToDelete(cust);
                 }}
-                className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-bold text-xs flex items-center space-x-1"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Excluir Cliente</span>
-              </button>
+                Excluir Cliente
+              </Button>
               <div className="flex space-x-2">
-                <button
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  icon={Edit3}
                   onClick={() => {
                     const cust = selectedCustomer;
                     handleOpenEditModal(cust);
                   }}
-                  className="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl font-bold text-xs flex items-center space-x-1"
                 >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Editar</span>
-                </button>
-                <button
+                  Editar
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setSelectedCustomer(null)}
-                  className="px-4 py-2 bg-amber-900 text-amber-50 rounded-xl font-bold text-xs"
                 >
                   Fechar
-                </button>
+                </Button>
               </div>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

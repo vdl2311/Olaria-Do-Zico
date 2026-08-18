@@ -1,9 +1,12 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-serif: "Playfair Display", Georgia, Cambria, "Times New Roman", Times, serif;
 
+  /* Light Theme Brand Palette */
   --color-brand-terracota: #B85C38;
   --color-brand-terracota-dark: #9E4A2A;
   --color-brand-terracota-light: #CF734E;
@@ -25,6 +28,33 @@
 
   --color-brand-grafite: #292724;
   --color-brand-grafite-muted: #5C5852;
+
+  /* Dark Theme Design Tokens (Cohesive Terracota Brand Architecture) */
+  --color-dark-bg-base: #1C1A17;
+  --color-dark-bg-surface: #252320;
+  --color-dark-bg-elevated: #2E2A26;
+
+  --color-dark-border-subtle: #3D3833;
+  --color-dark-border-strong: #4D4640;
+
+  --color-dark-text-primary: #F2EBDD;
+  --color-dark-text-secondary: #C9BFA8;
+  --color-dark-text-muted: #8B8475;
+  --color-dark-text-on-accent: #FFFFFF;
+
+  --color-dark-terracota: #C66B48;
+  --color-dark-terracota-hover: #D67855;
+  --color-dark-terracota-active: #B85C38;
+  --color-dark-terracota-bg: #3D2418;
+
+  --color-dark-status-success-bg: #2D3326;
+  --color-dark-status-success-text: #A4B38A;
+  --color-dark-status-warning-bg: #3D3220;
+  --color-dark-status-warning-text: #E0B366;
+  --color-dark-status-error-bg: #3D3620;
+  --color-dark-status-error-text: #E07A6E;
+  --color-dark-status-info-bg: #1F2D3A;
+  --color-dark-status-info-text: #7BA5C9;
 }
 
 :root {
@@ -34,14 +64,173 @@
   color: #292724;
 }
 
+html.dark, :root.dark {
+  color-scheme: dark;
+  background-color: #1C1A17;
+  color: #F2EBDD;
+}
+
 html, body {
   max-width: 100vw;
   overflow-x: hidden;
   position: relative;
 }
 
+body {
+  background-color: #F7F1E7;
+  color: #292724;
+}
+
+html.dark body, body.dark {
+  background-color: #1C1A17;
+  color: #F2EBDD;
+}
+
+/* =========================================================================
+   OLARIA DO ZICO - DESIGN SYSTEM DARK MODE ARCHITECTURE
+   ========================================================================= */
+
+/* 1. Surfaces & Elevations */
+.dark .bg-white,
+.dark .bg-\[\#FAF6EF\],
+.dark .bg-\[\#F7F1E7\],
+.dark .bg-\[\#FAF6EF\]\/90,
+.dark .bg-\[\#FAF6EF\]\/80,
+.dark .bg-\[\#F1E5D5\] {
+  background-color: #252320 !important;
+  color: #F2EBDD !important;
+}
+
+.dark .bg-\[\#E7D5BE\],
+.dark .bg-\[\#E7D5BE\]\/40,
+.dark .bg-\[\#E7D5BE\]\/60,
+.dark .bg-\[\#E7D5BE\]\/20,
+.dark .bg-\[\#E7D5BE\]\/30 {
+  background-color: #2E2A26 !important;
+  color: #F2EBDD !important;
+}
+
+/* Elevated Surfaces (Modals, Popovers, Dropdowns) */
+.dark [role="dialog"],
+.dark .modal-container,
+.dark .bg-elevated {
+  background-color: #2E2A26 !important;
+  border-color: #3D3833 !important;
+  color: #F2EBDD !important;
+}
+
+/* 2. Text Contrasts (WCAG AAA/AA Compliance) */
+.dark .text-\[\#292724\],
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #F2EBDD !important;
+}
+
+.dark .text-\[\#5C5852\] {
+  color: #C9BFA8 !important;
+}
+
+.dark .text-\[\#8A5A44\],
+.dark .text-\[\#6E4533\] {
+  color: #D67855 !important;
+}
+
+/* 3. Borders */
+.dark .border-\[\#E7D5BE\],
+.dark .border-\[\#D4BEA2\],
+.dark .border-\[\#E7D5BE\]\/60,
+.dark .border-\[\#D4BEA2\]\/60,
+.dark .border-\[\#E7D5BE\]\/40,
+.dark .border-[#6E4533] {
+  border-color: #3D3833 !important;
+}
+
+/* 4. Terracota Primary Actions in Dark Mode (Clared for 4.5:1+ Contrast) */
+.dark .bg-\[\#B85C38\] {
+  background-color: #C66B48 !important;
+  color: #FFFFFF !important;
+}
+
+.dark .bg-\[\#B85C38\]:hover,
+.dark .hover\:bg-\[\#9E4A2A\]:hover {
+  background-color: #D67855 !important;
+}
+
+.dark .border-\[\#B85C38\],
+.dark .text-\[\#B85C38\] {
+  border-color: #C66B48 !important;
+  color: #C66B48 !important;
+}
+
+/* 5. Tables in Dark Mode */
+.dark table {
+  color: #F2EBDD !important;
+}
+
+.dark th {
+  background-color: #1C1A17 !important;
+  color: #C9BFA8 !important;
+  border-color: #3D3833 !important;
+}
+
+.dark td {
+  border-color: #3D3833 !important;
+  color: #F2EBDD !important;
+}
+
+.dark tr:hover {
+  background-color: #2E2A26 !important;
+}
+
+/* 6. Form Controls in Dark Mode */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #1C1A17 !important;
+  color: #F2EBDD !important;
+  border-color: #3D3833 !important;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #4D4640 !important;
+  outline-color: #C66B48 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #8B8475 !important;
+}
+
+/* 7. Scrollbars in Dark Mode */
+.dark ::-webkit-scrollbar-track {
+  background: #1C1A17;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3D3833;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #4D4640;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
+}
+
+/* Global focus-visible for accessibility (WCAG 2.4.7) */
+*:focus-visible {
+  outline: 2px solid var(--color-brand-terracota, #B85C38);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for interactive elements */
+button, a, input, select, textarea {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
 /* Elegant scrollbar for brand palette */

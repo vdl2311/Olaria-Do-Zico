@@ -3,6 +3,8 @@ import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { VoiceModal } from './components/VoiceModal';
 import { VoiceFloatingButton } from './components/VoiceFloatingButton';
+import { ToastProvider } from './components/ui/Toast';
+import { ThemeProvider } from './context/ThemeContext';
 import { StorageService } from './services/storage';
 import { AuthService } from './services/authService';
 import { AuthUser } from './types';
@@ -23,7 +25,7 @@ import { SecurityUsersView } from './views/SecurityUsersView';
 import { BrandKitView } from './views/BrandKitView';
 import { LoginView } from './views/LoginView';
 import { TechnicalAdminView } from './views/TechnicalAdminView';
-import { ShieldAlert, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => AuthService.getCurrentUser());
@@ -64,24 +66,26 @@ export default function App() {
   };
 
   const handleActionApplied = () => {
-    // Re-render views if needed when a voice action is confirmed and applied
     setActiveView((prev) => prev);
   };
 
   // If in Technical DevOps portal mode
   if (isTechnicalPortalOpen) {
     return (
-      <TechnicalAdminView onBackToCommercial={() => setIsTechnicalPortalOpen(false)} />
+      <ToastProvider>
+        <TechnicalAdminView onBackToCommercial={() => setIsTechnicalPortalOpen(false)} />
+      </ToastProvider>
     );
   }
 
   // If not authenticated, display login screen
   if (!currentUser) {
     return (
-      <LoginView
-        onLoginSuccess={handleLoginSuccess}
-        onNavigateToTechnical={() => setIsTechnicalPortalOpen(true)}
-      />
+      <ToastProvider>
+        <LoginView
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </ToastProvider>
     );
   }
 
@@ -102,6 +106,7 @@ export default function App() {
         Seu perfil de usuário (<strong>{currentUser?.name || 'Usuário'}</strong>) não possui permissão para visualizar este módulo. Solicite a liberação ao proprietário da olaria.
       </p>
       <button
+        type="button"
         onClick={() => setActiveView('dashboard')}
         className="px-5 py-2.5 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold rounded-xl text-xs transition-all cursor-pointer"
       >
@@ -146,74 +151,79 @@ export default function App() {
   const isDemo = currentUser.tenantId === 'tenant_demo_sandbox_01';
 
   return (
-    <div className="min-h-screen bg-[#F7F1E7] text-[#292724] font-brand-sans flex flex-col antialiased selection:bg-[#E7D5BE] selection:text-[#292724] overflow-x-hidden w-full">
-      {/* Top Header */}
-      <Header 
-        activeView={activeView} 
-        onOpenVoiceModal={handleOpenVoiceModal} 
-        onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
-        onNavigateToTechnical={() => setIsTechnicalPortalOpen(true)}
-        onNavigateToSecurity={() => setActiveView('seguranca')}
-        onNavigateToBrandKit={() => setActiveView('brandkit')}
-      />
+    <ThemeProvider>
+      <ToastProvider>
+        <div className="min-h-screen bg-[#F7F1E7] dark:bg-[#1A1816] text-[#292724] dark:text-[#F7F1E7] font-brand-sans flex flex-col antialiased selection:bg-[#E7D5BE] selection:text-[#292724] transition-colors duration-200 overflow-x-hidden w-full">
+          {/* Top Header */}
+        <Header 
+          activeView={activeView} 
+          onOpenVoiceModal={handleOpenVoiceModal} 
+          onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
+          onNavigateToSecurity={() => setActiveView('seguranca')}
+          onNavigateToBrandKit={() => setActiveView('brandkit')}
+        />
 
-      {/* Demo Sandbox Banner */}
-      {isDemo && (
-        <div className="bg-[#8A5A44] text-[#F7F1E7] border-b border-[#6E4533] px-4 py-2.5 shadow-xs font-brand-sans">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2 text-center sm:text-left">
-              <span className="px-2 py-0.5 rounded-md bg-[#6E4533] font-black text-[10px] tracking-wider uppercase border border-[#A7735B]/40 shrink-0 text-[#E7D5BE]">
-                Sandbox
-              </span>
-              <span className="font-medium text-[#F7F1E7]">
-                Você está no <strong>Ambiente de Demonstração</strong>. Todos os dados (vendas, estoque, financeiro) são fictícios e 100% isolados da produção real.
-              </span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => {
-                  StorageService.resetDemoSandbox();
-                }}
-                className="px-3 py-1 bg-[#B85C38] hover:bg-[#9E4A2A] text-white rounded-lg font-bold transition-colors cursor-pointer text-xs"
-              >
-                Resetar Demonstração
-              </button>
-              <button
-                onClick={handleLogout}
-                className="px-3 py-1 bg-[#292724] hover:bg-black text-[#E7D5BE] rounded-lg font-semibold transition-colors cursor-pointer text-xs"
-              >
-                Sair
-              </button>
+        {/* Demo Sandbox Banner */}
+        {isDemo && (
+          <div className="bg-[#8A5A44] text-[#F7F1E7] border-b border-[#6E4533] px-4 py-2.5 shadow-xs font-brand-sans">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 text-center sm:text-left">
+                <span className="px-2 py-0.5 rounded-md bg-[#6E4533] font-black text-[10px] tracking-wider uppercase border border-[#A7735B]/40 shrink-0 text-[#E7D5BE]">
+                  Sandbox
+                </span>
+                <span className="font-medium text-[#F7F1E7]">
+                  Você está no <strong>Ambiente de Demonstração</strong>. Todos os dados (vendas, estoque, financeiro) são fictícios e 100% isolados da produção real.
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    StorageService.resetDemoSandbox();
+                  }}
+                  className="px-3 py-1 bg-[#B85C38] hover:bg-[#9E4A2A] text-white rounded-lg font-bold transition-colors cursor-pointer text-xs focus-visible:outline-2 focus-visible:outline-[#FAF6EF]"
+                >
+                  Resetar Demonstração
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-3 py-1 bg-[#292724] hover:bg-black text-[#E7D5BE] rounded-lg font-semibold transition-colors cursor-pointer text-xs focus-visible:outline-2 focus-visible:outline-[#FAF6EF]"
+                >
+                  Sair
+                </button>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* Main Body with Desktop Sidebar Navigation */}
+        <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 gap-6 min-w-0">
+          <Navigation 
+            activeView={activeView} 
+            setActiveView={setActiveView} 
+            isMobileDrawerOpen={isMobileDrawerOpen}
+            setIsMobileDrawerOpen={setIsMobileDrawerOpen}
+            onLogout={handleLogout}
+          />
+
+          <main className="flex-1 min-w-0 w-full pb-20 lg:pb-6">
+            {renderActiveView()}
+          </main>
         </div>
-      )}
 
-      {/* Main Body with Desktop Sidebar Navigation */}
-      <div className="flex-1 flex max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 gap-6 min-w-0">
-        <Navigation 
-          activeView={activeView} 
-          setActiveView={setActiveView} 
-          isMobileDrawerOpen={isMobileDrawerOpen}
-          setIsMobileDrawerOpen={setIsMobileDrawerOpen}
-          onLogout={handleLogout}
-        />
+        {/* Floating Voice Button */}
+        <VoiceFloatingButton onClick={handleOpenVoiceModal} />
 
-        <main className="flex-1 min-w-0 w-full pb-20 lg:pb-6">
-          {renderActiveView()}
-        </main>
-      </div>
-
-      {/* Floating Voice Button */}
-      <VoiceFloatingButton onClick={handleOpenVoiceModal} />
-
-      {/* Voice Assistant Modal */}
-      {isVoiceModalOpen && (
-        <VoiceModal
-          onClose={handleCloseVoiceModal}
-          onActionApplied={handleActionApplied}
-        />
-      )}
-    </div>
+        {/* Voice Assistant Modal */}
+        {isVoiceModalOpen && (
+          <VoiceModal
+            onClose={handleCloseVoiceModal}
+            onActionApplied={handleActionApplied}
+          />
+        )}
+        </div>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
