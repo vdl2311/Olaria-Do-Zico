@@ -12,10 +12,10 @@ import {
 } from '../components/ui';
 
 interface CustomOrdersViewProps {
-  onOpenVoiceModal: () => void;
+  onOpenVoiceModal?: () => void;
 }
 
-export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceModal }) => {
+export const CustomOrdersView: React.FC<CustomOrdersViewProps> = () => {
   const [orders, setOrders] = useState<CustomOrder[]>(() => StorageService.getCustomOrders());
   const [customers, setCustomers] = useState<Customer[]>(() => StorageService.getCustomers());
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -130,16 +130,8 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = ({ onOpenVoiceM
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
           <button
-            onClick={onOpenVoiceModal}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
-          >
-            <Mic className="w-4 h-4 animate-pulse" />
-            <span>Pedir por Voz</span>
-          </button>
-
-          <button
             onClick={() => setIsModalOpen(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Pedido</span>

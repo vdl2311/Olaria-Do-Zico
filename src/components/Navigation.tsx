@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { AuthService } from '../services/authService';
+import { BrandSymbol } from './BrandLogo';
 
 interface NavigationProps {
   activeView: string;
@@ -253,84 +254,129 @@ export const Navigation: React.FC<NavigationProps> = ({
         </div>
       </nav>
 
-      {/* Mobile Slide-Up Navigation Drawer */}
+      {/* Mobile Slide-in Lateral Navigation Drawer (Menu Slide) */}
       {isMobileDrawerOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-xs animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-label="Menu Completo de Navegação">
+        <div 
+          className="lg:hidden fixed inset-0 z-50 flex justify-start bg-black/60 backdrop-blur-xs transition-opacity duration-300" 
+          role="dialog" 
+          aria-modal="true" 
+          aria-label="Menu Principal da Olaria"
+        >
+          {/* Backdrop Click Dismiss */}
           <div 
-            className="fixed inset-0" 
+            className="fixed inset-0 cursor-pointer" 
             onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(false)} 
             aria-hidden="true"
           />
-          <div className="relative bg-[#8A5A44] dark:bg-[#252320] text-[#F7F1E7] dark:text-[#F2EBDD] rounded-t-3xl border-t border-[#6E4533] dark:border-[#3D3833] p-5 shadow-2xl max-h-[85vh] overflow-y-auto z-10 space-y-5 font-brand-sans">
-            <div className="flex items-center justify-between border-b border-[#6E4533] pb-3">
-              <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-5 h-5 text-[#E7D5BE]" />
-                <h3 className="font-brand-serif font-bold text-white text-base">Menu Completo da Olaria</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(false)}
-                aria-label="Fechar menu"
-                className="p-1 rounded-full bg-[#6E4533] text-[#E7D5BE] hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="space-y-5">
-              {NAV_GROUPS.map((group, idx) => (
-                <div key={idx} className="space-y-2">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#E7D5BE] border-b border-[#6E4533] pb-1">
-                    {group.title}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = activeView === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => handleSelectView(item.id)}
-                          aria-label={`Acessar ${item.label}`}
-                          className={`flex items-center space-x-2.5 p-3 rounded-xl text-xs font-bold text-left transition-all cursor-pointer ${
-                            isActive
-                              ? 'bg-[#B85C38] text-white shadow-md'
-                              : 'bg-[#6E4533]/80 text-[#FAF6EF] hover:bg-[#6E4533]'
-                          }`}
-                        >
-                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-[#E7D5BE]'}`} />
-                          <span className="truncate flex-1">{item.label}</span>
-                          {item.badge !== undefined && (
-                            <span className="bg-rose-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+          {/* Slide Drawer Content (From Left) */}
+          <div className="relative w-[85%] max-w-xs sm:max-w-sm h-full bg-[#8A5A44] dark:bg-[#252320] text-[#F7F1E7] dark:text-[#F2EBDD] border-r border-[#6E4533] dark:border-[#3D3833] p-5 shadow-2xl z-10 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-left duration-300 font-brand-sans">
+            
+            {/* Top Drawer Header */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[#6E4533] pb-3.5">
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-[#FAF6EF] flex items-center justify-center p-1 shrink-0">
+                    <BrandSymbol variant="terracota" className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-brand-serif font-black text-[#FAF6EF] text-sm uppercase tracking-wider truncate">
+                      {currentUser?.companyName || 'Olaria do Zico'}
+                    </h3>
+                    <p className="text-[10px] text-[#E7D5BE] font-medium">Gestão & Inteligência</p>
                   </div>
                 </div>
-              ))}
+
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(false)}
+                  aria-label="Fechar menu"
+                  className="p-1.5 rounded-xl bg-[#6E4533] hover:bg-[#5C3829] text-[#E7D5BE] hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* User Profile Card in Drawer */}
+              <div className="p-3 bg-[#6E4533]/90 rounded-2xl border border-[#A7735B]/40">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#B85C38] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-xs">
+                    <UserCheck className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-black text-[#F7F1E7] truncate">
+                      {currentUser?.name || 'Oleiro'}
+                    </p>
+                    <p className="text-[10px] text-[#E7D5BE] font-bold truncate">
+                      {currentUser?.role === 'PROPRIETARIO' ? '👑 Proprietário Geral' : '👷 Operacional'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation Items by Group */}
+              <div className="space-y-4 pt-1">
+                {NAV_GROUPS.map((group, idx) => (
+                  <div key={idx} className="space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#E7D5BE]/80 px-2 font-mono">
+                      {group.title}
+                    </p>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = activeView === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleSelectView(item.id)}
+                            aria-label={`Acessar ${item.label}`}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              isActive
+                                ? 'bg-[#B85C38] text-white shadow-sm translate-x-1'
+                                : 'text-[#E7D5BE] hover:bg-[#6E4533] hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2.5 min-w-0">
+                              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-[#E7D5BE]'}`} />
+                              <span className="truncate">{item.label}</span>
+                            </div>
+                            {item.badge !== undefined && (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
+                                isActive ? 'bg-[#9E4A2A] text-white' : 'bg-rose-600 text-white'
+                              }`}>
+                                {item.badge}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="pt-2 flex flex-col gap-2 border-t border-[#6E4533]">
+            {/* Bottom Actions of Drawer */}
+            <div className="pt-4 border-t border-[#6E4533] mt-6 space-y-2">
               <button
                 type="button"
                 onClick={handleLogoutClick}
-                className="w-full py-2.5 bg-rose-950 text-rose-100 hover:bg-rose-900 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-2.5 px-3 bg-rose-950/80 hover:bg-rose-900 text-rose-100 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-2 cursor-pointer border border-rose-800/40 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sair do Sistema</span>
               </button>
+              
               <button
                 type="button"
                 onClick={() => setIsMobileDrawerOpen && setIsMobileDrawerOpen(false)}
-                className="w-full py-2.5 bg-[#6E4533] text-[#FAF6EF] font-bold rounded-xl text-center text-xs cursor-pointer"
+                className="w-full py-2 bg-[#6E4533] hover:bg-[#5C3829] text-[#FAF6EF] font-bold rounded-xl text-center text-xs cursor-pointer transition-colors"
               >
                 Fechar Menu
               </button>
             </div>
+
           </div>
         </div>
       )}

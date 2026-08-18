@@ -17,10 +17,10 @@ import {
 } from '../components/ui';
 
 interface SalesViewProps {
-  onOpenVoiceModal: () => void;
+  onOpenVoiceModal?: () => void;
 }
 
-export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
+export const SalesView: React.FC<SalesViewProps> = () => {
   const { showSuccess, showError } = useToast();
   const [sales, setSales] = useState<Sale[]>(() => StorageService.getSales());
   const [products, setProducts] = useState<Product[]>(() => StorageService.getProducts());
@@ -275,23 +275,13 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
           <Button
-            onClick={onOpenVoiceModal}
-            variant="secondary"
-            size="md"
-            icon={Mic}
-            className="flex-1 sm:flex-none"
-          >
-            Registrar por Voz
-          </Button>
-
-          <Button
             onClick={openNewSaleModal}
             variant="primary"
             size="md"
             icon={Plus}
-            className="flex-1 sm:flex-none"
+            className="w-full sm:w-auto"
           >
-            Nova Venda Manual
+            Nova Venda
           </Button>
         </div>
       </div>
@@ -393,19 +383,19 @@ export const SalesView: React.FC<SalesViewProps> = ({ onOpenVoiceModal }) => {
           )}
         </div>
 
-        {/* Desktop View: Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+        {/* Desktop View: Table with Smooth Scroll */}
+        <div className="hidden md:block overflow-x-auto rounded-xl">
+          <table className="w-full min-w-[720px] text-left text-xs sm:text-sm">
             <thead className="bg-[#E7D5BE]/50 text-[#8A5A44] font-bold border-b border-[#E7D5BE]">
               <tr>
-                <th className="p-3.5">Código / Data</th>
-                <th className="p-3.5">Cliente</th>
+                <th className="p-3.5 whitespace-nowrap">Código / Data</th>
+                <th className="p-3.5 whitespace-nowrap">Cliente</th>
                 <th className="p-3.5 hidden lg:table-cell">Produtos</th>
-                <th className="p-3.5">Total</th>
-                <th className="p-3.5">Pago / Restante</th>
-                <th className="p-3.5 hidden xl:table-cell">Pagamento</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5 text-right">Ações</th>
+                <th className="p-3.5 whitespace-nowrap">Total</th>
+                <th className="p-3.5 whitespace-nowrap">Pago / Restante</th>
+                <th className="p-3.5 hidden xl:table-cell whitespace-nowrap">Pagamento</th>
+                <th className="p-3.5 whitespace-nowrap">Status</th>
+                <th className="p-3.5 text-right whitespace-nowrap">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E7D5BE]/60">

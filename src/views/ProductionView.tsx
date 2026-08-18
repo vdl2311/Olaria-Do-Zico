@@ -28,7 +28,7 @@ import {
 } from '../components/ui';
 
 interface ProductionViewProps {
-  onOpenVoiceModal: () => void;
+  onOpenVoiceModal?: () => void;
 }
 
 export const STAGES: ProductionStage[] = ['Produção', 'Secagem', 'Queima', 'Acabamento', 'Pronto'];
@@ -225,21 +225,11 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
           <Button
-            onClick={onOpenVoiceModal}
-            variant="secondary"
-            size="md"
-            icon={Mic}
-            className="flex-1 sm:flex-none"
-          >
-            Registrar por Voz
-          </Button>
-
-          <Button
             onClick={handleOpenNewBatch}
             variant="primary"
             size="md"
             icon={Plus}
-            className="flex-1 sm:flex-none"
+            className="w-full sm:w-auto"
           >
             Novo Lote
           </Button>

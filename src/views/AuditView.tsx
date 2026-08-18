@@ -23,10 +23,10 @@ export const AuditView: React.FC = () => {
       <div>
         <h2 className="text-xl font-black text-amber-950 flex items-center gap-2">
           <History className="w-6 h-6 text-amber-800" />
-          <span>Histórico de Voz & Auditoria de Ações</span>
+          <span>Histórico & Auditoria de Operações</span>
         </h2>
         <p className="text-xs text-amber-800/80">
-          Transparência total: veja tudo o que falou, como o sistema interpretou e desfaça qualquer ação se necessário.
+          Transparência total: rastreamento de todas as alterações, movimentações de estoque e reversão de ações.
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export const AuditView: React.FC = () => {
         <div className="block md:hidden divide-y divide-amber-100">
           {logs.length === 0 ? (
             <div className="p-8 text-center text-amber-800/60">
-              Nenhum registro de comando por voz encontrado.
+              Nenhum registro de auditoria encontrado.
             </div>
           ) : (
             logs.map((log) => (
@@ -81,24 +81,24 @@ export const AuditView: React.FC = () => {
           )}
         </div>
 
-        {/* Desktop View: Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+        {/* Desktop View: Table with Smooth Scroll */}
+        <div className="hidden md:block overflow-x-auto rounded-xl">
+          <table className="w-full min-w-[680px] text-left text-xs sm:text-sm">
             <thead className="bg-amber-900/10 text-amber-900 font-bold border-b border-amber-200">
               <tr>
-                <th className="p-3.5">Horário / Data</th>
-                <th className="p-3.5">Áudio Transcrito ("O que você falou")</th>
-                <th className="p-3.5">Ação Interpretada</th>
+                <th className="p-3.5 whitespace-nowrap">Horário / Data</th>
+                <th className="p-3.5">Ação Registrada</th>
+                <th className="p-3.5 whitespace-nowrap">Tipo da Ação</th>
                 <th className="p-3.5 hidden lg:table-cell">Detalhes da Alteração</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5 text-right">Ação</th>
+                <th className="p-3.5 whitespace-nowrap">Status</th>
+                <th className="p-3.5 text-right whitespace-nowrap">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-amber-100">
               {logs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-amber-800/60">
-                    Nenhum registro de comando por voz encontrado.
+                    Nenhum registro de auditoria encontrado.
                   </td>
                 </tr>
               ) : (

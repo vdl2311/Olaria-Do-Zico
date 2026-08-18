@@ -27,7 +27,7 @@ import {
 } from '../components/ui';
 
 interface StockViewProps {
-  onOpenVoiceModal: () => void;
+  onOpenVoiceModal?: () => void;
 }
 
 const RAW_CATEGORIES: RawMaterialCategory[] = [
@@ -40,7 +40,7 @@ const RAW_CATEGORIES: RawMaterialCategory[] = [
   'Outros'
 ];
 
-export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
+export const StockView: React.FC<StockViewProps> = () => {
   const { showSuccess } = useToast();
   const [activeTab, setActiveTab] = useState<'raw' | 'finished' | 'history'>('raw');
   const [products, setProducts] = useState<Product[]>(() => StorageService.getProducts());
@@ -227,21 +227,11 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
               variant="primary"
               size="md"
               icon={Plus}
-              className="flex-1 sm:flex-none"
+              className="w-full sm:w-auto"
             >
               Ajuste Manual
             </Button>
           )}
-
-          <Button
-            onClick={onOpenVoiceModal}
-            variant="secondary"
-            size="md"
-            icon={Mic}
-            className="flex-1 sm:flex-none"
-          >
-            Ajustar por Voz
-          </Button>
         </div>
       </div>
 
@@ -408,19 +398,19 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
                   })}
                 </div>
 
-                {/* Desktop View Table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-left text-xs sm:text-sm">
+                {/* Desktop View Table with Smooth Scroll */}
+                <div className="hidden md:block overflow-x-auto rounded-xl">
+                  <table className="w-full min-w-[720px] text-left text-xs sm:text-sm">
                     <thead className="bg-[#E7D5BE]/50 text-[#8A5A44] font-bold border-b border-[#E7D5BE]">
                       <tr>
-                        <th className="p-3.5">Matéria-Prima / Insumo</th>
-                        <th className="p-3.5">Categoria</th>
-                        <th className="p-3.5">Estoque Atual</th>
-                        <th className="p-3.5">Estoque Mín.</th>
-                        <th className="p-3.5">Custo / Unidade</th>
-                        <th className="p-3.5 hidden lg:table-cell">Fornecedor</th>
-                        <th className="p-3.5">Status</th>
-                        <th className="p-3.5 text-right">Ações</th>
+                        <th className="p-3.5 whitespace-nowrap">Matéria-Prima / Insumo</th>
+                        <th className="p-3.5 whitespace-nowrap">Categoria</th>
+                        <th className="p-3.5 whitespace-nowrap">Estoque Atual</th>
+                        <th className="p-3.5 whitespace-nowrap">Estoque Mín.</th>
+                        <th className="p-3.5 whitespace-nowrap">Custo / Unidade</th>
+                        <th className="p-3.5 hidden lg:table-cell whitespace-nowrap">Fornecedor</th>
+                        <th className="p-3.5 whitespace-nowrap">Status</th>
+                        <th className="p-3.5 text-right whitespace-nowrap">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E7D5BE]/60">
@@ -534,18 +524,18 @@ export const StockView: React.FC<StockViewProps> = ({ onOpenVoiceModal }) => {
                 })}
               </div>
 
-              {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left text-xs sm:text-sm">
+              {/* Desktop Table with Smooth Scroll */}
+              <div className="hidden md:block overflow-x-auto rounded-xl">
+                <table className="w-full min-w-[700px] text-left text-xs sm:text-sm">
                   <thead className="bg-[#E7D5BE]/50 text-[#8A5A44] font-bold border-b border-[#E7D5BE]">
                     <tr>
-                      <th className="p-3.5">Código / Foto</th>
-                      <th className="p-3.5">Produto</th>
-                      <th className="p-3.5 hidden lg:table-cell">Categoria</th>
-                      <th className="p-3.5">Preço Venda</th>
-                      <th className="p-3.5">Estoque Atual</th>
-                      <th className="p-3.5 hidden lg:table-cell">Estoque Mín.</th>
-                      <th className="p-3.5">Status</th>
+                      <th className="p-3.5 whitespace-nowrap">Código / Foto</th>
+                      <th className="p-3.5 whitespace-nowrap">Produto</th>
+                      <th className="p-3.5 hidden lg:table-cell whitespace-nowrap">Categoria</th>
+                      <th className="p-3.5 whitespace-nowrap">Preço Venda</th>
+                      <th className="p-3.5 whitespace-nowrap">Estoque Atual</th>
+                      <th className="p-3.5 hidden lg:table-cell whitespace-nowrap">Estoque Mín.</th>
+                      <th className="p-3.5 whitespace-nowrap">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E7D5BE]/60">

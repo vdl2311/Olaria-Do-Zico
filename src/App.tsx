@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
-import { VoiceModal } from './components/VoiceModal';
-import { VoiceFloatingButton } from './components/VoiceFloatingButton';
 import { ToastProvider } from './components/ui/Toast';
 import { ThemeProvider } from './context/ThemeContext';
 import { StorageService } from './services/storage';
@@ -33,7 +31,6 @@ export default function App() {
   const [isTechnicalPortalOpen, setIsTechnicalPortalOpen] = useState(false);
   
   const [activeView, setActiveView] = useState('dashboard');
-  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Scroll to top whenever the active view changes
@@ -56,18 +53,6 @@ export default function App() {
     AuthService.logout();
     setCurrentUser(null);
     setIsTechnicalPortalOpen(false);
-  };
-
-  const handleOpenVoiceModal = () => {
-    setIsVoiceModalOpen(true);
-  };
-
-  const handleCloseVoiceModal = () => {
-    setIsVoiceModalOpen(false);
-  };
-
-  const handleActionApplied = () => {
-    setActiveView((prev) => prev);
   };
 
   // If in Technical DevOps portal mode
@@ -119,23 +104,23 @@ export default function App() {
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
-        return <DashboardView onOpenVoiceModal={handleOpenVoiceModal} setActiveView={setActiveView} />;
+        return <DashboardView setActiveView={setActiveView} />;
       case 'assistente-ia':
-        return <AIAssistantView onNavigateToView={setActiveView} onOpenVoiceModal={handleOpenVoiceModal} />;
+        return <AIAssistantView onNavigateToView={setActiveView} />;
       case 'vendas':
-        return checkPermission('vendas') ? <SalesView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Vendas');
+        return checkPermission('vendas') ? <SalesView /> : renderAccessDenied('Vendas');
       case 'producao':
-        return checkPermission('producao') ? <ProductionView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Produção');
+        return checkPermission('producao') ? <ProductionView /> : renderAccessDenied('Produção');
       case 'estoque':
-        return checkPermission('estoque') ? <StockView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Estoque');
+        return checkPermission('estoque') ? <StockView /> : renderAccessDenied('Estoque');
       case 'clientes':
         return checkPermission('clientes') ? <CustomersView /> : renderAccessDenied('Clientes');
       case 'pedidos':
-        return checkPermission('pedidos') ? <CustomOrdersView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Pedidos Sob Encomenda');
+        return checkPermission('pedidos') ? <CustomOrdersView /> : renderAccessDenied('Pedidos Sob Encomenda');
       case 'entregas':
-        return checkPermission('entregas') ? <DeliveriesView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Entregas');
+        return checkPermission('entregas') ? <DeliveriesView /> : renderAccessDenied('Entregas');
       case 'financeiro':
-        return checkPermission('financeiro') ? <FinanceView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Financeiro & Contas');
+        return checkPermission('financeiro') ? <FinanceView /> : renderAccessDenied('Financeiro & Contas');
       case 'produtos':
         return checkPermission('produtos') ? <ProductsView onNavigateToStock={() => setActiveView('estoque')} /> : renderAccessDenied('Produtos');
       case 'brandkit':
@@ -147,7 +132,7 @@ export default function App() {
       case 'seguranca':
         return currentUser.role === 'PROPRIETARIO' ? <SecurityUsersView /> : renderAccessDenied('Segurança & Permissões');
       default:
-        return <DashboardView onOpenVoiceModal={handleOpenVoiceModal} setActiveView={setActiveView} />;
+        return <DashboardView setActiveView={setActiveView} />;
     }
   };
 
@@ -160,7 +145,6 @@ export default function App() {
           {/* Top Header */}
         <Header 
           activeView={activeView} 
-          onOpenVoiceModal={handleOpenVoiceModal} 
           onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
           onNavigateToSecurity={() => setActiveView('seguranca')}
           onNavigateToBrandKit={() => setActiveView('brandkit')}
@@ -214,17 +198,6 @@ export default function App() {
             {renderActiveView()}
           </main>
         </div>
-
-        {/* Floating Voice Button */}
-        <VoiceFloatingButton onClick={handleOpenVoiceModal} />
-
-        {/* Voice Assistant Modal */}
-        {isVoiceModalOpen && (
-          <VoiceModal
-            onClose={handleCloseVoiceModal}
-            onActionApplied={handleActionApplied}
-          />
-        )}
         </div>
       </ToastProvider>
     </ThemeProvider>

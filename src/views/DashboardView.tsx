@@ -6,25 +6,25 @@ import {
   Flame, 
   Truck, 
   AlertTriangle, 
-  Mic, 
   CheckCircle2, 
   Clock, 
   ArrowUpRight, 
   Users, 
   ChevronRight,
   ClipboardList,
-  Sparkles
+  Sparkles,
+  ShoppingCart
 } from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
 import { BrandSymbol } from '../components/BrandLogo';
 import { ExecutiveSummaryEngine } from '../ai/executive/executiveSummary';
 
 interface DashboardViewProps {
-  onOpenVoiceModal: () => void;
+  onOpenVoiceModal?: () => void;
   setActiveView: (view: string) => void;
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenVoiceModal, setActiveView }) => {
+export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveView }) => {
   const [sales, setSales] = useState(() => StorageService.getSales());
   const [products, setProducts] = useState(() => StorageService.getProducts());
   const [production, setProduction] = useState(() => StorageService.getProduction());
@@ -72,29 +72,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenVoiceModal, 
 
   return (
     <div className="space-y-6 pb-20 font-brand-sans">
-      {/* Banner / Voice Call to Action (Terracota & Argila) */}
-      <div className="bg-[#FAF6EF] rounded-3xl p-6 text-[#292724] shadow-xs border border-[#E7D5BE] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+      {/* Banner / Operational Overview (Terracota & Argila) */}
+      <div className="bg-[#FAF6EF] dark:bg-[#252320] rounded-3xl p-6 text-[#292724] dark:text-[#F7F1E7] shadow-xs border border-[#E7D5BE] dark:border-[#3D3833] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
         <div className="space-y-2 text-center md:text-left relative z-10 max-w-2xl">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#B85C38]/10 border border-[#B85C38]/20 text-[#B85C38] text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#B85C38]/10 border border-[#B85C38]/20 text-[#B85C38] dark:text-[#E78B68] text-xs font-bold uppercase tracking-wider">
             <BrandSymbol variant="terracota" className="w-3.5 h-3.5" />
             <span>Da terra para transformar ambientes</span>
           </div>
-          <h2 className="font-brand-serif text-2xl sm:text-3xl font-black text-[#292724] tracking-tight leading-tight">
-            Gestão da Olaria por Voz
+          <h2 className="font-brand-serif text-2xl sm:text-3xl font-black text-[#292724] dark:text-[#F7F1E7] tracking-tight leading-tight">
+            Painel de Gestão & Produção da Olaria
           </h2>
-          <p className="text-xs sm:text-sm text-[#8A5A44] leading-relaxed">
-            "Vendi 2 vasos por 360 no Pix", "Produzi lote de 30 peças", "Cliente Roberto pagou fiado"
+          <p className="text-xs sm:text-sm text-[#8A5A44] dark:text-[#CBB5A1] leading-relaxed">
+            Controle integrado de vendas, queima nos fornos, estoque de argilas e saúde financeira da olaria.
           </p>
         </div>
 
-        {/* Section #21 - Prominent Voice Button "Falar" */}
-        <button
-          onClick={onOpenVoiceModal}
-          className="shrink-0 flex items-center space-x-2.5 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold text-sm sm:text-base px-6 py-3.5 rounded-2xl transition-all shadow-md transform hover:scale-105 active:scale-95 cursor-pointer border border-[#CF734E]/50"
-        >
-          <Mic className="w-5 h-5 animate-pulse" />
-          <span className="tracking-wider uppercase">Falar</span>
-        </button>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveView('vendas')}
+            className="flex items-center space-x-2 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-2xl transition-all shadow-md transform hover:scale-105 active:scale-95 cursor-pointer border border-[#CF734E]/50"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>Nova Venda</span>
+          </button>
+        </div>
       </div>
 
       {/* AI Operational Intelligence Bar */}

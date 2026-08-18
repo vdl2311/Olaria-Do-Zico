@@ -225,97 +225,86 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({ onNavigateToVi
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Sincronizar</span>
           </button>
-
-          {onOpenVoiceModal && (
-            <button
-              type="button"
-              onClick={onOpenVoiceModal}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-xs"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>Comando de Voz</span>
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Tabs Menu */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-[#E7D5BE] dark:border-[#3D3833]">
+      {/* Tabs Menu - Smooth Horizontal Scroll on Mobile */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 border-b border-[#E7D5BE] dark:border-[#3D3833] no-scrollbar scroll-smooth -mx-1 px-1">
         <button
           type="button"
           onClick={() => setActiveTab('chat')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
             activeTab === 'chat'
               ? 'bg-[#B85C38] text-white shadow-xs'
               : 'text-[#8A5A44] dark:text-[#CBB5A1] hover:bg-[#FAF6EF] dark:hover:bg-[#252320]'
           }`}
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-4 h-4 shrink-0" />
           <span>Assistente & Consultas</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('insights')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
             activeTab === 'insights'
               ? 'bg-[#B85C38] text-white shadow-xs'
               : 'text-[#8A5A44] dark:text-[#CBB5A1] hover:bg-[#FAF6EF] dark:hover:bg-[#252320]'
           }`}
         >
-          <TrendingUp className="w-4 h-4" />
+          <TrendingUp className="w-4 h-4 shrink-0" />
           <span>Insights ({insights.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('alerts')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
             activeTab === 'alerts'
               ? 'bg-[#B85C38] text-white shadow-xs'
               : 'text-[#8A5A44] dark:text-[#CBB5A1] hover:bg-[#FAF6EF] dark:hover:bg-[#252320]'
           }`}
         >
-          <AlertTriangle className="w-4 h-4" />
+          <AlertTriangle className="w-4 h-4 shrink-0" />
           <span>Alertas ({alerts.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('summary')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
             activeTab === 'summary'
               ? 'bg-[#B85C38] text-white shadow-xs'
               : 'text-[#8A5A44] dark:text-[#CBB5A1] hover:bg-[#FAF6EF] dark:hover:bg-[#252320]'
           }`}
         >
-          <CheckCircle2 className="w-4 h-4" />
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>O Que Preciso Saber Hoje?</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('reports')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
             activeTab === 'reports'
               ? 'bg-[#B85C38] text-white shadow-xs'
               : 'text-[#8A5A44] dark:text-[#CBB5A1] hover:bg-[#FAF6EF] dark:hover:bg-[#252320]'
           }`}
         >
-          <FileText className="w-4 h-4" />
+          <FileText className="w-4 h-4 shrink-0" />
           <span>Relatórios com IA</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('governance')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer ${
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-t-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
             activeTab === 'governance'
               ? 'bg-[#B85C38] text-white shadow-xs'
               : 'text-[#8A5A44] dark:text-[#CBB5A1] hover:bg-[#FAF6EF] dark:hover:bg-[#252320]'
           }`}
         >
-          <Cpu className="w-4 h-4" />
+          <Cpu className="w-4 h-4 shrink-0" />
           <span>Governança & Status</span>
         </button>
       </div>
@@ -945,18 +934,24 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({ onNavigateToVi
                 </ul>
               </div>
 
-              {/* Tabular Data */}
+              {/* Tabular Data with Responsive Scroll */}
               {generatedReport.tabularData && (
-                <div className="space-y-2">
-                  <h4 className="font-brand-serif text-sm font-bold text-[#292724] dark:text-[#F7F1E7]">
-                    Tabela Detalhada de Registros
-                  </h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border-collapse">
+                <div className="space-y-2 pt-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <h4 className="font-brand-serif text-sm sm:text-base font-bold text-[#292724] dark:text-[#F7F1E7]">
+                      Tabela Detalhada de Registros
+                    </h4>
+                    <span className="text-[11px] text-[#8A5A44] dark:text-[#E78B68] font-semibold sm:hidden flex items-center gap-1">
+                      ↔ Deslize a tabela para ver todas as colunas
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-2xl border border-[#E7D5BE] dark:border-[#3D3833] bg-white dark:bg-[#1E1C1A] shadow-xs">
+                    <table className="w-full min-w-[620px] text-xs text-left border-collapse">
                       <thead>
                         <tr className="bg-[#FAF6EF] dark:bg-[#252320] border-b border-[#E7D5BE] dark:border-[#3D3833]">
                           {generatedReport.tabularData.headers.map((h, hidx) => (
-                            <th key={hidx} className="p-2.5 font-bold text-[#8A5A44] dark:text-[#E7D5BE]">
+                            <th key={hidx} className="p-3 font-bold text-[#8A5A44] dark:text-[#E7D5BE] whitespace-nowrap">
                               {h}
                             </th>
                           ))}
@@ -964,9 +959,9 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({ onNavigateToVi
                       </thead>
                       <tbody className="divide-y divide-[#E7D5BE] dark:divide-[#3D3833]">
                         {generatedReport.tabularData.rows.map((row, rowIdx) => (
-                          <tr key={rowIdx} className="hover:bg-[#FAF6EF] dark:hover:bg-[#252320]/50">
+                          <tr key={rowIdx} className="hover:bg-[#FAF6EF]/70 dark:hover:bg-[#252320]/50 transition-colors">
                             {row.map((cell, cidx) => (
-                              <td key={cidx} className="p-2.5 text-[#292724] dark:text-[#F7F1E7]">
+                              <td key={cidx} className={`p-3 text-[#292724] dark:text-[#F7F1E7] ${cidx === 0 || cidx === row.length - 1 ? 'whitespace-nowrap font-medium' : ''}`}>
                                 {cell}
                               </td>
                             ))}

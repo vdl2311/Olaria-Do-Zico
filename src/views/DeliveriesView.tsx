@@ -31,10 +31,10 @@ import {
 } from '../components/ui';
 
 interface DeliveriesViewProps {
-  onOpenVoiceModal: () => void;
+  onOpenVoiceModal?: () => void;
 }
 
-export const DeliveriesView: React.FC<DeliveriesViewProps> = ({ onOpenVoiceModal }) => {
+export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
   const [deliveries, setDeliveries] = useState<Delivery[]>(() => StorageService.getDeliveries());
   const [customers, setCustomers] = useState<Customer[]>(() => StorageService.getCustomers());
   const [sales, setSales] = useState<Sale[]>(() => StorageService.getSales());
@@ -289,16 +289,8 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = ({ onOpenVoiceModal
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
           <button
-            onClick={onOpenVoiceModal}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer"
-          >
-            <Mic className="w-4 h-4 animate-pulse" />
-            <span className="whitespace-nowrap">Confirmar por Voz</span>
-          </button>
-
-          <button
             onClick={handleOpenCreateModal}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer"
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span className="whitespace-nowrap">Agendar Entrega</span>

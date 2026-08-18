@@ -1,12 +1,12 @@
 import React from 'react';
-import { RefreshCw, Mic, Menu, Cloud, ShieldCheck, Cpu, FlaskConical, Palette, Sun, Moon } from 'lucide-react';
+import { RefreshCw, Menu, Cloud, ShieldCheck, Cpu, FlaskConical, Palette, Sun, Moon } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { AuthService } from '../services/authService';
 import { BrandSymbol } from './BrandLogo';
 import { useTheme } from '../context/ThemeContext';
 
 interface HeaderProps {
-  onOpenVoiceModal: () => void;
+  onOpenVoiceModal?: () => void;
   activeView: string;
   onOpenMobileDrawer?: () => void;
   onNavigateToTechnical?: () => void;
@@ -15,7 +15,6 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
-  onOpenVoiceModal, 
   activeView, 
   onOpenMobileDrawer,
   onNavigateToTechnical,
@@ -106,14 +105,14 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
-          {/* Brand Kit Quick Access Button */}
+        <div className="flex items-center space-x-1 sm:space-x-2.5 shrink-0">
+          {/* Brand Kit Quick Access Button (Desktop/Tablet) */}
           {onNavigateToBrandKit && (
             <button
               type="button"
               onClick={onNavigateToBrandKit}
               aria-label="Acessar Brand Kit e Manual da Marca"
-              className={`flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer font-brand-sans shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38] ${
+              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer font-brand-sans shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38] ${
                 activeView === 'brandkit'
                   ? 'bg-[#B85C38] text-white border-[#B85C38] shadow-sm'
                   : 'bg-[#6E4533] hover:bg-[#5C3829] text-[#E7D5BE] border-[#A7735B]/40'
@@ -121,35 +120,23 @@ export const Header: React.FC<HeaderProps> = ({
               title="Brand Kit"
             >
               <Palette className="w-3.5 h-3.5 text-[#E7D5BE] shrink-0" />
-              <span className="hidden md:inline">Brand Kit</span>
+              <span>Brand Kit</span>
             </button>
           )}
 
-          {/* Security & Access Quick Badge */}
+          {/* Security & Access Quick Badge (Desktop) */}
           {isOwner && onNavigateToSecurity && (
             <button
               type="button"
               onClick={onNavigateToSecurity}
               aria-label="Gerenciar Usuários e Segurança"
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#6E4533] hover:bg-[#5C3829] text-[#E7D5BE] border border-[#A7735B]/40 text-xs font-bold transition-all cursor-pointer font-brand-sans shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38]"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#6E4533] hover:bg-[#5C3829] text-[#E7D5BE] border border-[#A7735B]/40 text-xs font-bold transition-all cursor-pointer font-brand-sans shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38]"
               title="Segurança"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#E7D5BE] shrink-0" />
               <span>Segurança</span>
             </button>
           )}
-
-          {/* Voice Command Button in Header */}
-          <button
-            type="button"
-            onClick={onOpenVoiceModal}
-            aria-label="Abrir assistente de voz para registrar comandos"
-            className="flex items-center space-x-1.5 sm:space-x-2 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold text-xs sm:text-sm px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl transition-all shadow-sm active:scale-95 border border-[#CF734E]/60 cursor-pointer font-brand-sans shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38]"
-            title="Falar / Registrar por Voz"
-          >
-            <Mic className="w-4 h-4 text-[#F7F1E7] shrink-0" />
-            <span className="inline">Falar</span>
-          </button>
 
           {/* Dark / Light Mode Toggle Button */}
           <button
@@ -164,15 +151,15 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <Moon className="w-4 h-4 text-cyan-200" />
             )}
-            <span className="hidden lg:inline text-[11px] font-semibold">{isDark ? "Claro" : "Escuro"}</span>
+            <span className="hidden xl:inline text-[11px] font-semibold">{isDark ? "Claro" : "Escuro"}</span>
           </button>
 
-          {/* Reset Demo Data Button */}
+          {/* Reset Demo Data Button (Tablet/Desktop) */}
           <button
             type="button"
             onClick={handleReset}
             aria-label={isDemo ? "Restaurar dados de demonstração" : "Restaurar dados de exemplo"}
-            className="p-1.5 sm:p-2 text-[#E7D5BE] hover:text-[#F7F1E7] hover:bg-[#6E4533] rounded-xl transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#B85C38]"
+            className="hidden sm:flex p-1.5 sm:p-2 text-[#E7D5BE] hover:text-[#F7F1E7] hover:bg-[#6E4533] rounded-xl transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#B85C38]"
             title={isDemo ? 'Restaurar dados da demonstração' : 'Restaurar dados de exemplo'}
           >
             <RefreshCw className="w-4 h-4" />

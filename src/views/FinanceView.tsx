@@ -18,10 +18,10 @@ import {
 } from '../components/ui';
 
 interface FinanceViewProps {
-  onOpenVoiceModal: () => void;
+  onOpenVoiceModal?: () => void;
 }
 
-export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) => {
+export const FinanceView: React.FC<FinanceViewProps> = () => {
   const { showSuccess } = useToast();
   const [receivables, setReceivables] = useState<AccountReceivable[]>(() => StorageService.getReceivables());
   const [expenses, setExpenses] = useState<Expense[]>(() => StorageService.getExpenses());
@@ -192,16 +192,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
 
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
           <Button
-            onClick={onOpenVoiceModal}
-            variant="secondary"
-            size="md"
-            icon={Mic}
-            className="flex-1 sm:flex-none"
-          >
-            Lançar por Voz
-          </Button>
-
-          <Button
             onClick={() => handleOpenReceivableModal()}
             variant="primary"
             size="md"
@@ -314,18 +304,18 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
           )}
         </div>
 
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+        {/* Desktop Table with Smooth Scroll */}
+        <div className="hidden md:block overflow-x-auto rounded-xl">
+          <table className="w-full min-w-[650px] text-left text-xs sm:text-sm">
             <thead className="bg-[#E7D5BE]/50 text-[#8A5A44] font-bold border-b border-[#E7D5BE]">
               <tr>
-                <th className="p-3">Cliente</th>
+                <th className="p-3 whitespace-nowrap">Cliente</th>
                 <th className="p-3">Descrição</th>
-                <th className="p-3">Valor Total</th>
-                <th className="p-3">Valor Pago</th>
-                <th className="p-3">Restante</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Ação</th>
+                <th className="p-3 whitespace-nowrap">Valor Total</th>
+                <th className="p-3 whitespace-nowrap">Valor Pago</th>
+                <th className="p-3 whitespace-nowrap">Restante</th>
+                <th className="p-3 whitespace-nowrap">Status</th>
+                <th className="p-3 text-right whitespace-nowrap">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E7D5BE]/60">
@@ -461,18 +451,18 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ onOpenVoiceModal }) =>
           )}
         </div>
 
-        {/* Desktop View Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+        {/* Desktop View Table with Smooth Scroll */}
+        <div className="hidden md:block overflow-x-auto rounded-xl">
+          <table className="w-full min-w-[700px] text-left text-xs sm:text-sm">
             <thead className="bg-[#E7D5BE]/50 text-[#8A5A44] font-bold border-b border-[#E7D5BE]">
               <tr>
-                <th className="p-3">Descrição</th>
-                <th className="p-3">Categoria</th>
-                <th className="p-3">Fornecedor</th>
-                <th className="p-3">Valor (R$)</th>
-                <th className="p-3">Vencimento / Data</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Ações</th>
+                <th className="p-3 whitespace-nowrap">Descrição</th>
+                <th className="p-3 whitespace-nowrap">Categoria</th>
+                <th className="p-3 whitespace-nowrap">Fornecedor</th>
+                <th className="p-3 whitespace-nowrap">Valor (R$)</th>
+                <th className="p-3 whitespace-nowrap">Vencimento / Data</th>
+                <th className="p-3 whitespace-nowrap">Status</th>
+                <th className="p-3 text-right whitespace-nowrap">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E7D5BE]/60">
