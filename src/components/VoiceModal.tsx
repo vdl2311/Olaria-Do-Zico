@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Check, X, Edit3, AlertTriangle, Send, Volume2 } from 'lucide-react';
 import { StorageService } from '../services/storage';
+import { VoiceNluService } from '../services/voiceNluService';
 import { NluActionPayload } from '../types';
 import { BrandSymbol } from './BrandLogo';
 import { Modal } from './ui/Modal';
@@ -124,23 +125,11 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
       const products = StorageService.getProducts();
       const customers = StorageService.getCustomers();
 
-      const response = await fetch('/api/voice-nlu', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcript: textToSend,
-          context: {
-            products: products.map(p => ({ name: p.name, stock: p.stock, price: p.price })),
-            customers: customers.map(c => ({ name: c.name }))
-          }
-        })
+      const result = await VoiceNluService.processVoiceCommand(textToSend, {
+        products: products.map(p => ({ name: p.name, stock: p.stock, price: p.price })),
+        customers: customers.map(c => ({ name: c.name }))
       });
 
-      if (!response.ok) {
-        throw new Error('Falha no processamento de voz');
-      }
-
-      const result: NluActionPayload = await response.json();
       setNluResult(result);
       setEditedSummary(result.summary);
 
@@ -154,7 +143,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
 
     } catch (err: any) {
       console.error(err);
-      setFeedbackMsg('Erro ao conectar com assistente. Tente novamente.');
+      setFeedbackMsg('Não foi possível interpretar o comando. Tente com palavras como "Vendi", "Produzi" ou "Paguei".');
     } finally {
       setIsLoading(false);
     }
@@ -203,15 +192,15 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
             className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl transition-all transform active:scale-90 cursor-pointer ${
               isListening
                 ? 'bg-rose-600 text-white ring-8 ring-rose-500/30 animate-pulse'
-                : 'bg-[#B85C38] hover:bg-[#9E4A2A] text-white hover:scale-105 border-2 border-[#CF734E]'
+                : 'bg-[#B85C38] dark:bg-[#C66B48] hover:bg-[#9E4A2A] dark:hover:bg-[#D67855] text-white hover:scale-105 border-2 border-[#CF734E] dark:border-[#D67855]'
             }`}
           >
             {isListening ? <MicOff className="w-9 h-9" /> : <Mic className="w-9 h-9" />}
           </button>
-          <p className="mt-3 text-sm font-bold text-[#292724]">
+          <p className="mt-3 text-sm font-bold text-[#292724] dark:text-[#F2EBDD]">
             {isListening ? 'Estou ouvindo... Pode falar naturalmente' : 'Toque no microfone para Falar'}
           </p>
-          <p className="text-xs text-[#8A5A44]">
+          <p className="text-xs text-[#8A5A44] dark:text-[#C9BFA8]">
             {isListening ? 'Diga vendas, fornos, entregas ou despesas' : 'Ou toque em um exemplo abaixo:'}
           </p>
 
@@ -232,7 +221,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
                     setManualText(sample);
                     handleSendText(sample);
                   }}
-                  className="bg-[#F7F1E7] hover:bg-[#E7D5BE] text-[#292724] border border-[#D4BEA2] px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors text-left shadow-2xs cursor-pointer focus-visible:outline-2 focus-visible:outline-[#B85C38]"
+                  className="bg-[#F7F1E7] dark:bg-[#2E2A26] hover:bg-[#E7D5BE] dark:hover:bg-[#3D3833] text-[#292724] dark:text-[#F2EBDD] border border-[#D4BEA2] dark:border-[#3D3833] px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors text-left shadow-2xs cursor-pointer focus-visible:outline-2 focus-visible:outline-[#B85C38]"
                 >
                   🏺 "{sample}"
                 </button>
@@ -242,22 +231,22 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
         </div>
 
         {/* Real-time Transcription or Input */}
-        <div className="bg-[#F7F1E7] border border-[#E7D5BE] rounded-2xl p-4 space-y-3">
+        <div className="bg-[#F7F1E7] dark:bg-[#252320] border border-[#E7D5BE] dark:border-[#3D3833] rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase font-bold text-[#8A5A44] tracking-wider font-brand-sans">
+            <span className="text-[11px] uppercase font-bold text-[#8A5A44] dark:text-[#C9BFA8] tracking-wider font-brand-sans">
               O que você falou / digitou:
             </span>
             {currentText && (
               <button
                 type="button"
                 onClick={() => { setTranscript(''); setManualText(''); setNluResult(null); }}
-                className="text-[11px] text-[#B85C38] hover:underline cursor-pointer font-bold"
+                className="text-[11px] text-[#B85C38] dark:text-[#C66B48] hover:underline cursor-pointer font-bold"
               >
                 Limpar
               </button>
             )}
           </div>
-          <p className="text-sm font-medium text-[#292724] min-h-[36px] italic">
+          <p className="text-sm font-medium text-[#292724] dark:text-[#F2EBDD] min-h-[36px] italic">
             {currentText ? `"${currentText}"` : 'Aguardando sua fala ou digitação...'}
           </p>
 
@@ -278,42 +267,42 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
 
         {/* Action Loading */}
         {isLoading && (
-          <div className="flex items-center justify-center space-x-2 py-3 text-[#8A5A44] text-sm font-semibold">
-            <div className="w-4 h-4 border-2 border-[#B85C38] border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center justify-center space-x-2 py-3 text-[#8A5A44] dark:text-[#C9BFA8] text-sm font-semibold">
+            <div className="w-4 h-4 border-2 border-[#B85C38] dark:border-[#C66B48] border-t-transparent rounded-full animate-spin" />
             <span>Interpretando intenção da olaria...</span>
           </div>
         )}
 
         {/* Feedback Message */}
         {feedbackMsg && (
-          <div className="p-3 bg-[#667052]/15 border border-[#667052]/30 text-[#4F583D] rounded-xl text-xs sm:text-sm font-semibold text-center">
+          <div className="p-3 bg-[#667052]/15 dark:bg-[#2D3326] border border-[#667052]/30 dark:border-[#3D4634] text-[#4F583D] dark:text-[#A4B38A] rounded-xl text-xs sm:text-sm font-semibold text-center">
             {feedbackMsg}
           </div>
         )}
 
         {/* NLU Result Confirmation Card */}
         {nluResult && !isLoading && (
-          <div className="bg-[#FAF6EF] border-2 border-[#B85C38] rounded-2xl p-4 space-y-3 shadow-md">
-            <div className="flex items-center justify-between border-b border-[#E7D5BE] pb-2">
-              <span className="text-xs font-bold text-[#B85C38] uppercase tracking-wider flex items-center gap-1.5 font-brand-sans">
-                <Volume2 className="w-4 h-4 text-[#B85C38]" />
+          <div className="bg-[#FAF6EF] dark:bg-[#252320] border-2 border-[#B85C38] dark:border-[#C66B48] rounded-2xl p-4 space-y-3 shadow-md">
+            <div className="flex items-center justify-between border-b border-[#E7D5BE] dark:border-[#3D3833] pb-2">
+              <span className="text-xs font-bold text-[#B85C38] dark:text-[#C66B48] uppercase tracking-wider flex items-center gap-1.5 font-brand-sans">
+                <Volume2 className="w-4 h-4 text-[#B85C38] dark:text-[#C66B48]" />
                 <span>Entendi:</span>
               </span>
-              <span className="text-[10px] bg-[#667052]/15 text-[#4F583D] px-2 py-0.5 rounded-full font-bold">
+              <span className="text-[10px] bg-[#667052]/15 dark:bg-[#2D3326] text-[#4F583D] dark:text-[#A4B38A] px-2 py-0.5 rounded-full font-bold">
                 {Math.round(nluResult.confidence * 100)}% precisão
               </span>
             </div>
 
             {/* Missing Info Question */}
             {nluResult.needsMoreInfo && nluResult.questionToUser && (
-              <div className="bg-[#F7F1E7] p-3 rounded-xl border border-[#D4BEA2] text-[#292724] text-xs sm:text-sm font-semibold">
+              <div className="bg-[#F7F1E7] dark:bg-[#2E2A26] p-3 rounded-xl border border-[#D4BEA2] dark:border-[#3D3833] text-[#292724] dark:text-[#F2EBDD] text-xs sm:text-sm font-semibold">
                 ❓ {nluResult.questionToUser}
               </div>
             )}
 
             {/* Query Result */}
             {nluResult.intent === 'QUERY' && nluResult.parsedData?.queryAnswer && (
-              <div className="text-xs sm:text-sm font-medium text-[#292724] leading-relaxed bg-[#F7F1E7] p-3 rounded-xl border border-[#E7D5BE]">
+              <div className="text-xs sm:text-sm font-medium text-[#292724] dark:text-[#F2EBDD] leading-relaxed bg-[#F7F1E7] dark:bg-[#2E2A26] p-3 rounded-xl border border-[#E7D5BE] dark:border-[#3D3833]">
                 {nluResult.parsedData.queryAnswer}
               </div>
             )}
@@ -323,7 +312,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
               <div>
                 {editMode ? (
                   <div className="space-y-1.5">
-                    <label htmlFor="voice-summary-edit" className="text-xs text-[#8A5A44] font-bold">
+                    <label htmlFor="voice-summary-edit" className="text-xs text-[#8A5A44] dark:text-[#C9BFA8] font-bold">
                       Editar Resumo da Operação:
                     </label>
                     <Input
@@ -334,7 +323,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
                     />
                   </div>
                 ) : (
-                  <p className="text-sm font-bold text-[#292724] bg-[#F7F1E7] p-3 rounded-xl border border-[#E7D5BE]">
+                  <p className="text-sm font-bold text-[#292724] dark:text-[#F2EBDD] bg-[#F7F1E7] dark:bg-[#2E2A26] p-3 rounded-xl border border-[#E7D5BE] dark:border-[#3D3833]">
                     {editedSummary}
                   </p>
                 )}
@@ -379,7 +368,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ onClose, onActionApplied
         )}
 
         {/* Manual Text Input Option */}
-        <div className="pt-2 border-t border-[#E7D5BE]">
+        <div className="pt-2 border-t border-[#E7D5BE] dark:border-[#3D3833]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
