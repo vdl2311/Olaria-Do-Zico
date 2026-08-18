@@ -301,8 +301,75 @@ export class AIOrchestrator {
       };
     }
 
-    // 5. Estoque & Insumos
-    if (q.includes('estoque') || q.includes('insumo') || q.includes('argila') || q.includes('esmalte') || q.includes('falta') || q.includes('crítico')) {
+    // 5. Matérias-Primas & Insumos Cerâmicos (Argila, Esmalte, Pigmento, Lenha, Areia)
+    const isExplicitRawMaterial = q.includes('matéria prima') || 
+                                  q.includes('materia prima') || 
+                                  q.includes('matérias primas') || 
+                                  q.includes('materias primas') || 
+                                  q.includes('matéria-prima') || 
+                                  q.includes('materia-prima') || 
+                                  q.includes('matérias-primas') || 
+                                  q.includes('materias-primas') || 
+                                  q.includes('argila') || 
+                                  q.includes('esmalte') || 
+                                  q.includes('insumo') || 
+                                  q.includes('insumos') || 
+                                  q.includes('lenha') || 
+                                  q.includes('areia');
+
+    if (isExplicitRawMaterial) {
+      const matTool = SystemToolsRegistry.tools.get_materias_primas;
+      const tStart = performance.now();
+      const matData = matTool.handler({});
+      toolCalls.push({
+        toolName: 'get_materias_primas',
+        args: {},
+        result: matData,
+        timestamp: new Date().toISOString(),
+        executionTimeMs: Math.round(performance.now() - tStart)
+      });
+      dataSources.push('Almoxarifado & Estoque de Matérias-Primas');
+
+      let responseText = `### 🧱 Estoque de Matérias-Primas & Insumos\n\n`;
+      responseText += `Aqui está a situação exata dos insumos e matérias-primas cadastrados na olaria:\n\n`;
+      responseText += `- **Tipos de Insumos Cadastrados:** **${matData.totalMaterialTypes} item(ns)**\n`;
+      responseText += `- **Valor Investido em Matéria-Prima:** **R$ ${matData.totalCostValuation.toFixed(2)}**\n`;
+      responseText += `- **Insumos em Nível Crítico/Reposição:** **${matData.lowStockCount} item(ns)**\n\n`;
+
+      if (matData.materials && matData.materials.length > 0) {
+        responseText += `#### 📋 Detalhamento das Matérias-Primas em Estoque:\n`;
+        responseText += `| Insumo / Matéria-Prima | Categoria | Quantidade Atual | Mínimo | Custo Unit. | Status |\n`;
+        responseText += `| :--- | :--- | :--- | :--- | :--- | :--- |\n`;
+        
+        matData.materials.forEach((m: any) => {
+          const statusBadge = m.isLowStock ? '⚠️ **Repor urgente**' : '✅ **Adequado**';
+          const costStr = m.costPerUnit > 0 ? `R$ ${m.costPerUnit.toFixed(2)}/${m.unit}` : '-';
+          responseText += `| **${m.name}** | ${m.category} | **${m.stockQuantity} ${m.unit}** | ${m.minStock} ${m.unit} | ${costStr} | ${statusBadge} |\n`;
+        });
+        
+        if (matData.lowStockCount > 0) {
+          responseText += `\n⚠️ **Alerta de Compra:** O estoque de **${matData.lowStockAlerts.map((a: any) => `${a.name} (${a.currentStock} ${a.unit})`).join(', ')}** atingiu o nível de segurança. Programe pedidos com fornecedores para não paralisar os fornos e a modelagem.`;
+        } else {
+          responseText += `\n✅ **Tudo em ordem:** Todas as matérias-primas estão com estoque acima do limite mínimo operacional.`;
+        }
+      } else {
+        responseText += `ℹ️ *Nenhuma matéria-prima cadastrada no momento.* Acesse a aba **Estoque > Matérias-Primas** para cadastrar seus lotes de argila, esmaltes e lenha.`;
+      }
+
+      return {
+        content: responseText,
+        toolCalls,
+        dataSources,
+        suggestedFollowUps: [
+          'Como está a produção nos fornos?',
+          'Existe algum problema no estoque de peças?',
+          'Gere o relatório de estoque'
+        ]
+      };
+    }
+
+    // 6. Estoque Geral de Peças & Produtos Acabados
+    if (q.includes('estoque') || q.includes('pátio') || q.includes('patio') || q.includes('peça acabada') || q.includes('peças acabadas') || q.includes('falta') || q.includes('crítico')) {
       const stockTool = SystemToolsRegistry.tools.get_estoque_atual;
       const tStart = performance.now();
       const stockData = stockTool.handler({});
@@ -313,13 +380,13 @@ export class AIOrchestrator {
         timestamp: new Date().toISOString(),
         executionTimeMs: Math.round(performance.now() - tStart)
       });
-      dataSources.push('Inventário de Estoque e Almoxarifado');
+      dataSources.push('Inventário de Produtos & Pátio Cerâmico');
 
-      let responseText = `### 📦 Diagnóstico do Estoque & Matérias-Primas\n\n`;
+      let responseText = `### 📦 Diagnóstico do Estoque de Peças Cerâmicas\n\n`;
       responseText += `- **Modelos no Catálogo:** **${stockData.totalProductsInCatalog} peças**\n`;
       responseText += `- **Total de Peças em Pátio:** **${stockData.totalItemsInStock} unidades**\n`;
       responseText += `- **Valor Total de Venda do Estoque:** **R$ ${stockData.totalValuation.toFixed(2)}**\n`;
-      responseText += `- **Itens em Alerta de Reposição:** **${stockData.lowStockCount} modelo(s)**\n\n`;
+      responseText += `- **Peças em Alerta de Reposição:** **${stockData.lowStockCount} modelo(s)**\n\n`;
 
       if (stockData.lowStockAlerts.length > 0) {
         responseText += `#### ⚠️ Modelos com Estoque Crítico (<= Estoque Mínimo):\n`;
@@ -328,7 +395,7 @@ export class AIOrchestrator {
         stockData.lowStockAlerts.forEach((a: any) => {
           responseText += `| ${a.code} | **${a.name}** | **${a.currentStock} un** | ${a.minStock} un | R$ ${a.price.toFixed(2)} |\n`;
         });
-        responseText += `\n**Ação Sugerida:** Programar lote de queima para os produtos listados acima para evitar ruptura de vendas no pátio.\n`;
+        responseText += `\n**Ação Sugerida:** Programar lote de queima nos fornos para os produtos listados acima para evitar ruptura de vendas no pátio.\n`;
       } else {
         responseText += `✅ **Situação Regular:** Todos os modelos de peças estão com estoque acima do limite mínimo de segurança.\n`;
       }
@@ -338,9 +405,9 @@ export class AIOrchestrator {
         toolCalls,
         dataSources,
         suggestedFollowUps: [
+          'Como está a matéria-prima?',
           'Como está a produção nos fornos?',
-          'Quais produtos estão vendendo mais?',
-          'Gere o relatório de estoque'
+          'Quais produtos estão vendendo mais?'
         ]
       };
     }

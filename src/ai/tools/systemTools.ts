@@ -166,6 +166,59 @@ export class SystemToolsRegistry {
       }
     },
 
+    get_materias_primas: {
+      name: 'get_materias_primas',
+      description: 'Consulta detalhada do estoque de matérias-primas e insumos cerâmicos (argilas, esmaltes, areia, pigmentos, lenha para forno, embalagens).',
+      parameters: {
+        type: 'object',
+        properties: {
+          category: { type: 'string', description: 'Categoria do insumo (Argila, Esmalte, Tinta, Pigmento, Acabamento, Embalagem, Outros)' },
+          onlyLowStock: { type: 'boolean', description: 'Se verdadeiro, filtra apenas matérias-primas com estoque abaixo ou igual ao mínimo' }
+        }
+      },
+      handler: (args) => {
+        const rawMaterials = StorageService.getRawMaterials().filter(r => !r.softDeleted);
+        let filtered = rawMaterials;
+
+        if (args.category) {
+          filtered = filtered.filter(r => r.category.toLowerCase().includes(args.category.toLowerCase()));
+        }
+        if (args.onlyLowStock) {
+          filtered = filtered.filter(r => r.stockQuantity <= r.minStock);
+        }
+
+        const totalCostValuation = rawMaterials.reduce((acc, r) => acc + (r.stockQuantity * (r.costPerUnit || 0)), 0);
+        const lowStockItems = rawMaterials.filter(r => r.stockQuantity <= r.minStock);
+
+        return {
+          totalMaterialTypes: rawMaterials.length,
+          totalCostValuation,
+          lowStockCount: lowStockItems.length,
+          lowStockAlerts: lowStockItems.map(r => ({
+            name: r.name,
+            category: r.category,
+            currentStock: r.stockQuantity,
+            unit: r.unit,
+            minStock: r.minStock,
+            supplier: r.supplier || 'Não informado'
+          })),
+          materials: filtered.map(r => ({
+            id: r.id,
+            name: r.name,
+            category: r.category,
+            stockQuantity: r.stockQuantity,
+            unit: r.unit,
+            minStock: r.minStock,
+            costPerUnit: r.costPerUnit,
+            totalCost: Number((r.stockQuantity * (r.costPerUnit || 0)).toFixed(2)),
+            supplier: r.supplier || 'Não informado',
+            lastPurchaseDate: r.lastPurchaseDate || 'Não informada',
+            isLowStock: r.stockQuantity <= r.minStock
+          }))
+        };
+      }
+    },
+
     get_estoque_atual: {
       name: 'get_estoque_atual',
       description: 'Consulta o estoque atual de peças acabadas e matérias-primas (argila, esmaltes, insumos).',
@@ -192,6 +245,7 @@ export class SystemToolsRegistry {
         const totalValuation = products.reduce((acc, p) => acc + (p.stock * p.price), 0);
         const totalEstimatedCost = products.reduce((acc, p) => acc + (p.stock * (p.cost || p.estimatedCost || p.price * 0.4)), 0);
         const lowStockProducts = products.filter(p => p.stock <= p.minStock);
+        const lowStockRawMaterials = rawMaterials.filter(r => r.stockQuantity <= r.minStock);
 
         return {
           totalProductsInCatalog: products.length,
@@ -199,6 +253,7 @@ export class SystemToolsRegistry {
           totalValuation,
           totalEstimatedCost,
           lowStockCount: lowStockProducts.length,
+          lowStockRawMaterialsCount: lowStockRawMaterials.length,
           lowStockAlerts: lowStockProducts.map(p => ({
             code: p.code,
             name: p.name,
@@ -218,12 +273,15 @@ export class SystemToolsRegistry {
             finish: p.finish
           })),
           rawMaterials: rawMaterials.map(r => ({
+            id: r.id,
             name: r.name,
             category: r.category,
             stockQuantity: r.stockQuantity,
             unit: r.unit,
             minStock: r.minStock,
-            isLowStock: r.stockQuantity <= r.minStock
+            costPerUnit: r.costPerUnit,
+            isLowStock: r.stockQuantity <= r.minStock,
+            supplier: r.supplier
           }))
         };
       }

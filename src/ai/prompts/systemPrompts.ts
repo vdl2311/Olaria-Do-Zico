@@ -16,10 +16,11 @@ REGRAS ABSOLUTAS DE CONFIABILIDADE (ANTI-ALUCINAÇÃO):
 `;
 
 export const SUGGESTED_QUESTIONS = [
+  'Como está o estoque de matéria-prima?',
   'Como está a produção este mês?',
   'Compare a produção deste mês com o mês passado.',
   'Quais produtos tiveram maior saída?',
-  'Existe algum problema no estoque?',
+  'Existe algum problema no estoque de peças?',
   'Quais foram as vendas desta semana?',
   'Qual foi o melhor mês em vendas?',
   'O que merece minha atenção hoje?',
