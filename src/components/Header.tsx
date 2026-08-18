@@ -43,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   const getViewTitle = () => {
     switch (activeView) {
       case 'dashboard': return 'Início & Visão Geral';
+      case 'assistente-ia': return 'Assistente IA & Gestão';
       case 'vendas': return 'Gestão de Vendas';
       case 'producao': return 'Controle de Produção';
       case 'estoque': return 'Estoque & Insumos';

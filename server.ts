@@ -81,7 +81,7 @@ Regras de negócio cruciais:
 `;
 
       const response = await aiClient.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.7-flash',
         contents: `Analise a fala do oleiro: "${transcript}"`,
         config: {
           systemInstruction,
@@ -133,6 +133,64 @@ Regras de negócio cruciais:
       console.error('Error in voice-nlu API:', err);
       // Return fallback parsing on error
       return res.json(fallbackRuleBasedNlu(req.body.transcript || '', req.body.context));
+    }
+  });
+
+  // Dedicated Conversational AI Agent for Olaria Management
+  app.post('/api/ai-chat', async (req, res) => {
+    try {
+      const { query, history, contextData } = req.body;
+
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        return res.status(400).json({ error: 'Pergunta vazia ou inválida.' });
+      }
+
+      if (!aiClient) {
+        return res.status(503).json({ error: 'Gemini AI não configurado no servidor. Usando motor local.' });
+      }
+
+      const systemInstruction = `
+Você é o "Assistente de Gestão Inteligente" da "Olaria do Zico" (fábrica de vasos cerâmicos, fontes, cachepôs, bacias e jardineiras artesanais).
+
+MISSÃO:
+Responder a perguntas operacionais, financeiras e gerenciais do oleiro ou gestor com base estrita nos dados do negócio.
+
+REGRAS DE OURO ANTI-ALUCINAÇÃO:
+1. NUNCA invente números, vendas fictícias ou produtos inexistentes.
+2. Seja objetivo, claro, matemático e contextualizado.
+3. Se faltarem dados, responda claramente: "Não tenho dados suficientes para responder com segurança sobre este item."
+4. Utilize marcadores, valores em Reais (R$), percentuais (%) e tabelas quando comparar itens.
+`;
+
+      const promptContents = [];
+      if (history && Array.isArray(history)) {
+        history.slice(-4).forEach((h: any) => {
+          promptContents.push(`${h.role === 'user' ? 'Usuário' : 'Assistente'}: ${h.content}`);
+        });
+      }
+      if (contextData) {
+        promptContents.push(`Contexto dos dados atuais:\n${JSON.stringify(contextData)}`);
+      }
+      promptContents.push(`Pergunta atual do usuário: "${query}"`);
+
+      const response = await aiClient.models.generateContent({
+        model: 'gemini-3.7-flash',
+        contents: promptContents.join('\n\n'),
+        config: {
+          systemInstruction,
+          temperature: 0.2
+        }
+      });
+
+      const replyText = response.text || 'Não foi possível gerar a resposta.';
+      return res.json({
+        content: replyText,
+        dataSources: ['Banco de Dados da Olaria', 'Modelo Gemini 3.7 Flash']
+      });
+
+    } catch (err: any) {
+      console.error('Error in /api/ai-chat:', err);
+      return res.status(500).json({ error: err.message || 'Erro ao processar consulta de IA' });
     }
   });
 

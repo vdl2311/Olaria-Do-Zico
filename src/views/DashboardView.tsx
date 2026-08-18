@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
 import { BrandSymbol } from '../components/BrandLogo';
+import { ExecutiveSummaryEngine } from '../ai/executive/executiveSummary';
 
 interface DashboardViewProps {
   onOpenVoiceModal: () => void;
@@ -31,6 +32,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenVoiceModal, 
   const [deliveries, setDeliveries] = useState(() => StorageService.getDeliveries());
   const [receivables, setReceivables] = useState(() => StorageService.getReceivables());
   const [expenses, setExpenses] = useState(() => StorageService.getExpenses());
+  const [aiSummary, setAiSummary] = useState(() => ExecutiveSummaryEngine.generateSummary());
 
   const refreshData = () => {
     setSales(StorageService.getSales());
@@ -40,6 +42,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenVoiceModal, 
     setDeliveries(StorageService.getDeliveries());
     setReceivables(StorageService.getReceivables());
     setExpenses(StorageService.getExpenses());
+    setAiSummary(ExecutiveSummaryEngine.generateSummary());
   };
 
   useEffect(() => {
@@ -91,6 +94,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenVoiceModal, 
         >
           <Mic className="w-5 h-5 animate-pulse" />
           <span className="tracking-wider uppercase">Falar</span>
+        </button>
+      </div>
+
+      {/* AI Operational Intelligence Bar */}
+      <div className="bg-[#FAF6EF] dark:bg-[#252320] border border-[#E7D5BE] dark:border-[#3D3833] rounded-3xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-[#B85C38]/15 dark:bg-[#B85C38]/25 text-[#B85C38] dark:text-[#E78B68] flex items-center justify-center shrink-0 border border-[#B85C38]/30">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A5A44] dark:text-[#E7D5BE]">
+                Diagnóstico de IA • Saúde da Operação:
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                {aiSummary.health.score}/100 ({aiSummary.health.status})
+              </span>
+            </div>
+            <p className="text-xs text-[#292724] dark:text-[#F7F1E7] font-medium mt-0.5">
+              {aiSummary.recomendacoesImediatas[0]}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setActiveView('assistente-ia')}
+          className="px-4 py-2.5 bg-white dark:bg-[#1E1C1A] text-[#B85C38] dark:text-[#E78B68] hover:bg-[#FAF6EF] dark:hover:bg-[#252320] border border-[#B85C38]/30 hover:border-[#B85C38] text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs self-start md:self-auto"
+        >
+          <span>Abrir Assistente IA</span>
+          <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
 

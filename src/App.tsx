@@ -25,6 +25,7 @@ import { SecurityUsersView } from './views/SecurityUsersView';
 import { BrandKitView } from './views/BrandKitView';
 import { LoginView } from './views/LoginView';
 import { TechnicalAdminView } from './views/TechnicalAdminView';
+import { AIAssistantView } from './views/AIAssistantView';
 import { Lock } from 'lucide-react';
 
 export default function App() {
@@ -119,6 +120,8 @@ export default function App() {
     switch (activeView) {
       case 'dashboard':
         return <DashboardView onOpenVoiceModal={handleOpenVoiceModal} setActiveView={setActiveView} />;
+      case 'assistente-ia':
+        return <AIAssistantView onNavigateToView={setActiveView} onOpenVoiceModal={handleOpenVoiceModal} />;
       case 'vendas':
         return checkPermission('vendas') ? <SalesView onOpenVoiceModal={handleOpenVoiceModal} /> : renderAccessDenied('Vendas');
       case 'producao':

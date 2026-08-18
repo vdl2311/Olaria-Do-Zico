@@ -17,7 +17,8 @@ import {
   LogOut, 
   UserCheck, 
   Palette, 
-  Cpu
+  Cpu,
+  Sparkles
 } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { AuthService } from '../services/authService';
@@ -63,9 +64,10 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   const ALL_NAV_GROUPS: NavGroup[] = [
     {
-      title: 'Operacional',
+      title: 'Inteligência & Operação',
       items: [
         { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
+        { id: 'assistente-ia', label: 'Assistente IA', icon: Sparkles, badge: 'IA' },
         { id: 'vendas', label: 'Vendas', icon: ShoppingCart, requiredPermission: 'vendas' },
         { id: 'producao', label: 'Produção (Fornos)', icon: Flame, requiredPermission: 'producao' },
         { id: 'estoque', label: 'Estoque & Insumos', icon: Package, badge: lowStockCount > 0 ? lowStockCount : undefined, requiredPermission: 'estoque' },
