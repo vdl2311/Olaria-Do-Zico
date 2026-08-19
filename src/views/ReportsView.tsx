@@ -72,20 +72,28 @@ export const ReportsView: React.FC = () => {
     .sort((a, b) => b.qty - a.qty)
     .slice(0, 6);
 
-  // Category distribution for PieChart
+  // Category distribution for PieChart with fallback and clear naming
   const categoryMap: { [cat: string]: number } = {};
   products.forEach(p => {
-    categoryMap[p.category] = (categoryMap[p.category] || 0) + (p.stock || 1);
+    let cat = p.category ? p.category.trim() : 'Outros';
+    // Format / Normalize category names for clarity
+    if (cat.toLowerCase() === 'vaso') cat = 'Vasos';
+    if (cat.toLowerCase() === 'fonte') cat = 'Fontes';
+    if (cat.toLowerCase() === 'cachepo') cat = 'Cachepôs';
+    if (cat.toLowerCase() === 'jardineira') cat = 'Jardineiras';
+    if (cat.toLowerCase() === 'peça especial' || cat.toLowerCase() === 'pecas especiais') cat = 'Peças Especiais';
+
+    categoryMap[cat] = (categoryMap[cat] || 0) + (p.stock || 1);
   });
   const categoryPieData = Object.entries(categoryMap).map(([name, value]) => ({ name, value }));
 
   // Production vs Losses Donut Data
   const productionPieData = [
-    { name: 'Aproveitadas (Boas)', value: totalGood || 1, color: '#667052' },
-    { name: 'Perdas / Quebradas', value: totalLost || 0, color: '#E06D53' }
+    { name: 'Peças Boas / Aproveitadas', value: totalGood || 1, color: '#15803D' },
+    { name: 'Perdas / Quebradas', value: totalLost || 0, color: '#DC2626' }
   ];
 
-  // Financial Comparison Bar Chart Data
+  // Financial Comparison Bar Chart Data with highly distinct high-contrast colors
   const financialChartData = [
     {
       label: 'Resumo do Período',
@@ -96,22 +104,29 @@ export const ReportsView: React.FC = () => {
     }
   ];
 
-  // Monthly Sales Trend Data (mocked/grouped)
-  const salesByDateMap: { [date: string]: { Receita: number; Pendente: number } } = {};
-  sales.forEach(s => {
-    const d = new Date(s.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    if (!salesByDateMap[d]) salesByDateMap[d] = { Receita: 0, Pendente: 0 };
-    salesByDateMap[d].Receita += s.paidValue;
-    salesByDateMap[d].Pendente += s.pendingValue;
-  });
-  const salesTrendData = Object.entries(salesByDateMap).map(([date, val]) => ({
-    date,
-    Receita: val.Receita,
-    Pendente: val.Pendente
-  }));
+  // Colors with high visual distinction for instant comprehension:
+  // Faturamento = Azul Royal Forte (#1D4ED8)
+  // Entradas Reais / Caixa = Verde Esmeralda (#15803D)
+  // Despesas = Âmbar Escuro / Terracota Profundo (#B45309)
+  // Inadimplência / Fiado = Vermelho Rubi (#DC2626)
+  const FINANCIAL_COLORS = {
+    faturamento: '#1D4ED8',
+    entradasReais: '#15803D',
+    despesas: '#B45309',
+    inadimplencia: '#DC2626'
+  };
 
-  // Chart Palette (Brand Cohesive Terracota Palette)
-  const PIE_COLORS = ['#C66B48', '#A4B38A', '#D67855', '#E07A6E', '#E0B366', '#7BA5C9', '#C9BFA8'];
+  // Pie chart distinct colors (High contrast, clearly recognizable palette)
+  const PIE_COLORS = [
+    '#B85C38', // Terracota Olaria
+    '#15803D', // Verde Floresta
+    '#1D4ED8', // Azul Safira
+    '#D97706', // Âmbar Dourado
+    '#7C3AED', // Roxo Violeta
+    '#0891B2', // Ciano Profundo
+    '#DC2626'  // Vermelho
+  ];
+
   const textColor = isDark ? '#C9BFA8' : '#292724';
   const gridColor = isDark ? '#3D3833' : '#E7D5BE';
 
@@ -151,13 +166,13 @@ export const ReportsView: React.FC = () => {
         </div>
 
         <div className="bg-white dark:bg-[#25221E] border border-[#E7D5BE] dark:border-stone-800 p-5 rounded-2xl shadow-xs space-y-1 transition-colors">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#8A5A44] dark:text-[#D98A5B]">Faturamento Bruto</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">Faturamento Bruto</span>
           <p className="text-2xl font-black text-[#292724] dark:text-[#F7F1E7] mt-1 font-mono">R$ {totalSalesValue.toFixed(2)}</p>
           <p className="text-xs text-[#5C5852] dark:text-[#A8A29E]">{sales.length} vendas efetuadas</p>
         </div>
 
         <div className="bg-white dark:bg-[#25221E] border border-[#E7D5BE] dark:border-stone-800 p-5 rounded-2xl shadow-xs space-y-1 transition-colors">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#8A5A44] dark:text-[#D98A5B]">Inadimplência / Fiado</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">Inadimplência / Fiado</span>
           <p className="text-2xl font-black text-rose-700 dark:text-rose-400 mt-1 font-mono">R$ {totalPending.toFixed(2)}</p>
           <p className="text-xs text-rose-600 dark:text-rose-300">A receber de clientes</p>
         </div>
@@ -184,26 +199,33 @@ export const ReportsView: React.FC = () => {
             <span className="text-[11px] text-[#5C5852] dark:text-[#A8A29E] font-medium">Valores em R$</span>
           </div>
 
-          <div className="h-64 w-full pt-2">
+          <div className="h-72 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={financialChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <BarChart data={financialChartData} margin={{ top: 10, right: 10, left: -10, bottom: 25 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                <XAxis dataKey="label" stroke={textColor} tick={{ fontSize: 11 }} />
+                <XAxis dataKey="label" stroke={textColor} tick={{ fontSize: 12, fontWeight: 'bold' }} />
                 <YAxis stroke={textColor} tick={{ fontSize: 11 }} />
                 <Tooltip 
+                  formatter={(value: any) => [`R$ ${Number(value).toFixed(2)}`, '']}
                   contentStyle={{ 
                     backgroundColor: isDark ? '#1A1816' : '#FFF', 
                     borderColor: isDark ? '#3A3530' : '#E7D5BE',
                     borderRadius: '12px',
                     color: isDark ? '#F7F1E7' : '#292724',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    fontWeight: 'bold'
                   }} 
                 />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                <Bar dataKey="Faturamento" fill="#B85C38" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Entradas Reais" fill="#667052" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Despesas" fill="#8A5A44" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Inadimplência" fill="#E06D53" radius={[6, 6, 0, 0]} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  align="center"
+                  wrapperStyle={{ fontSize: '11px', paddingTop: '12px' }} 
+                />
+                {/* Visualmente destacado: Cores com contraste imediato */}
+                <Bar dataKey="Faturamento" name="Faturamento (Total)" fill={FINANCIAL_COLORS.faturamento} radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Entradas Reais" name="Entradas Reais (Caixa)" fill={FINANCIAL_COLORS.entradasReais} radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Despesas" name="Despesas Pagas" fill={FINANCIAL_COLORS.despesas} radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Inadimplência" name="Inadimplência / Fiado" fill={FINANCIAL_COLORS.inadimplencia} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -219,7 +241,7 @@ export const ReportsView: React.FC = () => {
             <span className="text-[11px] text-[#5C5852] dark:text-[#A8A29E] font-medium">Taxa de Quebra</span>
           </div>
 
-          <div className="h-64 w-full flex items-center justify-center pt-2">
+          <div className="h-72 w-full flex items-center justify-center pt-2">
             {totalProduced === 0 ? (
               <div className="text-center text-xs text-[#5C5852] dark:text-[#A8A29E] space-y-1">
                 <Flame className="w-8 h-8 text-[#B85C38] mx-auto opacity-50" />
@@ -231,9 +253,9 @@ export const ReportsView: React.FC = () => {
                   <Pie
                     data={productionPieData}
                     cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
+                    cy="45%"
+                    innerRadius={50}
+                    outerRadius={80}
                     paddingAngle={4}
                     dataKey="value"
                   >
@@ -242,6 +264,7 @@ export const ReportsView: React.FC = () => {
                     ))}
                   </Pie>
                   <Tooltip 
+                    formatter={(value: any) => [`${value} unidades`, '']}
                     contentStyle={{ 
                       backgroundColor: isDark ? '#1A1816' : '#FFF', 
                       borderColor: isDark ? '#3A3530' : '#E7D5BE',
@@ -250,7 +273,7 @@ export const ReportsView: React.FC = () => {
                       fontSize: '12px'
                     }} 
                   />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                  <Legend verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -267,18 +290,19 @@ export const ReportsView: React.FC = () => {
             <span className="text-[11px] text-[#5C5852] dark:text-[#A8A29E] font-medium">Unidades</span>
           </div>
 
-          <div className="h-64 w-full pt-2">
+          <div className="h-72 w-full pt-2">
             {topProductsByQty.length === 0 ? (
               <div className="text-center text-xs text-[#5C5852] dark:text-[#A8A29E] py-12">
                 Nenhuma venda registrada para compor o ranking.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topProductsByQty} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                <BarChart data={topProductsByQty} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                   <XAxis type="number" stroke={textColor} tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="name" type="category" stroke={textColor} tick={{ fontSize: 10 }} width={110} />
+                  <YAxis dataKey="name" type="category" stroke={textColor} tick={{ fontSize: 10 }} width={120} />
                   <Tooltip 
+                    formatter={(value: any) => [`${value} unidades vendidas`, '']}
                     contentStyle={{ 
                       backgroundColor: isDark ? '#1A1816' : '#FFF', 
                       borderColor: isDark ? '#3A3530' : '#E7D5BE',
@@ -287,14 +311,14 @@ export const ReportsView: React.FC = () => {
                       fontSize: '12px'
                     }} 
                   />
-                  <Bar dataKey="qty" name="Unidades Vendidas" fill="#D98A5B" radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="qty" name="Unidades Vendidas" fill="#B85C38" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        {/* CHART 4: Category Distribution (Pie Chart) */}
+        {/* CHART 4: Category Distribution (Pie Chart with Clean Responsive Legend) */}
         <div className="bg-white dark:bg-[#25221E] border border-[#E7D5BE] dark:border-stone-800 p-5 rounded-2xl shadow-xs space-y-4 transition-colors">
           <div className="flex items-center justify-between border-b border-[#E7D5BE]/60 dark:border-stone-800 pb-3">
             <h3 className="font-bold text-[#292724] dark:text-[#F7F1E7] text-base flex items-center gap-2 font-brand-serif">
@@ -304,35 +328,51 @@ export const ReportsView: React.FC = () => {
             <span className="text-[11px] text-[#5C5852] dark:text-[#A8A29E] font-medium">Tipos de Peça</span>
           </div>
 
-          <div className="h-64 w-full flex items-center justify-center pt-2">
+          <div className="h-72 w-full flex items-center justify-center pt-2">
             {categoryPieData.length === 0 ? (
               <div className="text-center text-xs text-[#5C5852] dark:text-[#A8A29E] py-12">
                 Nenhum produto cadastrado no catálogo.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <PieChart margin={{ top: 0, right: 10, left: 10, bottom: 20 }}>
                   <Pie
                     data={categoryPieData}
                     cx="50%"
-                    cy="50%"
-                    outerRadius={80}
+                    cy="45%"
+                    outerRadius={75}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    labelLine={false}
+                    nameKey="name"
                   >
                     {categoryPieData.map((entry, index) => (
                       <Cell key={`cell-cat-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip 
+                    formatter={(value: any, name: any, item: any) => {
+                      const total = categoryPieData.reduce((acc, curr) => acc + curr.value, 0);
+                      const percent = total > 0 ? ((Number(value) / total) * 100).toFixed(0) : '0';
+                      return [`${value} un (${percent}%)`, name];
+                    }}
                     contentStyle={{ 
                       backgroundColor: isDark ? '#1A1816' : '#FFF', 
                       borderColor: isDark ? '#3A3530' : '#E7D5BE',
                       borderRadius: '12px',
                       color: isDark ? '#F7F1E7' : '#292724',
-                      fontSize: '12px'
+                      fontSize: '12px',
+                      fontWeight: 'bold'
                     }} 
+                  />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    align="center"
+                    wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }}
+                    formatter={(value) => {
+                      // Correct singular/plural labels neatly
+                      if (value === 'Vaso' || value === 'vaso') return 'Vasos';
+                      if (value === 'Fonte' || value === 'fonte') return 'Fontes';
+                      return value;
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -375,30 +415,23 @@ export const ReportsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Breakage & Loss Audit List */}
+        {/* Strategic Tips / AI Operational Insights */}
         <div className="bg-white dark:bg-[#25221E] border border-[#E7D5BE] dark:border-stone-800 p-5 rounded-2xl shadow-xs space-y-4 transition-colors">
           <h3 className="font-bold text-[#292724] dark:text-[#F7F1E7] text-base flex items-center gap-2 font-brand-serif">
-            <AlertTriangle className="w-5 h-5 text-[#B85C38]" />
-            <span>Resumo de Perdas de Produção / Quebra</span>
+            <TrendingUp className="w-5 h-5 text-[#667052]" />
+            <span>Recomendações Estratégicas</span>
           </h3>
 
-          <div className="space-y-2.5">
-            {production.length === 0 ? (
-              <p className="text-xs text-[#5C5852] dark:text-[#A8A29E]">Nenhuma queima registrada.</p>
-            ) : (
-              production.map((b) => (
-                <div key={b.id} className="p-3 bg-[#FAF6EF] dark:bg-[#1A1816] rounded-xl border border-[#E7D5BE] dark:border-stone-800 text-xs space-y-1 transition-colors">
-                  <div className="flex justify-between font-bold text-[#292724] dark:text-[#F7F1E7]">
-                    <span>{b.productName} ({b.batchNumber || b.code})</span>
-                    <span className="text-rose-700 dark:text-rose-400 font-bold">{b.quantityLost} peças perdidas</span>
-                  </div>
-                  <p className="text-[#5C5852] dark:text-[#A8A29E]">
-                    Produzidos: {b.quantityProduced} | Aproveitados: {b.quantityGood} | Etapa: {b.stage}
-                  </p>
-                  {b.notes && <p className="text-[#8A5A44] dark:text-[#D98A5B] italic">Obs: {b.notes}</p>}
-                </div>
-              ))
-            )}
+          <div className="space-y-3 text-xs leading-relaxed text-[#5C5852] dark:text-[#A8A29E]">
+            <div className="p-3 bg-[#F7F1E7] dark:bg-[#1E1C1A] rounded-xl border border-[#E7D5BE] dark:border-stone-800">
+              <strong className="text-[#292724] dark:text-[#F7F1E7] block mb-1">🏺 Foco de Produção nos Fornos</strong>
+              Mantenha o forno abastecido com as peças de maior giro (Vasos Bojudos e Colunas) para evitar desabastecimento em finais de semana de pico.
+            </div>
+
+            <div className="p-3 bg-[#F7F1E7] dark:bg-[#1E1C1A] rounded-xl border border-[#E7D5BE] dark:border-stone-800">
+              <strong className="text-[#292724] dark:text-[#F7F1E7] block mb-1">💰 Gestão de Inadimplência e Fiado</strong>
+              O valor pendente em fiado representa um percentual do faturamento. Incentive o pagamento via Pix oferecendo pequenos descontos no ato.
+            </div>
           </div>
         </div>
       </div>

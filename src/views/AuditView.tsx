@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { History, RotateCcw, CheckCircle2, Mic, FileText, AlertCircle } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { AuditLog } from '../types';
+import { Button, Card, useToast } from '../components/ui';
 
 export const AuditView: React.FC = () => {
+  const { showSuccess } = useToast();
   const [logs, setLogs] = useState<AuditLog[]>(() => StorageService.getAuditLogs());
 
   const refreshLogs = () => {
@@ -14,66 +16,70 @@ export const AuditView: React.FC = () => {
     if (confirm('Tem certeza que deseja desfazer esta operação? Os registros no sistema serão revertidos.')) {
       StorageService.undoAuditAction(logId);
       refreshLogs();
+      showSuccess('Ação Revertida', 'Operação revertida com sucesso.');
     }
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20 font-brand-sans">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-black text-amber-950 flex items-center gap-2">
-          <History className="w-6 h-6 text-amber-800" />
+        <h2 className="text-2xl sm:text-3xl font-black text-[#292724] dark:text-[#F7F1E7] font-brand-serif flex items-center gap-3">
+          <History className="w-7 h-7 text-[#B85C38]" />
           <span>Histórico & Auditoria de Operações</span>
         </h2>
-        <p className="text-xs text-amber-800/80">
+        <p className="text-sm sm:text-base text-[#5C5852] dark:text-[#C9BFA8] mt-1">
           Transparência total: rastreamento de todas as alterações, movimentações de estoque e reversão de ações.
         </p>
       </div>
 
       {/* Logs List */}
-      <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden shadow-xs">
+      <Card variant="default" className="p-0 overflow-hidden">
         {/* Mobile View: Cards */}
-        <div className="block md:hidden divide-y divide-amber-100">
+        <div className="block md:hidden divide-y divide-[#E7D5BE] dark:divide-stone-800">
           {logs.length === 0 ? (
-            <div className="p-8 text-center text-amber-800/60">
+            <div className="p-10 text-center text-[#5C5852] dark:text-[#C9BFA8]">
               Nenhum registro de auditoria encontrado.
             </div>
           ) : (
             logs.map((log) => (
-              <div key={log.id} className="p-4 space-y-2.5 hover:bg-amber-50/40 transition-colors">
+              <div key={log.id} className="p-4 space-y-3 hover:bg-[#F7F1E7]/50 dark:hover:bg-stone-800/50 transition-colors">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-amber-800 font-semibold">
+                  <span className="text-xs font-semibold text-[#8A5A44] dark:text-[#C9BFA8]">
                     {new Date(log.timestamp).toLocaleString('pt-BR')}
                   </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    log.status === 'Aplicado' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                    log.status === 'Aplicado'
+                      ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300'
                   }`}>
                     {log.status}
                   </span>
                 </div>
 
                 <div>
-                  <p className="text-xs font-bold text-amber-950">
+                  <p className="text-base font-bold text-[#292724] dark:text-[#F7F1E7]">
                     "{log.transcript || log.action}"
                   </p>
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold text-[10px]">
+                  <span className="inline-block mt-1.5 px-2.5 py-0.5 rounded-md bg-[#E7D5BE]/60 dark:bg-stone-700 text-[#292724] dark:text-[#F7F1E7] font-bold text-xs">
                     {log.actionType || log.entityType}
                   </span>
                 </div>
 
-                <div className="text-[11px] text-amber-800 font-mono bg-amber-50/60 p-2 rounded-lg border border-amber-100 truncate">
+                <div className="text-xs text-[#8A5A44] dark:text-[#C9BFA8] font-mono bg-[#FAF6EF] dark:bg-[#1A1816] p-2.5 rounded-lg border border-[#E7D5BE] dark:border-stone-800 truncate">
                   {typeof log.details === 'string' ? log.details : JSON.stringify(log.details || '')}
                 </div>
 
                 {log.status === 'Aplicado' && (
                   <div className="flex justify-end pt-1">
-                    <button
+                    <Button
                       onClick={() => handleUndo(log.id)}
-                      className="px-3 py-1.5 bg-amber-100 hover:bg-red-100 hover:text-red-800 text-amber-950 font-bold rounded-lg text-xs transition-colors inline-flex items-center space-x-1.5 cursor-pointer"
+                      variant="secondary"
+                      size="sm"
+                      icon={RotateCcw}
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Desfazer Operação</span>
-                    </button>
+                      Desfazer Operação
+                    </Button>
                   </div>
                 )}
               </div>
@@ -81,59 +87,62 @@ export const AuditView: React.FC = () => {
           )}
         </div>
 
-        {/* Desktop View: Table with Smooth Scroll */}
+        {/* Desktop View: Table with Legible Typography */}
         <div className="hidden md:block overflow-x-auto rounded-xl">
-          <table className="w-full min-w-[680px] text-left text-xs sm:text-sm">
-            <thead className="bg-amber-900/10 text-amber-900 font-bold border-b border-amber-200">
+          <table className="w-full min-w-[720px] text-left text-sm sm:text-base font-brand-sans">
+            <thead className="bg-[#E7D5BE]/60 dark:bg-[#2E2A26] text-[#8A5A44] dark:text-[#D67855] font-bold border-b border-[#E7D5BE] dark:border-stone-800">
               <tr>
-                <th className="p-3.5 whitespace-nowrap">Horário / Data</th>
-                <th className="p-3.5">Ação Registrada</th>
-                <th className="p-3.5 whitespace-nowrap">Tipo da Ação</th>
-                <th className="p-3.5 hidden lg:table-cell">Detalhes da Alteração</th>
-                <th className="p-3.5 whitespace-nowrap">Status</th>
-                <th className="p-3.5 text-right whitespace-nowrap">Ação</th>
+                <th className="p-4 whitespace-nowrap text-sm font-bold uppercase tracking-wider">Horário / Data</th>
+                <th className="p-4 text-sm font-bold uppercase tracking-wider">Ação Registrada</th>
+                <th className="p-4 whitespace-nowrap text-sm font-bold uppercase tracking-wider">Tipo</th>
+                <th className="p-4 hidden lg:table-cell text-sm font-bold uppercase tracking-wider">Detalhes</th>
+                <th className="p-4 whitespace-nowrap text-sm font-bold uppercase tracking-wider">Status</th>
+                <th className="p-4 text-right whitespace-nowrap text-sm font-bold uppercase tracking-wider">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-amber-100">
+            <tbody className="divide-y divide-[#E7D5BE]/60 dark:divide-stone-800">
               {logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-amber-800/60">
-                    Nenhum registro de auditoria encontrado.
+                  <td colSpan={6} className="p-10 text-center text-[#5C5852] dark:text-[#C9BFA8]">
+                    Nenhum registro de auditoria no sistema.
                   </td>
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-amber-50/60">
-                    <td className="p-3.5 text-amber-800 font-semibold whitespace-nowrap">
+                  <tr key={log.id} className="hover:bg-[#F7F1E7]/80 dark:hover:bg-[#2E2A26] transition-colors">
+                    <td className="p-4 whitespace-nowrap text-xs sm:text-sm text-[#8A5A44] dark:text-[#C9BFA8] font-mono">
                       {new Date(log.timestamp).toLocaleString('pt-BR')}
                     </td>
-                    <td className="p-3.5 font-bold text-amber-950 max-w-xs">
-                      "{log.transcript || log.action}"
+                    <td className="p-4 font-bold text-[#292724] dark:text-[#F7F1E7]">
+                      {log.transcript || log.action}
                     </td>
-                    <td className="p-3.5">
-                      <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-xs">
+                    <td className="p-4 whitespace-nowrap">
+                      <span className="px-2.5 py-1 rounded-lg bg-[#E7D5BE]/60 dark:bg-stone-700 text-[#292724] dark:text-[#F7F1E7] font-bold text-xs">
                         {log.actionType || log.entityType}
                       </span>
                     </td>
-                    <td className="p-3.5 text-amber-800 text-xs font-mono max-w-xs truncate hidden lg:table-cell">
+                    <td className="p-4 hidden lg:table-cell font-mono text-xs text-[#5C5852] dark:text-[#C9BFA8] max-w-xs truncate">
                       {typeof log.details === 'string' ? log.details : JSON.stringify(log.details || '')}
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-4 whitespace-nowrap">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        log.status === 'Aplicado' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                        log.status === 'Aplicado'
+                          ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300'
                       }`}>
                         {log.status}
                       </span>
                     </td>
-                    <td className="p-3.5 text-right">
+                    <td className="p-4 text-right whitespace-nowrap">
                       {log.status === 'Aplicado' && (
-                        <button
+                        <Button
                           onClick={() => handleUndo(log.id)}
-                          className="px-3 py-1.5 bg-amber-200 hover:bg-red-100 hover:text-red-800 text-amber-950 font-bold rounded-lg text-xs transition-colors inline-flex items-center space-x-1 cursor-pointer"
+                          variant="secondary"
+                          size="sm"
+                          icon={RotateCcw}
                         >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Desfazer</span>
-                        </button>
+                          Desfazer
+                        </Button>
                       )}
                     </td>
                   </tr>
@@ -142,7 +151,7 @@ export const AuditView: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

@@ -60,109 +60,83 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-[#8A5A44] dark:bg-[#252320] text-[#F7F1E7] dark:text-[#F2EBDD] border-b border-[#6E4533] dark:border-[#3D3833] sticky top-0 z-30 shadow-md transition-colors">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+    <header className="bg-[#8A5A44] dark:bg-[#252320] text-[#F7F1E7] dark:text-[#F2EBDD] border-b border-[#6E4533] dark:border-[#3D3833] sticky top-0 z-30 shadow-md transition-colors font-brand-sans">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-18 flex items-center justify-between gap-2">
         {/* Left: Mobile menu toggle + Brand Logo & Title */}
-        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+        <div className="flex items-center space-x-2 sm:space-x-3.5 min-w-0 flex-1">
           {onOpenMobileDrawer && (
             <button
               type="button"
               onClick={onOpenMobileDrawer}
               aria-label="Abrir menu principal de navegação"
-              className="lg:hidden p-2 rounded-xl bg-[#6E4533] dark:bg-[#2E2A26] text-[#E7D5BE] dark:text-[#F2EBDD] hover:text-white hover:bg-[#5C3829] dark:hover:bg-[#3D3833] transition-colors cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38]"
+              className="lg:hidden p-2.5 rounded-xl bg-[#6E4533] dark:bg-[#2E2A26] text-[#E7D5BE] dark:text-[#F2EBDD] hover:text-white hover:bg-[#5C3829] dark:hover:bg-[#3D3833] transition-colors cursor-pointer shrink-0"
               title="Abrir Menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-6 h-6" />
             </button>
           )}
 
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#F7F1E7] flex items-center justify-center p-1.5 sm:p-2 shadow-xs border border-[#E7D5BE] shrink-0">
-              <BrandSymbol variant="terracota" className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F7F1E7] flex items-center justify-center p-2 shadow-xs border border-[#E7D5BE] shrink-0">
+              <BrandSymbol variant="terracota" className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight text-[#F7F1E7] flex items-center gap-1.5 sm:gap-2 truncate">
+              <h1 className="text-base sm:text-lg md:text-xl font-black tracking-tight text-[#F7F1E7] flex items-center gap-2 truncate">
                 <span className="font-brand-serif font-black tracking-wider uppercase truncate">
                   {currentUser?.companyName || (isDemo ? 'Olaria (Demo)' : 'OLARIA')}
                 </span>
                 {isDemo ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-200 border border-cyan-700 hidden sm:inline-flex items-center gap-1 shrink-0 font-brand-sans">
-                    <FlaskConical className="w-3 h-3 text-cyan-300" />
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-200 border border-cyan-700 hidden sm:inline-flex items-center gap-1 shrink-0 font-brand-sans">
+                    <FlaskConical className="w-3.5 h-3.5 text-cyan-300" />
                     <span>Sandbox</span>
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#667052] text-[#F7F1E7] border border-[#4F583D] hidden md:inline-flex items-center gap-1 shrink-0 font-brand-sans">
-                    <Cloud className="w-3 h-3 text-emerald-200" />
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#667052] text-[#F7F1E7] border border-[#4F583D] hidden md:inline-flex items-center gap-1 shrink-0 font-brand-sans">
+                    <Cloud className="w-3.5 h-3.5 text-emerald-200" />
                     <span>Nuvem</span>
                   </span>
                 )}
               </h1>
-              <p className="text-[10px] sm:text-[11px] text-[#E7D5BE]/90 font-medium truncate hidden sm:block font-brand-sans">
+              <p className="text-xs sm:text-sm text-[#E7D5BE] font-medium truncate hidden sm:block font-brand-sans">
                 {getViewTitle()}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center space-x-1 sm:space-x-2.5 shrink-0">
-          {/* Brand Kit Quick Access Button (Desktop/Tablet) */}
-          {onNavigateToBrandKit && (
-            <button
-              type="button"
-              onClick={onNavigateToBrandKit}
-              aria-label="Acessar Brand Kit e Manual da Marca"
-              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer font-brand-sans shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38] ${
-                activeView === 'brandkit'
-                  ? 'bg-[#B85C38] text-white border-[#B85C38] shadow-sm'
-                  : 'bg-[#6E4533] hover:bg-[#5C3829] text-[#E7D5BE] border-[#A7735B]/40'
-              }`}
-              title="Brand Kit"
-            >
-              <Palette className="w-3.5 h-3.5 text-[#E7D5BE] shrink-0" />
-              <span>Brand Kit</span>
-            </button>
-          )}
-
-          {/* Security & Access Quick Badge (Desktop) */}
-          {isOwner && onNavigateToSecurity && (
-            <button
-              type="button"
-              onClick={onNavigateToSecurity}
-              aria-label="Gerenciar Usuários e Segurança"
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#6E4533] hover:bg-[#5C3829] text-[#E7D5BE] border border-[#A7735B]/40 text-xs font-bold transition-all cursor-pointer font-brand-sans shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38]"
-              title="Segurança"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#E7D5BE] shrink-0" />
-              <span>Segurança</span>
-            </button>
-          )}
-
-          {/* Dark / Light Mode Toggle Button */}
+        {/* Right Actions: Dark/Light Mode + Brandkit + Reset */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+          {/* Dark / Light Theme Toggle */}
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label={isDark ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
-            className="p-1.5 sm:p-2 text-[#E7D5BE] hover:text-[#F7F1E7] hover:bg-[#6E4533] rounded-xl transition-all shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#B85C38] flex items-center gap-1 text-xs font-bold"
-            title={isDark ? "Modo Claro" : "Modo Escuro"}
+            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-[#6E4533] dark:bg-[#2E2A26] text-[#FAF6EF] hover:bg-[#5C3829] dark:hover:bg-[#3D3833] transition-all flex items-center gap-2 cursor-pointer border border-[#A7735B]/40 dark:border-[#3D3833] shadow-2xs font-brand-sans"
+            aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+            title={isDark ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
           >
             {isDark ? (
-              <Sun className="w-4 h-4 text-amber-300" />
+              <>
+                <Sun className="w-4 h-4 text-amber-300 shrink-0" />
+                <span className="text-xs font-bold hidden md:inline">Claro</span>
+              </>
             ) : (
-              <Moon className="w-4 h-4 text-cyan-200" />
+              <>
+                <Moon className="w-4 h-4 text-amber-100 shrink-0" />
+                <span className="text-xs font-bold hidden md:inline">Escuro</span>
+              </>
             )}
-            <span className="hidden xl:inline text-[11px] font-semibold">{isDark ? "Claro" : "Escuro"}</span>
           </button>
 
-          {/* Reset Demo Data Button (Tablet/Desktop) */}
+          {/* Reset Demo / Production Data */}
           <button
             type="button"
             onClick={handleReset}
-            aria-label={isDemo ? "Restaurar dados de demonstração" : "Restaurar dados de exemplo"}
-            className="hidden sm:flex p-1.5 sm:p-2 text-[#E7D5BE] hover:text-[#F7F1E7] hover:bg-[#6E4533] rounded-xl transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#B85C38]"
-            title={isDemo ? 'Restaurar dados da demonstração' : 'Restaurar dados de exemplo'}
+            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-[#6E4533] dark:bg-[#2E2A26] text-[#FAF6EF] hover:bg-[#5C3829] dark:hover:bg-[#3D3833] transition-colors flex items-center gap-1.5 cursor-pointer border border-[#A7735B]/40 dark:border-[#3D3833]"
+            title={isDemo ? 'Restaurar Sandbox Demo' : 'Restaurar Dados Padrão'}
+            aria-label="Restaurar dados padrão"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-4 h-4 text-amber-200 shrink-0" />
+            <span className="text-xs font-bold hidden xl:inline">Restaurar</span>
           </button>
         </div>
       </div>

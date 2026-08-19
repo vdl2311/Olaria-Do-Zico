@@ -25,15 +25,16 @@ export const Button: React.FC<ButtonProps> = ({
   const variantClasses = {
     primary: 'bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold shadow-xs border border-[#CF734E]/50 active:scale-[0.98]',
     secondary: 'bg-[#8A5A44] hover:bg-[#6E4533] text-[#FAF6EF] font-bold shadow-xs border border-[#A7735B]/40 active:scale-[0.98]',
-    outline: 'bg-transparent border border-[#B85C38] dark:border-[#D98A5B] text-[#B85C38] dark:text-[#D98A5B] hover:bg-[#B85C38]/10 font-bold active:scale-[0.98]',
+    outline: 'bg-transparent border-2 border-[#B85C38] dark:border-[#D98A5B] text-[#B85C38] dark:text-[#D98A5B] hover:bg-[#B85C38]/10 font-bold active:scale-[0.98]',
     danger: 'bg-rose-700 hover:bg-rose-800 text-white font-bold shadow-xs border border-rose-600/50 active:scale-[0.98]',
-    ghost: 'bg-transparent hover:bg-[#E7D5BE]/50 dark:hover:bg-stone-800 text-[#292724] dark:text-[#F7F1E7] font-medium',
+    ghost: 'bg-transparent hover:bg-[#E7D5BE]/50 dark:hover:bg-stone-800 text-[#292724] dark:text-[#F7F1E7] font-semibold',
   }[variant];
 
+  // Enhanced Button Sizes (sm = 14px, md = 15-16px, lg = 16-18px)
   const sizeClasses = {
-    sm: 'px-2.5 py-1.5 text-xs rounded-xl gap-1.5',
-    md: 'px-4 py-2 text-xs sm:text-sm rounded-xl gap-2',
-    lg: 'px-5 py-2.5 text-sm sm:text-base rounded-2xl gap-2.5',
+    sm: 'px-3 py-2 text-sm rounded-xl gap-2 font-bold min-h-[38px]',
+    md: 'px-4 py-2.5 text-sm sm:text-base rounded-xl gap-2.5 font-bold min-h-[42px]',
+    lg: 'px-6 py-3 text-base sm:text-lg rounded-2xl gap-3 font-bold min-h-[48px]',
   }[size];
 
   return (
@@ -45,9 +46,9 @@ export const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+        <Loader2 className="w-5 h-5 animate-spin shrink-0" />
       ) : Icon ? (
-        <Icon className="w-4 h-4 shrink-0" />
+        <Icon className="w-5 h-5 shrink-0" />
       ) : null}
       {children && <span>{children}</span>}
     </button>

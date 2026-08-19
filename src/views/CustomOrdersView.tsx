@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ClipboardList, Plus, Mic, Calendar, Palette, DollarSign, CheckCircle2, Clock, X, Camera, Upload } from 'lucide-react';
+import { ClipboardList, Plus, Mic, Calendar, Palette, DollarSign, CheckCircle2, Clock, X, Camera, Upload, Trash2 } from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
 import { CustomOrder, Customer } from '../types';
 import { CameraModal } from '../components/CameraModal';
@@ -8,7 +8,13 @@ import {
   Card,
   Modal,
   FormField,
-  Input
+  Input,
+  Select,
+  Textarea,
+  ConfirmModal,
+  StatusBadge,
+  EmptyState,
+  useToast
 } from '../components/ui';
 
 interface CustomOrdersViewProps {
@@ -16,9 +22,11 @@ interface CustomOrdersViewProps {
 }
 
 export const CustomOrdersView: React.FC<CustomOrdersViewProps> = () => {
+  const { showSuccess } = useToast();
   const [orders, setOrders] = useState<CustomOrder[]>(() => StorageService.getCustomOrders());
   const [customers, setCustomers] = useState<Customer[]>(() => StorageService.getCustomers());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<CustomOrder | null>(null);
 
   // Form State
   const [customerName, setCustomerName] = useState('');
@@ -29,19 +37,6 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (dataUrl) {
-        setPhotoUrl(dataUrl);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
   const [targetDate, setTargetDate] = useState(() => new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [depositPaid, setDepositPaid] = useState(0);
@@ -76,8 +71,8 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = () => {
       photoUrl,
       targetDate,
       status: 'Orçamento',
-      totalPrice,
-      depositPaid,
+      totalPrice: Number(totalPrice) || 0,
+      depositPaid: Number(depositPaid) || 0,
       createdAt: new Date().toISOString().split('T')[0],
       notes
     };
@@ -98,6 +93,7 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = () => {
 
     refreshData();
     setIsModalOpen(false);
+    showSuccess('Encomenda Criada', `Pedido ${newOrder.code} de ${newOrder.customerName} registrado com sucesso.`);
 
     // Reset Form
     setCustomerName('');
@@ -110,114 +106,129 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = () => {
     setNotes('');
   };
 
-  const handleUpdateStatus = (order: CustomOrder, newStatus: CustomOrder['status']) => {
-    const updated = { ...order, status: newStatus };
+  const handleUpdateStatus = (order: CustomOrder, nextStatus: CustomOrder['status']) => {
+    const updated = { ...order, status: nextStatus };
     StorageService.saveCustomOrder(updated);
     refreshData();
+    showSuccess('Status Atualizado', `Pedido ${order.code} movido para "${nextStatus}".`);
+  };
+
+  const confirmDelete = () => {
+    if (!orderToDelete) return;
+    StorageService.deleteCustomOrder(orderToDelete.id);
+    refreshData();
+    showSuccess('Encomenda Removida', 'Pedido removido com sucesso.');
+    setOrderToDelete(null);
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20 font-brand-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-amber-950 flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-amber-800" />
-            <span>Pedidos Personalizados e Sob Encomenda</span>
+          <h2 className="text-2xl sm:text-3xl font-black text-[#292724] dark:text-[#F7F1E7] font-brand-serif flex items-center gap-3">
+            <ClipboardList className="w-7 h-7 text-[#B85C38]" />
+            <span>Pedidos Sob Encomenda & Peças Especiais</span>
           </h2>
-          <p className="text-xs text-amber-800/80">Registre fontes sob medida, cores especiais, prazos e sinal pago.</p>
+          <p className="text-sm sm:text-base text-[#5C5852] dark:text-[#C9BFA8] mt-1">
+            Gestão de peças personalizadas, medidas sob medida, esmaltes especiais e prazos de entrega.
+          </p>
         </div>
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <button
+          <Button
             onClick={() => setIsModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer"
+            variant="primary"
+            size="md"
+            icon={Plus}
+            className="w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4" />
-            <span>Novo Pedido</span>
-          </button>
+            Novo Pedido
+          </Button>
         </div>
       </div>
 
-      {/* Orders Grid Cards */}
+      {/* Orders List */}
       {orders.length === 0 ? (
-        <div className="bg-white border border-amber-200 rounded-2xl p-10 text-center space-y-4 shadow-xs">
-          <ClipboardList className="w-12 h-12 text-amber-400 mx-auto" />
-          <div className="max-w-md mx-auto space-y-1">
-            <h3 className="font-bold text-amber-950 text-base">Nenhum pedido sob encomenda</h3>
-            <p className="text-xs text-amber-700">
-              Cadastre pedidos sob medida, fontes personalizadas com prazos de entrega e valores de sinal.
-            </p>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Criar Primeiro Pedido</span>
-          </button>
-        </div>
+        <EmptyState
+          title="Nenhum pedido sob encomenda cadastrado"
+          description="Registre peças personalizadas encomendadas por clientes, arquitetos ou floriculturas."
+          actionLabel="Criar Primeiro Pedido"
+          onAction={() => setIsModalOpen(true)}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {orders.map((ord) => (
-            <div key={ord.id} className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3">
-              <div className="flex items-start justify-between border-b border-amber-100 pb-2">
+            <Card key={ord.id} variant="default" className="p-5 space-y-4">
+              <div className="flex items-start justify-between border-b border-[#E7D5BE] dark:border-stone-800 pb-3">
                 <div>
-                  <span className="text-xs font-bold text-amber-700">{ord.code} • Prazo: {ord.targetDate}</span>
-                  <h3 className="font-black text-amber-950 text-base">{ord.customerName}</h3>
+                  <span className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#D67855] font-mono">
+                    {ord.code} • Prazo: {ord.targetDate.split('-').reverse().join('/')}
+                  </span>
+                  <h3 className="font-black text-[#292724] dark:text-[#F7F1E7] text-lg sm:text-xl mt-1">{ord.customerName}</h3>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                  ord.status === 'Entregue'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : ord.status === 'Em Produção'
-                    ? 'bg-amber-200 text-amber-900'
-                    : 'bg-amber-100 text-amber-800'
-                }`}>
-                  {ord.status}
-                </span>
+                <StatusBadge status={ord.status} />
               </div>
 
-              <p className="text-sm font-semibold text-amber-950 bg-amber-50/80 p-3 rounded-xl border border-amber-100">
-                📌 {ord.productDescription}
-              </p>
-
-              <div className="grid grid-cols-2 gap-2 text-xs text-amber-800">
-                {ord.sizeSpecs && <p><strong>Tamanho/Medidas:</strong> {ord.sizeSpecs}</p>}
-                {ord.colorSpecs && <p><strong>Cor/Esmalte:</strong> {ord.colorSpecs}</p>}
+              <div className="p-4 bg-[#FAF6EF] dark:bg-[#1A1816] rounded-xl border border-[#E7D5BE] dark:border-stone-800">
+                <p className="text-base font-semibold text-[#292724] dark:text-[#F7F1E7]">
+                  📌 {ord.productDescription}
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs bg-amber-100/50 p-2.5 rounded-xl border border-amber-200 font-bold">
+              {(ord.sizeSpecs || ord.colorSpecs) && (
+                <div className="grid grid-cols-2 gap-2 text-sm text-[#5C5852] dark:text-[#C9BFA8]">
+                  {ord.sizeSpecs && <p><strong>Medidas:</strong> {ord.sizeSpecs}</p>}
+                  {ord.colorSpecs && <p><strong>Esmalte / Cor:</strong> {ord.colorSpecs}</p>}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 p-3.5 bg-[#FAF6EF] dark:bg-[#1A1816] rounded-xl border border-[#E7D5BE] dark:border-stone-800">
                 <div>
-                  <span className="text-amber-800 block text-[10px]">Valor Total</span>
-                  <span className="text-amber-950">R$ {ord.totalPrice.toFixed(2)}</span>
+                  <span className="text-xs text-[#8A5A44] dark:text-[#C9BFA8] block uppercase font-bold">Valor Total</span>
+                  <span className="text-xl font-black text-[#292724] dark:text-[#F7F1E7] font-mono">R$ {ord.totalPrice.toFixed(2)}</span>
                 </div>
                 <div>
-                  <span className="text-emerald-800 block text-[10px]">Sinal Pago</span>
-                  <span className="text-emerald-950">R$ {ord.depositPaid.toFixed(2)}</span>
+                  <span className="text-xs text-[#4F583D] dark:text-[#A4B38A] block uppercase font-bold">Sinal Pago</span>
+                  <span className="text-xl font-black text-[#4F583D] dark:text-[#A4B38A] font-mono">R$ {ord.depositPaid.toFixed(2)}</span>
                 </div>
               </div>
 
               {ord.notes && (
-                <p className="text-xs text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200/60">
-                  <strong className="font-semibold text-amber-950">Obs:</strong> {ord.notes}
+                <p className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] bg-[#FAF6EF] dark:bg-[#1A1816] p-3 rounded-xl border border-[#E7D5BE] dark:border-stone-800">
+                  <strong className="text-[#8A5A44] dark:text-[#D67855]">Obs:</strong> {ord.notes}
                 </p>
               )}
 
-              {/* Status updates */}
-              <div className="pt-2 border-t border-amber-100 flex flex-wrap gap-1.5">
-                {(['Orçamento', 'Aprovado', 'Em Produção', 'Pronto', 'Entregue'] as CustomOrder['status'][]).map(st => (
-                  <button
-                    key={st}
-                    onClick={() => handleUpdateStatus(ord, st)}
-                    className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
-                      ord.status === st ? 'bg-amber-900 text-white' : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
-                    }`}
-                  >
-                    {st}
-                  </button>
-                ))}
+              {/* Status Update Pipeline */}
+              <div className="pt-3 border-t border-[#E7D5BE] dark:border-stone-800 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex flex-wrap gap-1.5">
+                  {(['Orçamento', 'Aprovado', 'Em Produção', 'Pronto', 'Entregue'] as CustomOrder['status'][]).map(st => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => handleUpdateStatus(ord, st)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        ord.status === st
+                          ? 'bg-[#B85C38] text-white shadow-xs'
+                          : 'bg-[#FAF6EF] dark:bg-[#1A1816] text-[#292724] dark:text-[#F7F1E7] hover:bg-[#E7D5BE] dark:hover:bg-stone-800'
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  onClick={() => setOrderToDelete(ord)}
+                  variant="ghost"
+                  size="sm"
+                  icon={Trash2}
+                  ariaLabel="Excluir pedido"
+                  className="text-rose-700 hover:bg-rose-100"
+                />
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -233,7 +244,7 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = () => {
         >
           <form onSubmit={handleCreateOrder} className="space-y-4 font-brand-sans">
             <FormField
-              label="Cliente"
+              label="Nome do Cliente"
               htmlFor="order-customer-input"
               required
               hint={customers.length > 0 ? `${customers.length} clientes cadastrados` : undefined}
@@ -243,167 +254,99 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = () => {
                 type="text"
                 required
                 list="orders-customers-list"
-                placeholder="Ex: Maria Oliveira ou Floricultura..."
+                placeholder="Ex: Maria Oliveira ou Floricultura Bela Arte..."
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
               />
               <datalist id="orders-customers-list">
-                {customers.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.type ? `${c.type}${c.city ? ` - ${c.city}` : ''}` : c.city}
-                  </option>
+                {customers.map(c => (
+                  <option key={c.id} value={c.name} />
                 ))}
               </datalist>
-              {!customerName && customers.length > 0 && (
-                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                  <span className="text-[10px] font-bold text-[#8A5A44] uppercase tracking-wider">Recentes:</span>
-                  {customers.slice(0, 4).map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCustomerName(c.name)}
-                      className="px-2 py-0.5 rounded-lg bg-[#FAF6EF] hover:bg-[#E7D5BE] text-[#292724] text-[11px] font-bold transition-colors cursor-pointer"
-                    >
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
-              )}
             </FormField>
 
-            <FormField label="Descrição da Peça Personalizada" htmlFor="order-description" required>
-              <textarea
-                id="order-description"
+            <FormField label="Descrição Detalhada da Peça Encomendada" htmlFor="order-desc" required>
+              <Input
+                id="order-desc"
+                type="text"
                 required
-                rows={2}
-                placeholder="Ex: Fonte de cerâmica de 1 metro na cor azul mar profundo com prato coletor"
+                placeholder="Ex: Conjunto de 4 Cachepôs Rústicos com textura canelada"
                 value={productDescription}
                 onChange={(e) => setProductDescription(e.target.value)}
-                className="w-full bg-white border border-[#D4BEA2] rounded-xl p-2.5 text-[#292724] text-sm focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 outline-hidden transition-all"
               />
             </FormField>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FormField label="Medidas / Tamanho" htmlFor="order-sizespecs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Dimensões / Medidas" htmlFor="order-size">
                 <Input
-                  id="order-sizespecs"
+                  id="order-size"
                   type="text"
-                  placeholder="Ex: 1 metro de altura"
+                  placeholder="Ex: 35cm altura x 25cm diâmetro"
                   value={sizeSpecs}
                   onChange={(e) => setSizeSpecs(e.target.value)}
                 />
               </FormField>
 
-              <FormField label="Cor / Esmalte" htmlFor="order-colorspecs">
+              <FormField label="Esmaltação & Cor" htmlFor="order-color">
                 <Input
-                  id="order-colorspecs"
+                  id="order-color"
                   type="text"
-                  placeholder="Ex: Azul cobalto"
+                  placeholder="Ex: Terracota fosco com borda esmaltada branca"
                   value={colorSpecs}
                   onChange={(e) => setColorSpecs(e.target.value)}
                 />
               </FormField>
             </div>
 
-            <div>
-              <span className="block text-xs font-bold text-[#292724] mb-1.5">Foto / Referência da Encomenda:</span>
-              
-              {photoUrl && (
-                <div className="mb-2 relative h-32 bg-[#FAF6EF] rounded-xl overflow-hidden border border-[#D4BEA2] flex items-center justify-center">
-                  <img
-                    src={photoUrl}
-                    alt="Foto de referência"
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setPhotoUrl('')}
-                    className="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-[#B85C38]"
-                    title="Remover foto"
-                    aria-label="Remover foto"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsCameraOpen(true)}
-                  icon={Camera}
-                >
-                  Abrir Câmera
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  icon={Upload}
-                >
-                  Galeria / Arquivo
-                </Button>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileUpload}
-                className="hidden"
-                aria-label="Upload de imagem de referência"
-              />
-            </div>
-
-            {/* Camera Modal */}
-            <CameraModal
-              isOpen={isCameraOpen}
-              onClose={() => setIsCameraOpen(false)}
-              onCapture={(imgData) => setPhotoUrl(imgData)}
-            />
-
-            <FormField label="Data de Entrega Prometida" htmlFor="order-targetdate" required>
-              <Input
-                id="order-targetdate"
-                type="date"
-                value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
-              />
-            </FormField>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FormField label="Valor Total (R$)" htmlFor="order-totalprice">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <FormField label="Prazo de Entrega" htmlFor="order-target-date" required>
                 <Input
-                  id="order-totalprice"
+                  id="order-target-date"
+                  type="date"
+                  required
+                  value={targetDate}
+                  onChange={(e) => setTargetDate(e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="Preço Total Estimado (R$)" htmlFor="order-price" required>
+                <Input
+                  id="order-price"
                   type="number"
+                  min="0"
+                  step="0.01"
+                  required
                   value={totalPrice}
-                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setTotalPrice(parseFloat(e.target.value) || 0)}
                 />
               </FormField>
 
-              <FormField label="Sinal / Entrada Pago (R$)" htmlFor="order-depositpaid">
+              <FormField label="Sinal Recebido (R$)" htmlFor="order-deposit">
                 <Input
-                  id="order-depositpaid"
+                  id="order-deposit"
                   type="number"
+                  min="0"
+                  step="0.01"
                   value={depositPaid}
-                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setDepositPaid(parseFloat(e.target.value) || 0)}
-                  className="font-bold text-emerald-800"
                 />
               </FormField>
             </div>
 
-            <div className="p-3.5 border-t border-[#E7D5BE] flex justify-end gap-2 shrink-0">
+            <FormField label="Observações de Produção / Detalhes Especiais" htmlFor="order-notes">
+              <Textarea
+                id="order-notes"
+                rows={2}
+                placeholder="Ex: Queima deve ser em alta temperatura para impermeabilizar. Cliente retira na olaria."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </FormField>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-[#E7D5BE] dark:border-stone-800">
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
                 onClick={() => setIsModalOpen(false)}
               >
                 Cancelar
@@ -411,13 +354,25 @@ export const CustomOrdersView: React.FC<CustomOrdersViewProps> = () => {
               <Button
                 type="submit"
                 variant="primary"
-                size="md"
               >
-                Criar Pedido
+                Registrar Encomenda
               </Button>
             </div>
           </form>
         </Modal>
+      )}
+
+      {/* Delete Confirmation */}
+      {orderToDelete && (
+        <ConfirmModal
+          isOpen={!!orderToDelete}
+          onClose={() => setOrderToDelete(null)}
+          onConfirm={confirmDelete}
+          title="Excluir Pedido Personalizado"
+          message={`Tem certeza que deseja excluir o pedido ${orderToDelete.code} de ${orderToDelete.customerName}?`}
+          confirmLabel="Excluir Pedido"
+          variant="danger"
+        />
       )}
     </div>
   );

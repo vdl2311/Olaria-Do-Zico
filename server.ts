@@ -28,6 +28,67 @@ async function startServer() {
     res.json({ status: 'ok', hasGeminiKey: !!apiKey });
   });
 
+  // Helper to generate content with fallback models and retry mechanism
+  async function generateContentWithRetry(params: {
+    contents: string;
+    systemInstruction?: string;
+    responseMimeType?: string;
+    responseSchema?: any;
+    temperature?: number;
+  }) {
+    if (!aiClient) throw new Error('AI client not initialized');
+
+    // Ordered list of candidate models
+    const candidateModels = ['gemini-3.7-flash', 'gemini-flash-latest', 'gemini-3.1-pro-preview'];
+
+    let lastError: any = null;
+
+    for (const model of candidateModels) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const config: any = {
+            temperature: params.temperature ?? 0.2
+          };
+          if (params.systemInstruction) {
+            config.systemInstruction = params.systemInstruction;
+          }
+          if (params.responseMimeType) {
+            config.responseMimeType = params.responseMimeType;
+          }
+          if (params.responseSchema) {
+            config.responseSchema = params.responseSchema;
+          }
+
+          const response = await aiClient.models.generateContent({
+            model,
+            contents: params.contents,
+            config
+          });
+
+          return { response, modelUsed: model };
+        } catch (err: any) {
+          lastError = err;
+          const is503OrRateLimit = err?.status === 503 || 
+                                   err?.message?.includes('503') || 
+                                   err?.message?.includes('high demand') ||
+                                   err?.message?.includes('UNAVAILABLE') ||
+                                   err?.message?.includes('RESOURCE_EXHAUSTED') ||
+                                   err?.status === 429;
+
+          if (is503OrRateLimit && attempt === 0) {
+            // Wait 500ms before quick retry
+            await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+          }
+          // If second attempt or other error, proceed to try next candidate model
+          break;
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
   // Voice NLU Endpoint using Gemini AI
   app.post('/api/voice-nlu', async (req, res) => {
     try {
@@ -80,48 +141,45 @@ Regras de negócio cruciais:
 - Gere sempre um resumo (summary) conciso, elegante e no formato ideal de confirmação humana.
 `;
 
-      const response = await aiClient.models.generateContent({
-        model: 'gemini-3.7-flash',
+      const { response } = await generateContentWithRetry({
         contents: `Analise a fala do oleiro: "${transcript}"`,
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              intent: {
-                type: Type.STRING,
-                description: 'RECORD_SALE, RECORD_PRODUCTION, RECORD_RAW_MATERIAL, RECORD_LOSS, RECORD_RECEIVABLE_PAYMENT, RECORD_EXPENSE, RECORD_RESERVE, RECORD_DELIVERY, QUERY, UNKNOWN'
-              },
-              summary: { type: Type.STRING, description: 'Resumo amigável em português' },
-              needsMoreInfo: { type: Type.BOOLEAN, description: 'Se falta dado essencial' },
-              questionToUser: { type: Type.STRING, description: 'Pergunta curta se precisa de mais dado' },
-              confidence: { type: Type.NUMBER, description: 'Score de 0.0 a 1.0' },
-              warning: { type: Type.STRING, description: 'Alerta de estoque baixo ou valor incomum' },
-              parsedData: {
-                type: Type.OBJECT,
-                properties: {
-                  customerName: { type: Type.STRING },
-                  productName: { type: Type.STRING },
-                  quantity: { type: Type.NUMBER },
-                  unitPrice: { type: Type.NUMBER },
-                  totalPrice: { type: Type.NUMBER },
-                  paidValue: { type: Type.NUMBER },
-                  pendingValue: { type: Type.NUMBER },
-                  paymentMethod: { type: Type.STRING, description: 'Pix, Dinheiro, Cartão, Transferência, Boleto, Fiado' },
-                  stage: { type: Type.STRING, description: 'Produção, Secagem, Queima, Acabamento, Pronto' },
-                  quantityProduced: { type: Type.NUMBER },
-                  quantityLost: { type: Type.NUMBER },
-                  materialName: { type: Type.STRING },
-                  materialCategory: { type: Type.STRING },
-                  expenseCategory: { type: Type.STRING },
-                  amount: { type: Type.NUMBER },
-                  queryAnswer: { type: Type.STRING, description: 'Resposta curta direta se for consulta' }
-                }
-              }
+        systemInstruction,
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            intent: {
+              type: Type.STRING,
+              description: 'RECORD_SALE, RECORD_PRODUCTION, RECORD_RAW_MATERIAL, RECORD_LOSS, RECORD_RECEIVABLE_PAYMENT, RECORD_EXPENSE, RECORD_RESERVE, RECORD_DELIVERY, QUERY, UNKNOWN'
             },
-            required: ['intent', 'summary', 'needsMoreInfo', 'confidence']
-          }
+            summary: { type: Type.STRING, description: 'Resumo amigável em português' },
+            needsMoreInfo: { type: Type.BOOLEAN, description: 'Se falta dado essencial' },
+            questionToUser: { type: Type.STRING, description: 'Pergunta curta se precisa de mais dado' },
+            confidence: { type: Type.NUMBER, description: 'Score de 0.0 a 1.0' },
+            warning: { type: Type.STRING, description: 'Alerta de estoque baixo ou valor incomum' },
+            parsedData: {
+              type: Type.OBJECT,
+              properties: {
+                customerName: { type: Type.STRING },
+                productName: { type: Type.STRING },
+                quantity: { type: Type.NUMBER },
+                unitPrice: { type: Type.NUMBER },
+                totalPrice: { type: Type.NUMBER },
+                paidValue: { type: Type.NUMBER },
+                pendingValue: { type: Type.NUMBER },
+                paymentMethod: { type: Type.STRING, description: 'Pix, Dinheiro, Cartão, Transferência, Boleto, Fiado' },
+                stage: { type: Type.STRING, description: 'Produção, Secagem, Queima, Acabamento, Pronto' },
+                quantityProduced: { type: Type.NUMBER },
+                quantityLost: { type: Type.NUMBER },
+                materialName: { type: Type.STRING },
+                materialCategory: { type: Type.STRING },
+                expenseCategory: { type: Type.STRING },
+                amount: { type: Type.NUMBER },
+                queryAnswer: { type: Type.STRING, description: 'Resposta curta direta se for consulta' }
+              }
+            }
+          },
+          required: ['intent', 'summary', 'needsMoreInfo', 'confidence']
         }
       });
 
@@ -130,7 +188,7 @@ Regras de negócio cruciais:
       return res.json(parsed);
 
     } catch (err: any) {
-      console.error('Error in voice-nlu API:', err);
+      console.warn('Fallback to rule-based NLU due to Gemini error:', err?.message || err);
       // Return fallback parsing on error
       return res.json(fallbackRuleBasedNlu(req.body.transcript || '', req.body.context));
     }
@@ -173,24 +231,25 @@ REGRAS DE OURO ANTI-ALUCINAÇÃO:
       }
       promptContents.push(`Pergunta atual do usuário: "${query}"`);
 
-      const response = await aiClient.models.generateContent({
-        model: 'gemini-3.7-flash',
+      const { response, modelUsed } = await generateContentWithRetry({
         contents: promptContents.join('\n\n'),
-        config: {
-          systemInstruction,
-          temperature: 0.2
-        }
+        systemInstruction,
+        temperature: 0.2
       });
 
       const replyText = response.text || 'Não foi possível gerar a resposta.';
       return res.json({
         content: replyText,
-        dataSources: ['Banco de Dados da Olaria', 'Modelo Gemini 3.7 Flash']
+        dataSources: ['Banco de Dados da Olaria', `Modelo Gemini (${modelUsed})`]
       });
 
     } catch (err: any) {
-      console.error('Error in /api/ai-chat:', err);
-      return res.status(500).json({ error: err.message || 'Erro ao processar consulta de IA' });
+      console.error('Handled error in /api/ai-chat (falling back to client engine):', err?.message || err);
+      return res.status(503).json({ 
+        error: 'Instabilidade momentânea no modelo Gemini na nuvem.',
+        code: 'MODEL_UNAVAILABLE',
+        fallback: true
+      });
     }
   });
 

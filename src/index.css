@@ -6,7 +6,7 @@
   --font-sans: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-serif: "Playfair Display", Georgia, Cambria, "Times New Roman", Times, serif;
 
-  /* Light Theme Brand Palette */
+  /* Light Theme Brand Palette (Olaria Autêntica: Terracota, Argila, Areia, Oliva e Creme) */
   --color-brand-terracota: #B85C38;
   --color-brand-terracota-dark: #9E4A2A;
   --color-brand-terracota-light: #CF734E;
@@ -62,6 +62,10 @@
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background-color: #F7F1E7;
   color: #292724;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html.dark, :root.dark {
@@ -74,6 +78,8 @@ html, body {
   max-width: 100vw;
   overflow-x: hidden;
   position: relative;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 body {
@@ -84,6 +90,106 @@ body {
 html.dark body, body.dark {
   background-color: #1C1A17;
   color: #F2EBDD;
+}
+
+/* =========================================================================
+   SISTEMA GLOBAL DE TIPOGRAFIA & HIERARQUIA VISUAL (ALTA LEGIBILIDADE)
+   ========================================================================= */
+
+/* Títulos Principais de Módulos (24px - 32px) */
+.page-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.5rem, 2vw + 1rem, 2rem);
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: #292724;
+}
+
+.dark .page-title {
+  color: #F2EBDD;
+}
+
+/* Títulos de Seção e Cards (20px - 24px) */
+.section-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.25rem, 1.5vw + 0.5rem, 1.5rem);
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: #292724;
+}
+
+.dark .section-title {
+  color: #F2EBDD;
+}
+
+/* Subtítulos e Rótulos Estratégicos (16px - 18px) */
+.section-subtitle {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #5C5852;
+}
+
+.dark .section-subtitle {
+  color: #C9BFA8;
+}
+
+/* Texto de Corpo Principal (16px - 18px) */
+.body-text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #292724;
+}
+
+.dark .body-text {
+  color: #F2EBDD;
+}
+
+/* Rótulos de Formulários e Métricas (14px - 16px) */
+.form-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8A5A44;
+}
+
+.dark .form-label {
+  color: #D67855;
+}
+
+/* Textos de Apoio / Informações Auxiliares (Mínimo de 13.5px a 14.5px, nunca microscópico) */
+.aux-text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #5C5852;
+}
+
+.dark .aux-text {
+  color: #C9BFA8;
+}
+
+/* Destaque de Números e Métricas Grandes em Dashboards */
+.metric-value-lg {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.75rem, 2.5vw + 1rem, 2.5rem);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.metric-value-md {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.35rem, 1.5vw + 0.8rem, 1.75rem);
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 /* =========================================================================
@@ -144,57 +250,43 @@ html.dark body, body.dark {
   border-color: #3D3833 !important;
 }
 
-/* 4. Terracota Primary Actions in Dark Mode (Clared for 4.5:1+ Contrast) */
+/* 4. Terracota Primary Actions in Dark Mode */
 .dark .bg-\[\#B85C38\] {
   background-color: #C66B48 !important;
   color: #FFFFFF !important;
 }
 
-.dark .bg-\[\#B85C38\]:hover,
-.dark .hover\:bg-\[\#9E4A2A\]:hover {
-  background-color: #D67855 !important;
-}
-
-.dark .border-\[\#B85C38\],
 .dark .text-\[\#B85C38\] {
+  color: #D67855 !important;
+}
+
+.dark .border-\[\#B85C38\] {
   border-color: #C66B48 !important;
-  color: #C66B48 !important;
 }
 
-/* 5. Tables in Dark Mode */
-.dark table {
+/* 5. Natural Olive Secondary Actions in Dark Mode */
+.dark .bg-\[\#667052\] {
+  background-color: #4F583D !important;
   color: #F2EBDD !important;
 }
 
-.dark th {
-  background-color: #1C1A17 !important;
-  color: #C9BFA8 !important;
-  border-color: #3D3833 !important;
+.dark .text-\[\#667052\],
+.dark .text-\[\#4F583D\] {
+  color: #A4B38A !important;
 }
 
-.dark td {
-  border-color: #3D3833 !important;
-  color: #F2EBDD !important;
-}
-
-.dark tr:hover {
-  background-color: #2E2A26 !important;
-}
-
-/* 6. Form Controls in Dark Mode */
-.dark input,
+/* 6. Inputs and Forms in Dark Mode */
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="date"],
 .dark select,
 .dark textarea {
   background-color: #1C1A17 !important;
-  color: #F2EBDD !important;
   border-color: #3D3833 !important;
-}
-
-.dark input:focus,
-.dark select:focus,
-.dark textarea:focus {
-  border-color: #4D4640 !important;
-  outline-color: #C66B48 !important;
+  color: #F2EBDD !important;
+  font-size: 1rem !important;
 }
 
 .dark input::placeholder,
@@ -235,8 +327,8 @@ button, a, input, select, textarea {
 
 /* Elegant scrollbar for brand palette */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -252,7 +344,7 @@ button, a, input, select, textarea {
   background: #8A5A44;
 }
 
-/* Subtle clay texture & organic line utility */
+/* Typography Utility */
 .font-brand-serif {
   font-family: 'Playfair Display', Georgia, serif;
 }

@@ -20,6 +20,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
+    
+    // Clear any residual geometric theme classes
+    root.classList.remove('theme-geometric');
+    body.classList.remove('theme-geometric');
+    localStorage.removeItem('olaria_dashboard_layout');
+
+    // Manage Dark Mode for Olaria
     if (theme === 'dark') {
       root.classList.add('dark');
       body.classList.add('dark');
@@ -27,6 +34,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.remove('dark');
       body.classList.remove('dark');
     }
+
     localStorage.setItem('olaria_theme', theme);
   }, [theme]);
 
@@ -35,7 +43,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, isDark: theme === 'dark' }}>
+    <ThemeContext.Provider value={{ 
+      theme, 
+      toggleTheme, 
+      isDark: theme === 'dark'
+    }}>
       {children}
     </ThemeContext.Provider>
   );

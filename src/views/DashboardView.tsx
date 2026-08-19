@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -13,76 +13,68 @@ import {
   ChevronRight,
   ClipboardList,
   Sparkles,
-  ShoppingCart
+  Layers,
+  ShieldCheck,
+  ShoppingCart,
+  Calendar,
+  Filter,
+  BarChart3,
+  Search,
+  Check,
+  Plus
 } from 'lucide-react';
-import { StorageService, subscribeStorage } from '../services/storage';
-import { BrandSymbol } from '../components/BrandLogo';
+import { StorageService } from '../services/storage';
+import { Product, Sale, ProductionBatch, CustomOrder, Delivery, AccountReceivable, Expense } from '../types';
 import { ExecutiveSummaryEngine } from '../ai/executive/executiveSummary';
+import { BrandSymbol } from '../components/BrandLogo';
 
 interface DashboardViewProps {
-  onOpenVoiceModal?: () => void;
   setActiveView: (view: string) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveView }) => {
-  const [sales, setSales] = useState(() => StorageService.getSales());
-  const [products, setProducts] = useState(() => StorageService.getProducts());
-  const [production, setProduction] = useState(() => StorageService.getProduction());
-  const [customOrders, setCustomOrders] = useState(() => StorageService.getCustomOrders());
-  const [deliveries, setDeliveries] = useState(() => StorageService.getDeliveries());
-  const [receivables, setReceivables] = useState(() => StorageService.getReceivables());
-  const [expenses, setExpenses] = useState(() => StorageService.getExpenses());
-  const [aiSummary, setAiSummary] = useState(() => ExecutiveSummaryEngine.generateSummary());
+  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days' | 'all'>('30days');
 
-  const refreshData = () => {
-    setSales(StorageService.getSales());
-    setProducts(StorageService.getProducts());
-    setProduction(StorageService.getProduction());
-    setCustomOrders(StorageService.getCustomOrders());
-    setDeliveries(StorageService.getDeliveries());
-    setReceivables(StorageService.getReceivables());
-    setExpenses(StorageService.getExpenses());
-    setAiSummary(ExecutiveSummaryEngine.generateSummary());
-  };
+  const products = StorageService.getProducts();
+  const sales = StorageService.getSales();
+  const production = StorageService.getProduction();
+  const customOrders = StorageService.getCustomOrders();
+  const deliveries = StorageService.getDeliveries();
+  const receivables = StorageService.getReceivables();
+  const expenses = StorageService.getExpenses();
+  const aiSummary = ExecutiveSummaryEngine.generateSummary();
 
-  useEffect(() => {
-    const unsub = subscribeStorage(() => {
-      refreshData();
-    });
-    return () => unsub();
-  }, []);
-
-  // Financial calculations
-  const totalSalesValue = sales.reduce((acc, s) => acc + s.totalValue, 0);
-  const totalPaidReceived = sales.reduce((acc, s) => acc + s.paidValue, 0);
-  const totalReceivablePending = receivables.filter(r => r.status !== 'Pago').reduce((acc, r) => acc + (r.amount - r.amountPaid), 0);
-  const totalExpensesPaid = expenses.filter(e => e.status === 'Paga').reduce((acc, e) => acc + e.amount, 0);
-  const totalExpensesPending = expenses.filter(e => e.status === 'Pendente').reduce((acc, e) => acc + e.amount, 0);
-  const currentBalance = totalPaidReceived - totalExpensesPaid;
-
-  // Today metrics
+  // Metrics calculation
   const todayStr = new Date().toISOString().split('T')[0];
   const salesToday = sales.filter(s => s.date === todayStr);
   const totalSalesToday = salesToday.reduce((acc, s) => acc + s.totalValue, 0);
-  const pendingDeliveriesCount = deliveries.filter(d => d.status === 'Pendente' || d.status === 'A caminho').length;
-  const inProductionBatchesCount = production.filter(p => p.stage !== 'Pronto').length;
 
-  // Low stock products
+  const totalSalesValue = sales.reduce((acc, s) => acc + s.totalValue, 0);
+  const totalPaidReceived = sales.reduce((acc, s) => acc + s.paidValue, 0);
+  const totalExpensesPaid = expenses.filter(e => e.status === 'Paga').reduce((acc, e) => acc + e.amount, 0);
+  const currentBalance = totalPaidReceived - totalExpensesPaid;
+
+  const totalReceivablePending = receivables
+    .filter(r => r.status !== 'Pago')
+    .reduce((acc, r) => acc + (r.amount - r.amountPaid), 0);
+
+  const activeBatches = production.filter(p => p.stage !== 'Pronto');
   const lowStockProducts = products.filter(p => p.stock <= p.minStock);
 
   return (
     <div className="space-y-6 pb-20 font-brand-sans">
+      
       {/* Banner / Operational Overview (Terracota & Argila) */}
-      <div className="bg-[#FAF6EF] dark:bg-[#252320] rounded-3xl p-6 text-[#292724] dark:text-[#F7F1E7] shadow-xs border border-[#E7D5BE] dark:border-[#3D3833] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-        <div className="space-y-2 text-center md:text-left relative z-10 max-w-2xl">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#B85C38]/10 border border-[#B85C38]/20 text-[#B85C38] dark:text-[#E78B68] text-xs font-bold uppercase tracking-wider">
-            <BrandSymbol variant="terracota" className="w-3.5 h-3.5" />
+      <div className="bg-[#FAF6EF] dark:bg-[#252320] rounded-3xl p-6 sm:p-8 text-[#292724] dark:text-[#F7F1E7] shadow-xs border border-[#E7D5BE] dark:border-[#3D3833] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+        <div className="space-y-3 text-center md:text-left relative z-10 max-w-2xl">
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#B85C38]/10 border border-[#B85C38]/20 text-[#B85C38] dark:text-[#E78B68] text-xs sm:text-sm font-bold uppercase tracking-wider font-brand-sans">
+            <BrandSymbol variant="terracota" className="w-4 h-4" />
             <span>Da terra para transformar ambientes</span>
           </div>
-          <h2 className="font-brand-serif text-2xl sm:text-3xl font-black text-[#292724] dark:text-[#F7F1E7] tracking-tight leading-tight">
+          <h2 className="font-brand-serif text-2xl sm:text-3xl md:text-4xl font-black text-[#292724] dark:text-[#F7F1E7] tracking-tight leading-tight">
             Painel de Gestão & Produção da Olaria
           </h2>
-          <p className="text-xs sm:text-sm text-[#8A5A44] dark:text-[#CBB5A1] leading-relaxed">
+          <p className="text-sm sm:text-base text-[#8A5A44] dark:text-[#CBB5A1] leading-relaxed font-brand-sans">
             Controle integrado de vendas, queima nos fornos, estoque de argilas e saúde financeira da olaria.
           </p>
         </div>
@@ -91,31 +83,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveView }) =
           <button
             type="button"
             onClick={() => setActiveView('vendas')}
-            className="flex items-center space-x-2 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-2xl transition-all shadow-md transform hover:scale-105 active:scale-95 cursor-pointer border border-[#CF734E]/50"
+            className="flex items-center space-x-2.5 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold text-sm sm:text-base px-6 py-3.5 rounded-2xl transition-all shadow-md transform hover:scale-105 active:scale-95 cursor-pointer border border-[#CF734E]/50 font-brand-sans min-h-[46px]"
           >
-            <ShoppingCart className="w-4 h-4" />
+            <ShoppingCart className="w-5 h-5" />
             <span>Nova Venda</span>
           </button>
         </div>
       </div>
 
       {/* AI Operational Intelligence Bar */}
-      <div className="bg-[#FAF6EF] dark:bg-[#252320] border border-[#E7D5BE] dark:border-[#3D3833] rounded-3xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start sm:items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-[#B85C38]/15 dark:bg-[#B85C38]/25 text-[#B85C38] dark:text-[#E78B68] flex items-center justify-center shrink-0 border border-[#B85C38]/30">
-            <Sparkles className="w-5 h-5" />
+      <div className="bg-[#FAF6EF] dark:bg-[#252320] border border-[#E7D5BE] dark:border-[#3D3833] rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#B85C38]/15 dark:bg-[#B85C38]/25 text-[#B85C38] dark:text-[#E78B68] flex items-center justify-center shrink-0 border border-[#B85C38]/30">
+            <Sparkles className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A5A44] dark:text-[#E7D5BE]">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#8A5A44] dark:text-[#E7D5BE]">
                 Diagnóstico de IA • Saúde da Operação:
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+              <span className="px-3 py-1 rounded-full text-xs sm:text-sm font-black bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700">
                 {aiSummary.health.score}/100 ({aiSummary.health.status})
               </span>
             </div>
-            <p className="text-xs text-[#292724] dark:text-[#F7F1E7] font-medium mt-0.5">
-              {aiSummary.recomendacoesImediatas[0]}
+            <p className="text-sm sm:text-base text-[#292724] dark:text-[#F7F1E7] font-medium mt-1">
+              {aiSummary.recomendacoesImediatas[0] || 'Operação balanceada e fornos em ritmo regular.'}
             </p>
           </div>
         </div>
@@ -123,284 +115,122 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveView }) =
         <button
           type="button"
           onClick={() => setActiveView('assistente-ia')}
-          className="px-4 py-2.5 bg-white dark:bg-[#1E1C1A] text-[#B85C38] dark:text-[#E78B68] hover:bg-[#FAF6EF] dark:hover:bg-[#252320] border border-[#B85C38]/30 hover:border-[#B85C38] text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs self-start md:self-auto"
+          className="px-5 py-2.5 bg-white dark:bg-[#1E1C1A] text-[#B85C38] dark:text-[#E78B68] hover:bg-[#FAF6EF] dark:hover:bg-[#252320] border border-[#B85C38]/30 hover:border-[#B85C38] text-sm font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 shadow-xs self-start md:self-auto min-h-[42px]"
         >
           <span>Abrir Assistente IA</span>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Hoje (Section #22: Vendas hoje, Recebimentos, Pedidos, Produção, Estoque, Entregas) */}
+      {/* Atividade em Tempo Real (6 Cards com Tipografia Reforçada) */}
       <div>
-        <h3 className="font-brand-serif text-xl font-bold text-[#292724] mb-3 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-[#8A5A44]" />
+        <h3 className="font-brand-serif text-xl sm:text-2xl font-bold text-[#292724] dark:text-[#F7F1E7] mb-3.5 flex items-center gap-2.5">
+          <Clock className="w-6 h-6 text-[#8A5A44] dark:text-[#D67855]" />
           <span>Atividade em Tempo Real</span>
         </h3>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
           {/* Vendas Hoje */}
-          <div className="bg-[#FAF6EF] p-4 rounded-2xl border border-[#E7D5BE] shadow-xs">
-            <p className="text-xs font-bold text-[#8A5A44] uppercase tracking-wider">Vendas Hoje</p>
-            <p className="font-brand-serif text-xl font-black text-[#292724] mt-1.5">R$ {totalSalesToday.toFixed(2)}</p>
-            <span className="text-[10px] text-[#5C5852] font-semibold">{salesToday.length} registro(s)</span>
+          <div className="bg-[#FAF6EF] dark:bg-[#252320] p-4.5 rounded-2xl border border-[#E7D5BE] dark:border-[#3D3833] shadow-xs space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#C9BFA8] uppercase tracking-wider">Vendas Hoje</p>
+            <p className="font-brand-serif text-xl sm:text-2xl font-black text-[#292724] dark:text-[#F7F1E7] font-mono">R$ {totalSalesToday.toFixed(2)}</p>
+            <span className="text-xs text-[#5C5852] dark:text-[#C9BFA8] font-semibold block">{salesToday.length} registro(s)</span>
           </div>
 
           {/* Recebimentos */}
-          <div className="bg-[#FAF6EF] p-4 rounded-2xl border border-[#E7D5BE] shadow-xs">
-            <p className="text-xs font-bold text-[#667052] uppercase tracking-wider">Recebimentos</p>
-            <p className="font-brand-serif text-xl font-black text-[#4F583D] mt-1.5">
+          <div className="bg-[#FAF6EF] dark:bg-[#252320] p-4.5 rounded-2xl border border-[#E7D5BE] dark:border-[#3D3833] shadow-xs space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-[#667052] dark:text-[#A4B38A] uppercase tracking-wider">Recebimentos</p>
+            <p className="font-brand-serif text-xl sm:text-2xl font-black text-[#4F583D] dark:text-[#D4E4BF] font-mono">
               R$ {salesToday.reduce((acc, s) => acc + s.paidValue, 0).toFixed(2)}
             </p>
-            <span className="text-[10px] text-[#667052] font-semibold">Em caixa hoje</span>
+            <span className="text-xs text-[#667052] dark:text-[#A4B38A] font-semibold block">Em caixa hoje</span>
           </div>
 
           {/* Produção */}
-          <div className="bg-[#FAF6EF] p-4 rounded-2xl border border-[#E7D5BE] shadow-xs">
-            <p className="text-xs font-bold text-[#8A5A44] uppercase tracking-wider">Produção</p>
-            <p className="font-brand-serif text-xl font-black text-[#292724] mt-1.5">{inProductionBatchesCount} Lotes</p>
-            <span className="text-[10px] text-[#8A5A44] font-semibold">Torno & Fornos</span>
+          <div className="bg-[#FAF6EF] dark:bg-[#252320] p-4.5 rounded-2xl border border-[#E7D5BE] dark:border-[#3D3833] shadow-xs space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#C9BFA8] uppercase tracking-wider">Produção</p>
+            <p className="font-brand-serif text-xl sm:text-2xl font-black text-[#B85C38] dark:text-[#E78B68]">{activeBatches.length} Lotes</p>
+            <span className="text-xs text-[#8A5A44] dark:text-[#CBB5A1] font-semibold block">Em andamento</span>
           </div>
 
-          {/* Pedidos */}
-          <div className="bg-[#FAF6EF] p-4 rounded-2xl border border-[#E7D5BE] shadow-xs">
-            <p className="text-xs font-bold text-[#8A5A44] uppercase tracking-wider">Pedidos</p>
-            <p className="font-brand-serif text-xl font-black text-[#292724] mt-1.5">{customOrders.length}</p>
-            <span className="text-[10px] text-[#8A5A44] font-semibold">Sob Encomenda</span>
-          </div>
-
-          {/* Estoque */}
-          <div className="bg-[#FAF6EF] p-4 rounded-2xl border border-[#E7D5BE] shadow-xs">
-            <p className="text-xs font-bold text-[#8A5A44] uppercase tracking-wider">Estoque</p>
-            <p className="font-brand-serif text-xl font-black text-[#B85C38] mt-1.5">{lowStockProducts.length}</p>
-            <span className="text-[10px] text-[#8A5A44] font-semibold">Abaixo do mínimo</span>
+          {/* Estoque Crítico */}
+          <div className="bg-[#FAF6EF] dark:bg-[#252320] p-4.5 rounded-2xl border border-[#E7D5BE] dark:border-[#3D3833] shadow-xs space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#C9BFA8] uppercase tracking-wider">Estoque Crítico</p>
+            <p className="font-brand-serif text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-400">{lowStockProducts.length} Peças</p>
+            <span className="text-xs text-rose-700 dark:text-rose-400 font-semibold block">Abaixo do mínimo</span>
           </div>
 
           {/* Entregas */}
-          <div className="bg-[#FAF6EF] p-4 rounded-2xl border border-[#E7D5BE] shadow-xs">
-            <p className="text-xs font-bold text-[#8A5A44] uppercase tracking-wider">Entregas</p>
-            <p className="font-brand-serif text-xl font-black text-[#292724] mt-1.5">{pendingDeliveriesCount}</p>
-            <span className="text-[10px] text-[#5C5852] font-semibold">Logística ativa</span>
+          <div className="bg-[#FAF6EF] dark:bg-[#252320] p-4.5 rounded-2xl border border-[#E7D5BE] dark:border-[#3D3833] shadow-xs space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#C9BFA8] uppercase tracking-wider">Entregas</p>
+            <p className="font-brand-serif text-xl sm:text-2xl font-black text-[#292724] dark:text-[#F7F1E7]">{deliveries.filter(d => d.status !== 'Entregue').length}</p>
+            <span className="text-xs text-[#5C5852] dark:text-[#C9BFA8] font-semibold block">A despachar</span>
+          </div>
+
+          {/* Encomendas */}
+          <div className="bg-[#FAF6EF] dark:bg-[#252320] p-4.5 rounded-2xl border border-[#E7D5BE] dark:border-[#3D3833] shadow-xs space-y-1">
+            <p className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#C9BFA8] uppercase tracking-wider">Encomendas</p>
+            <p className="font-brand-serif text-xl sm:text-2xl font-black text-[#8A5A44] dark:text-[#D4BEA2]">{customOrders.length}</p>
+            <span className="text-xs text-[#8A5A44] dark:text-[#CBB5A1] font-semibold block">Sob medida</span>
           </div>
         </div>
       </div>
 
-      {/* Financeiro Summary Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#FAF6EF] border border-[#E7D5BE] p-4 sm:p-5 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#8A5A44]">Saldo Atual em Caixa</span>
-            <DollarSign className="w-5 h-5 text-[#B85C38]" />
+      {/* Cards Financeiros & Indicadores Chave com Destaque Tipográfico */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-[#FAF6EF] dark:bg-[#252320] p-6 rounded-3xl border border-[#E7D5BE] dark:border-[#3D3833] shadow-xs flex flex-col justify-between">
+          <div>
+            <p className="text-sm font-bold text-[#8A5A44] dark:text-[#D67855] uppercase tracking-wider">Saldo Líquido em Caixa</p>
+            <p className="font-brand-serif text-3xl sm:text-4xl font-black text-[#292724] dark:text-[#F7F1E7] mt-2 font-mono">
+              R$ {currentBalance.toFixed(2)}
+            </p>
+            <p className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] mt-1 font-medium">Entradas realizadas menos saídas</p>
           </div>
-          <p className="font-brand-serif text-2xl font-black text-[#292724] mt-2">R$ {currentBalance.toFixed(2)}</p>
-          <p className="text-xs text-[#5C5852] mt-1">Total recebido menos despesas pagas</p>
-        </div>
-
-        <div className="bg-[#FAF6EF] border border-[#E7D5BE] p-4 sm:p-5 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#667052]">Contas a Receber</span>
-            <ArrowUpRight className="w-5 h-5 text-[#667052]" />
-          </div>
-          <p className="font-brand-serif text-2xl font-black text-[#4F583D] mt-2">R$ {totalReceivablePending.toFixed(2)}</p>
-          <p className="text-xs text-[#667052] mt-1">Clientes a prazo (Fiado / Boleto)</p>
-        </div>
-
-        <div className="bg-[#FAF6EF] border border-[#E7D5BE] p-4 sm:p-5 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#8A5A44]">Vendas Acumuladas</span>
-            <TrendingUp className="w-5 h-5 text-[#8A5A44]" />
-          </div>
-          <p className="font-brand-serif text-2xl font-black text-[#292724] mt-2">R$ {totalSalesValue.toFixed(2)}</p>
-          <p className="text-xs text-[#5C5852] mt-1">{sales.length} vendas registradas</p>
-        </div>
-
-        <div className="bg-[#FAF6EF] border border-[#E7D5BE] p-4 sm:p-5 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-800">Despesas Totais</span>
-            <AlertTriangle className="w-5 h-5 text-rose-600" />
-          </div>
-          <p className="font-brand-serif text-2xl font-black text-[#292724] mt-2">R$ {totalExpensesPaid.toFixed(2)}</p>
-          <p className="text-xs text-[#5C5852] mt-1">R$ {totalExpensesPending.toFixed(2)} pendente</p>
-        </div>
-      </div>
-
-      {/* Production & Stock Low Alerts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Low Stock Alerts */}
-        <div className="bg-[#FAF6EF] border border-[#E7D5BE] rounded-3xl p-5 sm:p-6 shadow-xs">
-          <div className="flex items-center justify-between mb-4 border-b border-[#E7D5BE] pb-3">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-[#B85C38]" />
-              <h4 className="font-brand-serif font-bold text-[#292724] text-base">Alerta de Estoque Mínimo</h4>
-            </div>
-            <button
-              onClick={() => setActiveView('estoque')}
-              className="text-xs font-bold text-[#B85C38] hover:text-[#9E4A2A] flex items-center gap-1 cursor-pointer"
-            >
-              <span>Ver Estoque</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {lowStockProducts.length === 0 ? (
-            <div className="text-center py-6 text-[#8A5A44] text-sm">
-              <CheckCircle2 className="w-8 h-8 text-[#667052] mx-auto mb-2" />
-              Todas as peças cerâmicas estão acima do estoque mínimo.
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {lowStockProducts.map(p => (
-                <div key={p.id} className="flex items-center justify-between p-3.5 rounded-xl bg-[#F7F1E7] border border-[#E7D5BE]">
-                  <div>
-                    <p className="font-bold text-sm text-[#292724]">{p.name}</p>
-                    <p className="text-xs text-[#8A5A44]">Código: {p.code} | Mínimo: {p.minStock} un</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                      Estoque: {p.stock} un
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recent Production Batches */}
-        <div className="bg-[#FAF6EF] border border-[#E7D5BE] rounded-3xl p-5 sm:p-6 shadow-xs">
-          <div className="flex items-center justify-between mb-4 border-b border-[#E7D5BE] pb-3">
-            <div className="flex items-center space-x-2">
-              <Flame className="w-5 h-5 text-[#B85C38]" />
-              <h4 className="font-brand-serif font-bold text-[#292724] text-base">Fornadas em Andamento</h4>
-            </div>
-            <button
-              onClick={() => setActiveView('producao')}
-              className="text-xs font-bold text-[#B85C38] hover:text-[#9E4A2A] flex items-center gap-1 cursor-pointer"
-            >
-              <span>Ver Produção</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {production.length === 0 ? (
-            <div className="text-center py-6 text-[#8A5A44] text-sm">
-              <Flame className="w-8 h-8 text-[#8A5A44]/40 mx-auto mb-2" />
-              <p className="font-semibold text-[#292724]">Nenhuma fornada ativa no momento</p>
-              <p className="text-xs text-[#8A5A44] mt-1">Inicie um lote ou fale: "Produzi 30 vasos bojudo"</p>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {production.slice(0, 4).map(b => (
-                <div key={b.id} className="flex items-center justify-between p-3.5 rounded-xl bg-[#F7F1E7] border border-[#E7D5BE]">
-                  <div>
-                    <p className="font-bold text-sm text-[#292724]">{b.productName}</p>
-                    <p className="text-xs text-[#8A5A44]">
-                      Lote {b.code} | Produzidos: {b.quantityProduced} | Quebras: {b.quantityLost}
-                    </p>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    b.stage === 'Pronto' ? 'bg-[#667052]/20 text-[#4F583D]' : 'bg-[#B85C38]/15 text-[#9E4A2A]'
-                  }`}>
-                    {b.stage}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Recent Sales List */}
-      <div className="bg-[#FAF6EF] border border-[#E7D5BE] rounded-3xl p-5 sm:p-6 shadow-xs">
-        <div className="flex items-center justify-between mb-4 border-b border-[#E7D5BE] pb-3">
-          <h4 className="font-brand-serif font-bold text-[#292724] text-base">Últimas Vendas Registradas</h4>
-          <button
-            onClick={() => setActiveView('vendas')}
-            className="text-xs font-bold text-[#B85C38] hover:text-[#9E4A2A] flex items-center gap-1 cursor-pointer"
+          <button 
+            type="button"
+            onClick={() => setActiveView('financeiro')}
+            className="mt-5 pt-3.5 border-t border-[#E7D5BE] dark:border-[#3D3833] flex items-center justify-between text-sm font-bold text-[#B85C38] dark:text-[#E78B68] hover:text-[#9E4A2A] cursor-pointer"
           >
-            <span>Ver Todas as Vendas</span>
-            <ChevronRight className="w-4 h-4" />
+            <span>Ver Extrato Financeiro Completo</span>
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
 
-        {sales.length === 0 ? (
-          <div className="text-center py-8 text-[#8A5A44] text-sm">
-            <TrendingUp className="w-8 h-8 text-[#8A5A44]/40 mx-auto mb-2" />
-            <p className="font-semibold text-[#292724]">Nenhuma venda registrada ainda</p>
-            <p className="text-xs text-[#8A5A44] mt-1">Realize a primeira venda pelo botão de voz ("Falar")!</p>
+        <div className="bg-[#FAF6EF] dark:bg-[#252320] p-6 rounded-3xl border border-[#E7D5BE] dark:border-[#3D3833] shadow-xs flex flex-col justify-between">
+          <div>
+            <p className="text-sm font-bold text-[#667052] dark:text-[#A4B38A] uppercase tracking-wider">A Receber (Prazo / Fiado)</p>
+            <p className="font-brand-serif text-3xl sm:text-4xl font-black text-[#4F583D] dark:text-[#D4E4BF] mt-2 font-mono">
+              R$ {totalReceivablePending.toFixed(2)}
+            </p>
+            <p className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] mt-1 font-medium">Contas e vendas pendentes</p>
           </div>
-        ) : (
-          <>
-            {/* Mobile View: Cards */}
-            <div className="block sm:hidden space-y-2.5">
-              {sales.slice(0, 5).map(s => (
-                <div key={s.id} className="p-3 bg-[#FAF6EF] rounded-xl border border-[#E7D5BE] space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="font-mono text-xs font-bold text-[#B85C38] block">{s.code}</span>
-                      <p className="font-bold text-[#292724] text-sm">{s.customerName}</p>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                      s.status === 'Concluída' ? 'bg-[#667052]/20 text-[#4F583D]' : 'bg-[#B85C38]/15 text-[#9E4A2A]'
-                    }`}>
-                      {s.status}
-                    </span>
-                  </div>
+          <button 
+            type="button"
+            onClick={() => setActiveView('financeiro')}
+            className="mt-5 pt-3.5 border-t border-[#E7D5BE] dark:border-[#3D3833] flex items-center justify-between text-sm font-bold text-[#667052] dark:text-[#A4B38A] hover:text-[#4F583D] cursor-pointer"
+          >
+            <span>Gestão de Cobranças & Fiados</span>
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
 
-                  <p className="text-xs text-[#5C5852] line-clamp-1">
-                    {s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}
-                  </p>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-[#E7D5BE]/60 text-xs">
-                    <span className="px-2 py-0.5 rounded bg-[#E7D5BE]/50 text-[#8A5A44] font-medium text-[11px]">
-                      {s.paymentMethod}
-                    </span>
-                    <span className="font-black text-sm text-[#292724]">
-                      R$ {s.totalValue.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop / Tablet View: Table */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead>
-                  <tr className="border-b border-[#E7D5BE] text-[#8A5A44]">
-                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Código</th>
-                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Cliente</th>
-                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Peças Cerâmicas</th>
-                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Valor</th>
-                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Pagamento</th>
-                    <th className="pb-3 font-bold uppercase tracking-wider text-[11px]">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E7D5BE]/60 text-[#292724]">
-                  {sales.slice(0, 5).map(s => (
-                    <tr key={s.id} className="hover:bg-[#F7F1E7]/70">
-                      <td className="py-3 font-mono font-bold text-[#B85C38]">{s.code}</td>
-                      <td className="py-3 font-semibold text-[#292724]">{s.customerName}</td>
-                      <td className="py-3 text-[#5C5852]">{s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</td>
-                      <td className="py-3 font-brand-serif font-black text-[#292724]">R$ {s.totalValue.toFixed(2)}</td>
-                      <td className="py-3">
-                        <span className="px-2.5 py-1 rounded-md bg-[#E7D5BE]/50 text-[#8A5A44] font-medium text-xs">
-                          {s.paymentMethod}
-                        </span>
-                      </td>
-                      <td className="py-3">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                          s.status === 'Concluída' ? 'bg-[#667052]/20 text-[#4F583D]' : 'bg-[#B85C38]/15 text-[#9E4A2A]'
-                        }`}>
-                          {s.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+        <div className="bg-[#FAF6EF] dark:bg-[#252320] p-6 rounded-3xl border border-[#E7D5BE] dark:border-[#3D3833] shadow-xs flex flex-col justify-between">
+          <div>
+            <p className="text-sm font-bold text-[#8A5A44] dark:text-[#D67855] uppercase tracking-wider">Faturamento Histórico</p>
+            <p className="font-brand-serif text-3xl sm:text-4xl font-black text-[#292724] dark:text-[#F7F1E7] mt-2 font-mono">
+              R$ {totalSalesValue.toFixed(2)}
+            </p>
+            <p className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] mt-1 font-medium">Total de {sales.length} vendas registradas</p>
+          </div>
+          <button 
+            type="button"
+            onClick={() => setActiveView('vendas')}
+            className="mt-5 pt-3.5 border-t border-[#E7D5BE] dark:border-[#3D3833] flex items-center justify-between text-sm font-bold text-[#8A5A44] dark:text-[#D67855] hover:text-[#6E4533] cursor-pointer"
+          >
+            <span>Histórico Detalhado de Vendas</span>
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -23,10 +23,10 @@ export const FormField: React.FC<FormFieldProps> = ({
     <div className={`space-y-1.5 font-brand-sans ${className}`}>
       <label
         htmlFor={htmlFor}
-        className="block text-xs font-bold text-[#8A5A44] uppercase tracking-wider"
+        className="block text-sm sm:text-base font-bold text-[#8A5A44] dark:text-[#D67855] uppercase tracking-wider"
       >
         {label}
-        {required && <span className="text-rose-600 ml-1" aria-hidden="true">*</span>}
+        {required && <span className="text-rose-600 dark:text-rose-400 ml-1" aria-hidden="true">*</span>}
       </label>
       
       <div>
@@ -34,13 +34,13 @@ export const FormField: React.FC<FormFieldProps> = ({
       </div>
 
       {error && (
-        <p id={`${htmlFor}-error`} className="text-xs font-medium text-rose-700 mt-1">
+        <p id={`${htmlFor}-error`} className="text-sm font-semibold text-rose-700 dark:text-rose-400 mt-1">
           {error}
         </p>
       )}
 
       {helpText && !error && (
-        <p id={`${htmlFor}-help`} className="text-[11px] text-[#5C5852] mt-0.5">
+        <p id={`${htmlFor}-help`} className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] mt-0.5">
           {helpText}
         </p>
       )}

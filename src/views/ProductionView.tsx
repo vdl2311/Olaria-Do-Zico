@@ -9,7 +9,8 @@ import {
   Edit3, 
   PlusCircle, 
   MinusCircle,
-  Layers
+  Layers,
+  Trash2
 } from 'lucide-react';
 import { StorageService, subscribeStorage } from '../services/storage';
 import { ProductionBatch, Product, ProductionStage } from '../types';
@@ -100,93 +101,65 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
     setIsModalOpen(true);
   };
 
-  const handleUpdateStage = (batch: ProductionBatch, newStage: ProductionStage) => {
-    const updated: ProductionBatch = {
-      ...batch,
-      stage: newStage,
-      completedDate: newStage === 'Pronto' ? (batch.completedDate || new Date().toISOString().split('T')[0]) : batch.completedDate
+  const handleOpenQuickLoss = (batch: ProductionBatch) => {
+    setQuickLossBatch(batch);
+    setQuickLossAmount(1);
+    setQuickLossReason(LOSS_REASONS[0]);
+  };
+
+  const handleSubmitBatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const prod = products.find(p => p.id === selectedProductId);
+    if (!prod) return;
+
+    const planned = Number(quantityPlanned) || 1;
+    const lost = Number(quantityLost) || 0;
+    const good = Math.max(0, planned - lost);
+
+    const batchData: ProductionBatch = {
+      id: editingBatch ? editingBatch.id : `batch-${Date.now()}`,
+      code: editingBatch ? editingBatch.code : `LOT-${Math.floor(1000 + Math.random() * 9000)}`,
+      batchNumber: batchNumber || `Lote ${new Date().toISOString().split('T')[0]}`,
+      productId: prod.id,
+      productName: prod.name,
+      quantityPlanned: planned,
+      quantityLost: lost,
+      quantityGood: good,
+      quantityProduced: planned,
+      stage,
+      startDate: editingBatch ? editingBatch.startDate : new Date().toISOString().split('T')[0],
+      completedDate: stage === 'Pronto' ? new Date().toISOString().split('T')[0] : editingBatch?.completedDate,
+      notes
     };
-    StorageService.saveProduction(updated);
+
+    StorageService.saveProduction(batchData);
     refreshData();
-    showSuccess('Etapa Atualizada', `Lote ${batch.code} avançou para ${newStage}.`);
+    setIsModalOpen(false);
+    showSuccess(
+      editingBatch ? 'Lote Atualizado' : 'Lote Criado',
+      `Lote ${batchData.code} (${batchData.productName}) salvo com sucesso.`
+    );
   };
 
   const confirmDeleteBatch = () => {
     if (!batchToDelete) return;
     StorageService.deleteProduction(batchToDelete.id);
     refreshData();
-    showSuccess('Lote Removido', `O lote ${batchToDelete.code} foi excluído.`);
+    showSuccess('Lote Excluído', `Lote ${batchToDelete.code} foi removido com sucesso.`);
     setBatchToDelete(null);
   };
 
-  const handleSaveBatch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const prod = products.find(p => p.id === selectedProductId);
-    if (!prod) return;
-
-    const safePlanned = Math.max(1, Number(quantityPlanned) || 1);
-    const safeLost = Math.max(0, Number(quantityLost) || 0);
-    const safeGood = Math.max(0, safePlanned - safeLost);
-
-    if (editingBatch) {
-      const updatedBatch: ProductionBatch = {
-        ...editingBatch,
-        productId: prod.id,
-        productName: prod.name,
-        quantityPlanned: safePlanned,
-        quantityProduced: safePlanned,
-        quantityLost: safeLost,
-        quantityGood: safeGood,
-        stage,
-        completedDate: stage === 'Pronto' ? (editingBatch.completedDate || new Date().toISOString().split('T')[0]) : editingBatch.completedDate,
-        batchNumber: batchNumber.trim() || editingBatch.code,
-        notes: notes.trim()
-      };
-
-      StorageService.saveProduction(updatedBatch);
-      showSuccess('Lote Atualizado', `Lote ${updatedBatch.code} salvo com sucesso!`);
-    } else {
-      const newBatch: ProductionBatch = {
-        id: `batch-${Date.now()}`,
-        code: `PRD-${Math.floor(100 + Math.random() * 900)}`,
-        productId: prod.id,
-        productName: prod.name,
-        quantityPlanned: safePlanned,
-        quantityProduced: safePlanned,
-        quantityLost: safeLost,
-        quantityGood: safeGood,
-        stage,
-        startDate: new Date().toISOString().split('T')[0],
-        completedDate: stage === 'Pronto' ? new Date().toISOString().split('T')[0] : undefined,
-        batchNumber: batchNumber.trim() || `Lote ${new Date().toISOString().split('T')[0]}`,
-        notes: notes.trim()
-      };
-
-      StorageService.saveProduction(newBatch);
-      showSuccess('Novo Lote Iniciado', `Lote ${newBatch.code} registrado em ${stage}.`);
-    }
-
-    refreshData();
-    setIsModalOpen(false);
-  };
-
-  const handleOpenQuickLoss = (batch: ProductionBatch) => {
-    setQuickLossBatch(batch);
-    setQuickLossAmount(1);
-    setQuickLossReason(batch.stage === 'Queima' ? LOSS_REASONS[0] : batch.stage === 'Secagem' ? LOSS_REASONS[1] : LOSS_REASONS[4]);
-  };
-
-  const handleApplyQuickLoss = (e: React.FormEvent) => {
+  const handleConfirmQuickLoss = (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickLossBatch) return;
 
     const currentLost = quickLossBatch.quantityLost || 0;
-    const additionalLost = Math.max(1, quickLossAmount);
-    const totalLost = Math.min(quickLossBatch.quantityPlanned, currentLost + additionalLost);
-    const totalGood = Math.max(0, quickLossBatch.quantityPlanned - totalLost);
+    const planned = quickLossBatch.quantityPlanned || quickLossBatch.quantityProduced || 1;
+    const additionalLost = Number(quickLossAmount) || 0;
+    const totalLost = Math.min(planned, currentLost + additionalLost);
+    const totalGood = Math.max(0, planned - totalLost);
 
-    const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const logNote = `[${new Date().toLocaleDateString('pt-BR')} ${nowStr}] +${additionalLost} perda(s) na etapa ${quickLossBatch.stage} (${quickLossReason}).`;
+    const logNote = `[Quebra ${new Date().toLocaleDateString('pt-BR')}]: +${additionalLost} un (${quickLossReason})`;
     const updatedNotes = quickLossBatch.notes ? `${quickLossBatch.notes}\n${logNote}` : logNote;
 
     const updated: ProductionBatch = {
@@ -202,23 +175,16 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
     setQuickLossBatch(null);
   };
 
-  const calculateQuickIncrement = (delta: number) => {
-    setQuantityLost(prev => {
-      const next = prev + delta;
-      return Math.max(0, Math.min(quantityPlanned, next));
-    });
-  };
-
   return (
     <div className="space-y-6 pb-20 font-brand-sans">
-      {/* Header & Voice Callout */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-[#292724] font-brand-serif flex items-center gap-2">
-            <Hammer className="w-6 h-6 text-[#B85C38]" />
+          <h2 className="text-2xl sm:text-3xl font-black text-[#292724] dark:text-[#F7F1E7] font-brand-serif flex items-center gap-3">
+            <Hammer className="w-7 h-7 text-[#B85C38]" />
             <span>Controle de Produção & Queima de Cerâmica</span>
           </h2>
-          <p className="text-xs text-[#5C5852]">
+          <p className="text-sm sm:text-base text-[#5C5852] dark:text-[#C9BFA8] mt-1">
             Acompanhe lotes nas etapas de Produção, Secagem, Queima no Forno, Acabamento e Entrada em Estoque.
           </p>
         </div>
@@ -237,7 +203,7 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
       </div>
 
       {/* Production Stage Pipeline Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {STAGES.map((stg) => {
           const count = batches.filter(b => b.stage === stg).length;
           const isKiln = stg === 'Queima';
@@ -245,26 +211,26 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
             <Card
               key={stg}
               variant="flat"
-              className={`p-3 text-center ${isKiln ? 'bg-[#B85C38]/10 border-[#B85C38]/40' : ''}`}
+              className={`p-4 text-center ${isKiln ? 'bg-[#B85C38]/10 border-[#B85C38]/40 dark:bg-[#B85C38]/20' : ''}`}
             >
-              <div className="flex items-center justify-center gap-1">
-                {isKiln && <Flame className="w-3.5 h-3.5 text-[#B85C38] animate-pulse" />}
-                <p className="text-[11px] font-bold text-[#8A5A44] uppercase tracking-wider">{stg}</p>
+              <div className="flex items-center justify-center gap-1.5">
+                {isKiln && <Flame className="w-4 h-4 text-[#B85C38] animate-pulse" />}
+                <p className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#C9BFA8] uppercase tracking-wider">{stg}</p>
               </div>
-              <p className="text-xl font-black text-[#292724] mt-1">{count} Lote{count !== 1 ? 's' : ''}</p>
+              <p className="text-2xl sm:text-3xl font-black text-[#292724] dark:text-[#F7F1E7] mt-1">{count} Lote{count !== 1 ? 's' : ''}</p>
             </Card>
           );
         })}
       </div>
 
       {/* Production Batches List */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-[#292724] text-base flex items-center gap-2 font-brand-serif">
-            <Layers className="w-4 h-4 text-[#8A5A44]" />
+      <div className="space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E7D5BE] dark:border-stone-800 pb-3">
+          <h3 className="font-bold text-[#292724] dark:text-[#F7F1E7] text-lg sm:text-xl flex items-center gap-2 font-brand-serif">
+            <Layers className="w-5 h-5 text-[#8A5A44]" />
             <span>Lotes de Produção ({batches.length})</span>
           </h3>
-          <span className="text-xs text-[#5C5852]">
+          <span className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8]">
             Dica: Clique em <strong>Editar</strong> ou <strong>Quebra</strong> para registrar trincas de forno.
           </span>
         </div>
@@ -286,110 +252,84 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
                 <Card
                   key={b.id}
                   variant="default"
-                  className={`p-4 space-y-3 ${isKiln ? 'border-[#B85C38]/50 bg-[#FAF6EF]' : ''}`}
+                  className={`p-5 space-y-4 ${isKiln ? 'border-[#B85C38]/50 bg-[#FAF6EF] dark:bg-[#25221E]' : ''}`}
                 >
                   {/* Top Bar */}
-                  <div className="flex items-start justify-between border-b border-[#E7D5BE] pb-2.5 gap-2">
+                  <div className="flex items-start justify-between border-b border-[#E7D5BE] dark:border-stone-800 pb-3 gap-2">
                     <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-[#8A5A44] font-mono">{b.code}</span>
-                        <span className="text-xs text-[#5C5852]">•</span>
-                        <span className="text-xs text-[#5C5852] font-medium">{b.batchNumber || 'Lote sem nome'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#D67855] font-mono">{b.code}</span>
+                        <span className="text-xs text-[#5C5852] dark:text-[#C9BFA8]">•</span>
+                        <span className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] font-medium">{b.batchNumber || 'Lote sem nome'}</span>
                       </div>
-                      <h4 className="font-black text-[#292724] text-base mt-0.5">{b.productName}</h4>
+                      <h4 className="font-black text-[#292724] dark:text-[#F7F1E7] text-lg sm:text-xl mt-1">{b.productName}</h4>
                     </div>
 
-                    <div className="flex items-center space-x-1 shrink-0">
-                      <StatusBadge status={b.stage} />
+                    <StatusBadge status={b.stage} />
+                  </div>
 
+                  {/* Metrics Row */}
+                  <div className="grid grid-cols-3 gap-2 py-3 px-4 bg-[#FAF6EF] dark:bg-[#1A1816] rounded-xl border border-[#E7D5BE] dark:border-stone-800 text-center">
+                    <div>
+                      <span className="text-xs text-[#8A5A44] dark:text-[#C9BFA8] block uppercase font-bold">Planejado</span>
+                      <span className="text-lg sm:text-xl font-bold text-[#292724] dark:text-[#F7F1E7]">
+                        {b.quantityPlanned || b.quantityProduced} un
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-[#4F583D] dark:text-[#A4B38A] block uppercase font-bold">Aproveitado</span>
+                      <span className="text-lg sm:text-xl font-black text-[#4F583D] dark:text-[#A4B38A]">
+                        {b.quantityGood !== undefined ? b.quantityGood : (b.quantityProduced || 0) - (b.quantityLost || 0)} un
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-rose-700 dark:text-rose-400 block uppercase font-bold">Perda / Trinca</span>
+                      <span className={`text-lg sm:text-xl font-black ${hasLoss ? 'text-rose-700 dark:text-rose-400' : 'text-[#8A5A44] dark:text-[#C9BFA8]'}`}>
+                        {b.quantityLost || 0} un
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Notes & Breakage Info */}
+                  {b.notes && (
+                    <div className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] bg-[#FAF6EF] dark:bg-[#1A1816] p-3 rounded-xl border border-[#E7D5BE] dark:border-stone-800 whitespace-pre-line">
+                      <strong className="text-[#8A5A44] dark:text-[#D67855]">Histórico do Lote:</strong> {b.notes}
+                    </div>
+                  )}
+
+                  {/* Bottom Actions */}
+                  <div className="flex items-center justify-between pt-2 border-t border-[#E7D5BE] dark:border-stone-800 gap-2">
+                    <span className="text-xs sm:text-sm text-[#8A5A44] dark:text-[#C9BFA8]">
+                      Início: {b.startDate} {b.completedDate ? `• Fim: ${b.completedDate}` : ''}
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      {b.stage !== 'Pronto' && (
+                        <Button
+                          onClick={() => handleOpenQuickLoss(b)}
+                          variant="danger"
+                          size="sm"
+                          icon={AlertTriangle}
+                        >
+                          Quebra
+                        </Button>
+                      )}
                       <Button
                         onClick={() => handleOpenEditBatch(b)}
-                        variant="ghost"
+                        variant="primary"
                         size="sm"
                         icon={Edit3}
-                        ariaLabel={`Editar lote ${b.code}`}
-                      />
-
+                      >
+                        Editar
+                      </Button>
                       <Button
                         onClick={() => setBatchToDelete(b)}
                         variant="ghost"
                         size="sm"
-                        className="text-rose-700"
+                        icon={Trash2}
                         ariaLabel={`Excluir lote ${b.code}`}
+                        className="text-rose-700 hover:bg-rose-100"
                       />
-                    </div>
-                  </div>
-
-                  {/* Quantity Stats */}
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs bg-[#FAF6EF] p-2.5 rounded-2xl border border-[#E7D5BE]">
-                    <div>
-                      <span className="text-[#5C5852] block text-[10px] uppercase font-bold">Produzidos</span>
-                      <span className="font-black text-[#292724] text-sm">{b.quantityProduced || b.quantityPlanned} un</span>
-                    </div>
-
-                    <div className={`rounded-xl py-0.5 ${hasLoss ? 'bg-rose-500/10 text-rose-700' : ''}`}>
-                      <span className="text-rose-700 block text-[10px] uppercase font-bold flex items-center justify-center gap-0.5">
-                        <Flame className="w-2.5 h-2.5" />
-                        <span>Quebras</span>
-                      </span>
-                      <span className="font-black text-rose-700 text-sm">{b.quantityLost || 0} un</span>
-                    </div>
-
-                    <div className="bg-[#667052]/10 rounded-xl py-0.5 text-[#4F583D]">
-                      <span className="text-[#4F583D] block text-[10px] uppercase font-bold">Aproveitados</span>
-                      <span className="font-black text-[#4F583D] text-sm">{b.quantityGood} un</span>
-                    </div>
-                  </div>
-
-                  {/* Quick Breakage Registration Action */}
-                  <div className="flex items-center justify-between bg-[#FAF6EF] px-3 py-2 rounded-xl border border-[#E7D5BE] text-xs">
-                    <span className="text-[#5C5852] font-medium flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-[#B85C38]" />
-                      <span>Quebrou peça no forno ou secagem?</span>
-                    </span>
-
-                    <Button
-                      type="button"
-                      onClick={() => handleOpenQuickLoss(b)}
-                      variant="danger"
-                      size="sm"
-                      icon={PlusCircle}
-                    >
-                      Quebra
-                    </Button>
-                  </div>
-
-                  {b.stage === 'Pronto' && (
-                    <div className="flex items-center space-x-1.5 text-xs text-[#4F583D] font-semibold bg-[#667052]/10 px-2.5 py-1.5 rounded-xl border border-[#667052]/30">
-                      <CheckCircle2 className="w-4 h-4 text-[#4F583D] shrink-0" />
-                      <span>Estoque atualizado com +{b.quantityGood} peças aproveitadas.</span>
-                    </div>
-                  )}
-
-                  {b.notes && (
-                    <div className="text-xs text-[#292724] bg-[#FAF6EF] p-2 rounded-xl border border-[#E7D5BE] whitespace-pre-line font-mono text-[11px]">
-                      {b.notes}
-                    </div>
-                  )}
-
-                  {/* Stage Progress Selector */}
-                  <div className="pt-2 border-t border-[#E7D5BE]">
-                    <label className="text-[11px] font-bold text-[#8A5A44] block mb-1.5">Avançar Etapa:</label>
-                    <div className="flex flex-wrap gap-1">
-                      {STAGES.map((stg) => (
-                        <button
-                          key={stg}
-                          type="button"
-                          onClick={() => handleUpdateStage(b, stg)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            b.stage === stg
-                              ? 'bg-[#B85C38] text-white shadow-xs'
-                              : 'bg-[#E7D5BE]/50 text-[#292724] hover:bg-[#E7D5BE]'
-                          }`}
-                        >
-                          {stg}
-                        </button>
-                      ))}
                     </div>
                   </div>
                 </Card>
@@ -399,193 +339,134 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
         )}
       </div>
 
-      {/* Main Create / Edit Batch Modal */}
+      {/* Batch Form Modal (New & Edit) */}
       {isModalOpen && (
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          title={editingBatch ? `Editar Lote: ${editingBatch.code}` : 'Registrar Novo Lote de Produção'}
-          description="Controle a quantidade moldada, trincas de secagem e quebras de forno."
-          size="md"
+          title={editingBatch ? `Editar Lote ${editingBatch.code}` : 'Criar Novo Lote de Produção'}
+          description="Acompanhe o lote desde a argila crua até a queima nos fornos."
+          size="lg"
         >
-          <form onSubmit={handleSaveBatch} className="space-y-4 font-brand-sans">
-            <FormField label="Produto / Peça" htmlFor="batch-product-select" required>
+          <form onSubmit={handleSubmitBatch} className="space-y-4 font-brand-sans">
+            <FormField label="Peça Cerâmica / Produto" htmlFor="batch-prod-select" required>
               <Select
-                id="batch-product-select"
-                required
+                id="batch-prod-select"
                 value={selectedProductId}
                 onChange={(e) => setSelectedProductId(e.target.value)}
+                required
               >
-                <option value="">Selecione a peça...</option>
                 {products.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.category}) — Estoque: {p.stock} un</option>
+                  <option key={p.id} value={p.id}>{p.name} ({p.category})</option>
                 ))}
               </Select>
             </FormField>
 
-            <div className="p-4 bg-[#FAF6EF] border border-[#E7D5BE] rounded-2xl space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Total Produzido" htmlFor="batch-planned-input" required>
-                  <Input
-                    id="batch-planned-input"
-                    type="number"
-                    min={1}
-                    required
-                    value={quantityPlanned}
-                    onFocus={(e) => e.target.select()}
-                    onChange={(e) => setQuantityPlanned(parseInt(e.target.value) || 1)}
-                    className="font-bold"
-                  />
-                </FormField>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Identificação / Nome do Lote" htmlFor="batch-number" required>
+                <Input
+                  id="batch-number"
+                  type="text"
+                  required
+                  placeholder="Ex: Queima Semanal Forno 2..."
+                  value={batchNumber}
+                  onChange={(e) => setBatchNumber(e.target.value)}
+                />
+              </FormField>
 
-                <FormField label="Perdas / Quebras" htmlFor="batch-lost-input">
-                  <Input
-                    id="batch-lost-input"
-                    type="number"
-                    min={0}
-                    max={quantityPlanned}
-                    value={quantityLost}
-                    onFocus={(e) => e.target.select()}
-                    onChange={(e) => setQuantityLost(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="font-bold text-rose-700"
-                  />
-                </FormField>
-              </div>
-
-              <div>
-                <span className="text-[11px] font-bold text-[#8A5A44] block mb-1">Ajuste Rápido de Quebras (Queima/Forno):</span>
-                <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => calculateQuickIncrement(1)}
-                    className="px-2.5 py-1 bg-rose-500/15 text-rose-800 font-bold rounded-lg text-xs cursor-pointer hover:bg-rose-500/25"
-                  >
-                    +1 Quebrado
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => calculateQuickIncrement(2)}
-                    className="px-2.5 py-1 bg-rose-500/15 text-rose-800 font-bold rounded-lg text-xs cursor-pointer hover:bg-rose-500/25"
-                  >
-                    +2 Quebrados
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => calculateQuickIncrement(5)}
-                    className="px-2.5 py-1 bg-rose-500/15 text-rose-800 font-bold rounded-lg text-xs cursor-pointer hover:bg-rose-500/25"
-                  >
-                    +5 Quebrados
-                  </button>
-                  {quantityLost > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setQuantityLost(0)}
-                      className="px-2 py-1 bg-[#E7D5BE]/60 text-[#292724] font-bold rounded-lg text-xs cursor-pointer"
-                    >
-                      Zerar
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-white p-3 rounded-xl border border-[#E7D5BE] flex items-center justify-between">
-                <span className="font-bold text-[#292724]">Peças Aproveitadas (Boas):</span>
-                <span className="text-[#4F583D] font-black text-base sm:text-lg">
-                  {Math.max(0, quantityPlanned - quantityLost)} unidades
-                </span>
-              </div>
+              <FormField label="Etapa Atual" htmlFor="batch-stage" required>
+                <Select
+                  id="batch-stage"
+                  value={stage}
+                  onChange={(e) => setStage(e.target.value as ProductionStage)}
+                >
+                  {STAGES.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </Select>
+              </FormField>
             </div>
 
-            <FormField label="Etapa Atual do Lote" htmlFor="batch-stage-select" required>
-              <Select
-                id="batch-stage-select"
-                value={stage}
-                onChange={(e) => setStage(e.target.value as ProductionStage)}
-              >
-                {STAGES.map(s => (
-                  <option key={s} value={s}>
-                    {s === 'Queima' ? '🔥 Queima (No Forno)' : s === 'Pronto' ? '✅ Pronto (Disponível no Estoque)' : s}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Quantidade Planejada (Total)" htmlFor="batch-qty-planned" required>
+                <Input
+                  id="batch-qty-planned"
+                  type="number"
+                  min="1"
+                  required
+                  value={quantityPlanned}
+                  onChange={(e) => setQuantityPlanned(parseInt(e.target.value, 10) || 1)}
+                />
+              </FormField>
 
-            <FormField label="Identificação / Nome do Lote" htmlFor="batch-identifier-input">
-              <Input
-                id="batch-identifier-input"
-                type="text"
-                value={batchNumber}
-                onChange={(e) => setBatchNumber(e.target.value)}
-                placeholder="Ex: Fornada 04 - Argila Vermelha"
-              />
-            </FormField>
+              <FormField label="Quantidade de Perdas / Quebras" htmlFor="batch-qty-lost">
+                <Input
+                  id="batch-qty-lost"
+                  type="number"
+                  min="0"
+                  max={quantityPlanned}
+                  value={quantityLost}
+                  onChange={(e) => setQuantityLost(parseInt(e.target.value, 10) || 0)}
+                />
+              </FormField>
+            </div>
 
-            <FormField label="Observações (detalhes da queima, forno, motivos de quebra)" htmlFor="batch-notes-textarea">
+            <FormField label="Anotações da Produção & Fornadas" htmlFor="batch-notes">
               <Textarea
-                id="batch-notes-textarea"
-                placeholder="Ex: Queima a 950°C no forno 2. 2 vasos trincaram."
+                id="batch-notes"
+                rows={3}
+                placeholder="Ex: Forno atingiu 1050°C às 18h. Queima durou 12h..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
             </FormField>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-[#E7D5BE]">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>
+            <div className="flex justify-end gap-3 pt-4 border-t border-[#E7D5BE] dark:border-stone-800">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsModalOpen(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" variant="primary" size="md" icon={Hammer}>
-                {editingBatch ? 'Salvar Alterações' : 'Criar Lote'}
+              <Button
+                type="submit"
+                variant="primary"
+              >
+                {editingBatch ? 'Salvar Alterações' : 'Iniciar Lote'}
               </Button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* Quick Loss Registration Modal */}
+      {/* Quick Loss Modal */}
       {quickLossBatch && (
         <Modal
           isOpen={!!quickLossBatch}
           onClose={() => setQuickLossBatch(null)}
-          title="Registrar Quebra de Vaso"
-          description={`Lote ${quickLossBatch.code} • ${quickLossBatch.productName}`}
-          size="sm"
+          title={`Registrar Quebra/Trinca • ${quickLossBatch.code}`}
+          size="md"
         >
-          <form onSubmit={handleApplyQuickLoss} className="space-y-4 font-brand-sans">
-            <FormField label="Vasos quebrados / perdidos agora" htmlFor="quick-loss-amount-input" required>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  onClick={() => setQuickLossAmount(prev => Math.max(1, prev - 1))}
-                  variant="outline"
-                  size="sm"
-                  icon={MinusCircle}
-                >
-                  Diminuir
-                </Button>
-                <Input
-                  id="quick-loss-amount-input"
-                  type="number"
-                  min={1}
-                  max={Math.max(1, quickLossBatch.quantityPlanned - (quickLossBatch.quantityLost || 0))}
-                  value={quickLossAmount}
-                  onChange={(e) => setQuickLossAmount(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="text-center font-black text-lg text-rose-700"
-                />
-                <Button
-                  type="button"
-                  onClick={() => setQuickLossAmount(prev => prev + 1)}
-                  variant="outline"
-                  size="sm"
-                  icon={PlusCircle}
-                >
-                  Aumentar
-                </Button>
-              </div>
+          <form onSubmit={handleConfirmQuickLoss} className="space-y-4 font-brand-sans">
+            <p className="text-sm text-[#5C5852] dark:text-[#C9BFA8]">
+              Registre peças que trincaram ou estouraram no forno para ajustar os cálculos de rendimento do lote de <strong>{quickLossBatch.productName}</strong>.
+            </p>
+
+            <FormField label="Quantidade de Peças Quebradas" htmlFor="quick-loss-qty" required>
+              <Input
+                id="quick-loss-qty"
+                type="number"
+                min="1"
+                required
+                value={quickLossAmount}
+                onChange={(e) => setQuickLossAmount(parseInt(e.target.value, 10) || 1)}
+              />
             </FormField>
 
-            <FormField label="Motivo da Quebra / Ocorrência" htmlFor="quick-loss-reason-select" required>
+            <FormField label="Motivo da Perda" htmlFor="quick-loss-reason" required>
               <Select
-                id="quick-loss-reason-select"
+                id="quick-loss-reason"
                 value={quickLossReason}
                 onChange={(e) => setQuickLossReason(e.target.value)}
               >
@@ -595,11 +476,18 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
               </Select>
             </FormField>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-[#E7D5BE]">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setQuickLossBatch(null)}>
+            <div className="flex justify-end gap-3 pt-4 border-t border-[#E7D5BE] dark:border-stone-800">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setQuickLossBatch(null)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" variant="danger" size="md">
+              <Button
+                type="submit"
+                variant="danger"
+              >
                 Confirmar Quebra
               </Button>
             </div>
@@ -607,16 +495,18 @@ export const ProductionView: React.FC<ProductionViewProps> = ({ onOpenVoiceModal
         </Modal>
       )}
 
-      {/* Confirm Delete Modal */}
-      <ConfirmModal
-        isOpen={!!batchToDelete}
-        onClose={() => setBatchToDelete(null)}
-        onConfirm={confirmDeleteBatch}
-        title="Excluir Lote de Produção"
-        message={`Deseja excluir o lote ${batchToDelete?.code} (${batchToDelete?.productName})? Se este lote já tiver enviado peças para o estoque, elas serão estornadas.`}
-        confirmLabel="Excluir Lote"
-        variant="danger"
-      />
+      {/* Delete Batch Confirmation */}
+      {batchToDelete && (
+        <ConfirmModal
+          isOpen={!!batchToDelete}
+          onClose={() => setBatchToDelete(null)}
+          onConfirm={confirmDeleteBatch}
+          title="Excluir Lote de Produção"
+          message={`Tem certeza que deseja excluir o lote ${batchToDelete.code} (${batchToDelete.productName})?`}
+          confirmLabel="Excluir Lote"
+          variant="danger"
+        />
+      )}
     </div>
   );
 };

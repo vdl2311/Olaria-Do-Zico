@@ -23,7 +23,10 @@ import {
   ArrowRight,
   ShieldCheck,
   Search,
-  ChevronDown
+  ChevronDown,
+  Mic,
+  MicOff,
+  Square
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { AIOrchestrator } from '../ai/orchestrator/aiOrchestrator';
@@ -65,7 +68,81 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({ onNavigateToVi
   const [isProcessing, setIsProcessing] = useState(false);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up' | 'down'>>({});
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Initialize Web Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'pt-BR';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setInputQuery(prev => prev ? `${prev} ${transcript}` : transcript);
+          showToast(`Áudio captado: "${transcript}"`, 'info');
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition error:', event.error);
+        setIsListening(false);
+        if (event.error === 'not-allowed') {
+          showToast('Permissão de microfone negada. Autorize no navegador para falar.', 'warning');
+        } else if (event.error !== 'no-speech') {
+          showToast('Não foi possível captar a voz. Tente falar novamente.', 'warning');
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, [showToast]);
+
+  const toggleSpeechRecognition = () => {
+    if (!recognitionRef.current) {
+      showToast('O reconhecimento de voz não é suportado pelo seu navegador atual.', 'warning');
+      return;
+    }
+
+    if (isListening) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        setIsListening(false);
+      }
+    } else {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error('Error starting speech recognition:', e);
+        showToast('Não foi possível iniciar o microfone.', 'warning');
+      }
+    }
+  };
 
   // Insights & Alerts State
   const [insights, setInsights] = useState<OperationalInsight[]>(() => InsightGenerator.generateInsights());
@@ -465,17 +542,42 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({ onNavigateToVi
                 <Trash2 className="w-4 h-4" />
               </button>
 
-              <input
-                type="text"
-                value={inputQuery}
-                onChange={(e) => setInputQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSendMessage();
-                }}
-                placeholder="Pergunte sobre vendas, produção, fornos, estoque ou contas..."
-                disabled={isProcessing}
-                className="flex-1 px-4 py-2.5 bg-white dark:bg-[#1A1816] border border-[#E7D5BE] dark:border-[#3D3833] rounded-xl text-xs sm:text-sm text-[#292724] dark:text-[#F7F1E7] focus:outline-none focus:ring-2 focus:ring-[#B85C38] transition-all placeholder-[#A89F91]"
-              />
+              <div className="relative flex-1 flex items-center">
+                <input
+                  type="text"
+                  value={inputQuery}
+                  onChange={(e) => setInputQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSendMessage();
+                  }}
+                  placeholder={isListening ? "Ouvindo sua voz... fale agora..." : "Pergunte sobre vendas, produção, fornos, estoque ou contas..."}
+                  disabled={isProcessing}
+                  className={`w-full pl-4 pr-11 py-2.5 bg-white dark:bg-[#1A1816] border rounded-xl text-xs sm:text-sm text-[#292724] dark:text-[#F7F1E7] focus:outline-none transition-all placeholder-[#A89F91] ${
+                    isListening 
+                      ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/20 dark:bg-red-950/10' 
+                      : 'border-[#E7D5BE] dark:border-[#3D3833] focus:ring-2 focus:ring-[#B85C38]'
+                  }`}
+                />
+
+                {/* Microphone / Speech-to-Text Button inside input */}
+                <button
+                  type="button"
+                  onClick={toggleSpeechRecognition}
+                  disabled={isProcessing}
+                  title={isListening ? "Parar gravação de voz" : "Falar pergunta por microfone"}
+                  className={`absolute right-2 p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center ${
+                    isListening
+                      ? 'bg-red-500 text-white animate-pulse shadow-xs'
+                      : 'text-[#8A5A44] dark:text-[#CBB5A1] hover:text-[#B85C38] hover:bg-[#FAF6EF] dark:hover:bg-[#252320]'
+                  }`}
+                >
+                  {isListening ? (
+                    <Square className="w-4 h-4 fill-current" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
 
               <button
                 type="button"

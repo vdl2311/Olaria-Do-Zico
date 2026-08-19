@@ -26,19 +26,16 @@ import { TechnicalAdminView } from './views/TechnicalAdminView';
 import { AIAssistantView } from './views/AIAssistantView';
 import { Lock } from 'lucide-react';
 
-export default function App() {
+function AppContent() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => AuthService.getCurrentUser());
   const [isTechnicalPortalOpen, setIsTechnicalPortalOpen] = useState(false);
-  
   const [activeView, setActiveView] = useState('dashboard');
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
-  // Scroll to top whenever the active view changes
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   }, [activeView]);
 
-  // Initialize real-time cloud database sync with Firebase
   useEffect(() => {
     StorageService.initFirestoreSync();
   }, []);
@@ -55,7 +52,6 @@ export default function App() {
     setIsTechnicalPortalOpen(false);
   };
 
-  // If in Technical DevOps portal mode
   if (isTechnicalPortalOpen) {
     return (
       <ToastProvider>
@@ -64,18 +60,14 @@ export default function App() {
     );
   }
 
-  // If not authenticated, display login screen
   if (!currentUser) {
     return (
       <ToastProvider>
-        <LoginView
-          onLoginSuccess={handleLoginSuccess}
-        />
+        <LoginView onLoginSuccess={handleLoginSuccess} />
       </ToastProvider>
     );
   }
 
-  // Permission Guard Helper
   const checkPermission = (requiredKey: string): boolean => {
     if (currentUser.role === 'PROPRIETARIO') return true;
     if (!currentUser.permissions) return false;
@@ -83,18 +75,20 @@ export default function App() {
   };
 
   const renderAccessDenied = (moduleName: string) => (
-    <div className="bg-[#FAF6EF] border border-[#E7D5BE] rounded-3xl p-5 sm:p-8 text-center max-w-lg mx-auto my-6 sm:my-12 shadow-xs space-y-4 font-brand-sans w-full">
-      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#E7D5BE] text-[#8A5A44] mx-auto flex items-center justify-center">
+    <div className="bg-[#FAF6EF] dark:bg-[#252320] border border-[#E7D5BE] dark:border-[#3D3833] rounded-3xl p-5 sm:p-8 text-center max-w-lg mx-auto my-6 sm:my-12 shadow-xs space-y-4 font-brand-sans w-full">
+      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#E7D5BE] dark:bg-[#3D3833] text-[#8A5A44] dark:text-[#E78B68] mx-auto flex items-center justify-center">
         <Lock className="w-7 h-7 sm:w-8 sm:h-8" />
       </div>
-      <h3 className="font-brand-serif text-lg sm:text-xl font-bold text-[#292724]">Acesso Restrito: {moduleName}</h3>
-      <p className="text-xs sm:text-sm text-[#5C5852] leading-relaxed">
+      <h3 className="font-brand-serif text-lg sm:text-xl font-bold text-[#292724] dark:text-[#F7F1E7]">
+        Acesso Restrito: {moduleName}
+      </h3>
+      <p className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] leading-relaxed">
         Seu perfil de usuário (<strong>{currentUser?.name || 'Usuário'}</strong>) não possui permissão para visualizar este módulo. Solicite a liberação ao proprietário da olaria.
       </p>
       <button
         type="button"
         onClick={() => setActiveView('dashboard')}
-        className="px-5 py-2.5 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold rounded-xl text-xs transition-all cursor-pointer"
+        className="px-5 py-2.5 bg-[#B85C38] hover:bg-[#9E4A2A] text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs"
       >
         Voltar para a Visão Geral
       </button>
@@ -139,10 +133,9 @@ export default function App() {
   const isDemo = currentUser.tenantId === 'tenant_demo_sandbox_01';
 
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <div className="min-h-screen bg-[#F7F1E7] dark:bg-[#1A1816] text-[#292724] dark:text-[#F7F1E7] font-brand-sans flex flex-col antialiased selection:bg-[#E7D5BE] selection:text-[#292724] transition-colors duration-200 overflow-x-hidden w-full">
-          {/* Top Header */}
+    <ToastProvider>
+      <div className="min-h-screen bg-[#F7F1E7] dark:bg-[#1A1816] text-[#292724] dark:text-[#F7F1E7] font-brand-sans flex flex-col antialiased selection:bg-[#E7D5BE] selection:text-[#292724] transition-colors duration-200 overflow-x-hidden w-full">
+        {/* Top Header */}
         <Header 
           activeView={activeView} 
           onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
@@ -165,9 +158,7 @@ export default function App() {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => {
-                    StorageService.resetDemoSandbox();
-                  }}
+                  onClick={() => StorageService.resetDemoSandbox()}
                   className="px-3 py-1 bg-[#B85C38] hover:bg-[#9E4A2A] text-white rounded-lg font-bold transition-colors cursor-pointer text-xs focus-visible:outline-2 focus-visible:outline-[#FAF6EF]"
                 >
                   Resetar Demonstração
@@ -198,8 +189,15 @@ export default function App() {
             {renderActiveView()}
           </main>
         </div>
-        </div>
-      </ToastProvider>
+      </div>
+    </ToastProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
     </ThemeProvider>
   );
 }

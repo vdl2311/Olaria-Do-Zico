@@ -27,7 +27,9 @@ import {
   Card,
   Modal,
   FormField,
-  Input
+  Input,
+  Select,
+  useToast
 } from '../components/ui';
 
 interface DeliveriesViewProps {
@@ -35,6 +37,7 @@ interface DeliveriesViewProps {
 }
 
 export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
+  const { showSuccess } = useToast();
   const [deliveries, setDeliveries] = useState<Delivery[]>(() => StorageService.getDeliveries());
   const [customers, setCustomers] = useState<Customer[]>(() => StorageService.getCustomers());
   const [sales, setSales] = useState<Sale[]>(() => StorageService.getSales());
@@ -75,7 +78,6 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
     return () => unsub();
   }, []);
 
-  // Filtered customers for autocomplete / picker
   const filteredCustomers = useMemo(() => {
     if (!customerSearchQuery.trim()) return customers;
     const q = customerSearchQuery.toLowerCase().trim();
@@ -87,27 +89,17 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
     );
   }, [customers, customerSearchQuery]);
 
-  // Sales linked to currently selected customer
-  const customerRecentSales = useMemo(() => {
-    if (!customerName.trim() && !selectedCustomerId) return [];
-    const nameLower = customerName.toLowerCase().trim();
-    return sales.filter(s =>
-      (selectedCustomerId && s.customerId === selectedCustomerId) ||
-      (nameLower && s.customerName.toLowerCase().includes(nameLower))
-    ).slice(0, 5);
-  }, [sales, customerName, selectedCustomerId]);
-
   const handleOpenCreateModal = () => {
     setEditingDelivery(null);
-    setCustomerMode(customers.length > 0 ? 'select' : 'manual');
-    setSelectedCustomerId('');
+    setCustomerMode('select');
+    setSelectedCustomerId(customers[0]?.id || '');
     setCustomerSearchQuery('');
-    setCustomerName('');
-    setCustomerPhone('');
-    setAddress('');
+    setCustomerName(customers[0]?.name || '');
+    setCustomerPhone(customers[0]?.phone || customers[0]?.whatsapp || '');
+    setAddress(customers[0]?.address || '');
     setDeliveryDate(new Date().toISOString().split('T')[0]);
     setShippingFee(0);
-    setDeliveryPerson('Furgão do Zico');
+    setDeliveryPerson('');
     setStatus('Pendente');
     setNotes('');
     setSelectedSaleId('');
@@ -116,19 +108,11 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
 
   const handleOpenEditModal = (del: Delivery) => {
     setEditingDelivery(del);
-    const linkedCust = customers.find(c => c.id === del.customerId || c.name.toLowerCase() === del.customerName.toLowerCase());
-    
-    if (linkedCust) {
-      setCustomerMode('select');
-      setSelectedCustomerId(linkedCust.id);
-    } else {
-      setCustomerMode('manual');
-      setSelectedCustomerId('');
-    }
-
+    setCustomerMode('manual');
+    setSelectedCustomerId(del.customerId || '');
     setCustomerSearchQuery('');
     setCustomerName(del.customerName);
-    setCustomerPhone(del.customerPhone || linkedCust?.phone || linkedCust?.whatsapp || '');
+    setCustomerPhone(del.customerPhone || '');
     setAddress(del.address);
     setDeliveryDate(del.deliveryDate);
     setShippingFee(del.shippingFee || 0);
@@ -139,36 +123,11 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
     setIsModalOpen(true);
   };
 
-  const handleSelectCustomer = (cust: Customer) => {
-    setSelectedCustomerId(cust.id);
-    setCustomerName(cust.name);
-    const phoneVal = cust.whatsapp || cust.phone || '';
-    setCustomerPhone(phoneVal);
-
-    // Auto-fill address if available
-    let autoAddress = cust.address || '';
-    if (!autoAddress && cust.city) {
-      autoAddress = cust.city;
-    }
-    if (autoAddress) {
-      setAddress(autoAddress);
-    }
-
-    // Auto-link latest sale if available and notes empty
-    const clientSales = sales.filter(s => s.customerId === cust.id || s.customerName.toLowerCase() === cust.name.toLowerCase());
-    if (clientSales.length > 0 && !notes) {
-      const latest = clientSales[0];
-      const itemsList = latest.items.map(i => `${i.quantity}x ${i.productName}`).join(', ');
-      setNotes(`Venda ${latest.code}: ${itemsList}`);
-      setSelectedSaleId(latest.id);
-    }
-  };
-
-  const handleSelectSaleLink = (sale: Sale) => {
-    setSelectedSaleId(sale.id);
-    const itemsList = sale.items.map(i => `${i.quantity}x ${i.productName}`).join(', ');
-    const noteText = `Entrega referente à Venda ${sale.code} (${itemsList})`;
-    setNotes(noteText);
+  const handleSelectCustomer = (c: Customer) => {
+    setSelectedCustomerId(c.id);
+    setCustomerName(c.name);
+    setCustomerPhone(c.phone || c.whatsapp || '');
+    setAddress(c.address || '');
   };
 
   const handleSaveDelivery = (e: React.FormEvent) => {
@@ -176,17 +135,14 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
     const cleanName = customerName.trim();
     const cleanAddress = address.trim();
 
-    if (!cleanName || !cleanAddress) {
-      alert('Por favor, informe o nome do cliente e o endereço completo de entrega.');
-      return;
-    }
+    if (!cleanName) return;
+    if (!cleanAddress) return;
 
-    // If new manual customer, also register into customer base
     let finalCustId = selectedCustomerId;
-    if (!finalCustId) {
+    if (customerMode === 'manual' || !finalCustId) {
       const savedCust = StorageService.findOrCreateCustomerByName(cleanName);
       finalCustId = savedCust.id;
-      if (cleanAddress && !savedCust.address) {
+      if (!savedCust.address && cleanAddress) {
         savedCust.address = cleanAddress;
         if (customerPhone && !savedCust.phone) savedCust.phone = customerPhone;
         StorageService.saveCustomer(savedCust, true);
@@ -214,6 +170,10 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
     refreshData();
     setIsModalOpen(false);
     setEditingDelivery(null);
+    showSuccess(
+      editingDelivery ? 'Entrega Atualizada' : 'Entrega Agendada',
+      `Entrega para ${cleanName} salva com sucesso.`
+    );
   };
 
   const handleMarkDelivered = (delivery: Delivery) => {
@@ -224,6 +184,7 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
     };
     StorageService.saveDelivery(updated);
     refreshData();
+    showSuccess('Entrega Concluída', `Entrega para ${delivery.customerName} marcada como entregue.`);
   };
 
   const handleQuickStatusChange = (delivery: Delivery, newStatus: Delivery['status']) => {
@@ -240,18 +201,16 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
     if (!deliveryToDelete) return;
     StorageService.deleteDelivery(deliveryToDelete.id);
     refreshData();
+    showSuccess('Entrega Removida', 'O agendamento de entrega foi removido.');
     setDeliveryToDelete(null);
   };
 
-  // Filtered deliveries for display
   const displayDeliveries = useMemo(() => {
     return deliveries.filter(del => {
-      // Status filter
       if (statusTab === 'Pendentes' && del.status !== 'Pendente') return false;
       if (statusTab === 'A caminho' && del.status !== 'A caminho') return false;
       if (statusTab === 'Entregues' && del.status !== 'Entregue') return false;
 
-      // Search filter
       if (searchFilter.trim()) {
         const q = searchFilter.toLowerCase().trim();
         const matchName = del.customerName.toLowerCase().includes(q);
@@ -264,7 +223,6 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
     });
   }, [deliveries, statusTab, searchFilter]);
 
-  // Statistics
   const totalDeliveries = deliveries.length;
   const pendingCount = deliveries.filter(d => d.status === 'Pendente').length;
   const inTransitCount = deliveries.filter(d => d.status === 'A caminho').length;
@@ -274,71 +232,73 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
     .reduce((acc, d) => acc + (d.shippingFee || 0), 0);
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Top Header */}
+    <div className="space-y-6 pb-20 font-brand-sans">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-amber-950 flex items-center gap-2">
-            <Truck className="w-6 h-6 text-amber-800" />
+          <h2 className="text-2xl sm:text-3xl font-black text-[#292724] dark:text-[#F7F1E7] font-brand-serif flex items-center gap-3">
+            <Truck className="w-7 h-7 text-[#B85C38]" />
             <span>Logística e Organização de Entregas</span>
           </h2>
-          <p className="text-xs sm:text-sm text-amber-800/80">
+          <p className="text-sm sm:text-base text-[#5C5852] dark:text-[#C9BFA8] mt-1">
             Agende entregas com seleção instantânea de clientes cadastrados nas vendas e rastreie status.
           </p>
         </div>
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <button
+          <Button
             onClick={handleOpenCreateModal}
-            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer"
+            variant="primary"
+            size="md"
+            icon={Plus}
+            className="w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4" />
-            <span className="whitespace-nowrap">Agendar Entrega</span>
-          </button>
+            Agendar Entrega
+          </Button>
         </div>
       </div>
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white border border-amber-200/80 rounded-2xl p-3 sm:p-4 shadow-xs">
-          <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Total de Entregas</p>
-          <p className="text-xl sm:text-2xl font-black text-amber-950 mt-1">{totalDeliveries}</p>
-        </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card variant="flat" className="p-4 sm:p-5 space-y-1">
+          <p className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#C9BFA8] uppercase tracking-wider">Total de Entregas</p>
+          <p className="text-2xl sm:text-3xl font-black text-[#292724] dark:text-[#F7F1E7]">{totalDeliveries}</p>
+        </Card>
 
-        <div className="bg-white border border-amber-300 rounded-2xl p-3 sm:p-4 shadow-xs">
+        <Card variant="flat" className="p-4 sm:p-5 space-y-1">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Pendentes</p>
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <p className="text-xs sm:text-sm font-bold text-[#B85C38] uppercase tracking-wider">Pendentes</p>
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
           </div>
-          <p className="text-xl sm:text-2xl font-black text-amber-800 mt-1">{pendingCount}</p>
-        </div>
+          <p className="text-2xl sm:text-3xl font-black text-[#B85C38]">{pendingCount}</p>
+        </Card>
 
-        <div className="bg-white border border-blue-200 rounded-2xl p-3 sm:p-4 shadow-xs">
-          <p className="text-[11px] font-bold text-blue-800 uppercase tracking-wider">A Caminho</p>
-          <p className="text-xl sm:text-2xl font-black text-blue-900 mt-1">{inTransitCount}</p>
-        </div>
+        <Card variant="flat" className="p-4 sm:p-5 space-y-1">
+          <p className="text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">A Caminho</p>
+          <p className="text-2xl sm:text-3xl font-black text-blue-800 dark:text-blue-300">{inTransitCount}</p>
+        </Card>
 
-        <div className="bg-white border border-emerald-200 rounded-2xl p-3 sm:p-4 shadow-xs">
-          <p className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Entregues</p>
-          <p className="text-xl sm:text-2xl font-black text-emerald-800 mt-1">
+        <Card variant="flat" className="p-4 sm:p-5 space-y-1">
+          <p className="text-xs sm:text-sm font-bold text-[#4F583D] dark:text-[#A4B38A] uppercase tracking-wider">Entregues</p>
+          <p className="text-2xl sm:text-3xl font-black text-[#4F583D] dark:text-[#A4B38A]">
             {deliveredCount}
-            <span className="text-[11px] font-normal text-emerald-700 ml-1.5">(R$ {totalShippingEarned.toFixed(2)} frete)</span>
+            <span className="text-xs font-normal text-[#667052] dark:text-[#C9BFA8] ml-2">(R$ {totalShippingEarned.toFixed(2)})</span>
           </p>
-        </div>
+        </Card>
       </div>
 
-      {/* Search and Filter Tabs */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-amber-200 shadow-xs">
+      {/* Filter Tabs & Search */}
+      <Card variant="flat" className="p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Status Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
           {(['Todas', 'Pendentes', 'A caminho', 'Entregues'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setStatusTab(tab)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors whitespace-nowrap cursor-pointer ${
                 statusTab === tab
-                  ? 'bg-amber-900 text-white shadow-2xs'
-                  : 'bg-amber-50 text-amber-900 hover:bg-amber-100'
+                  ? 'bg-[#B85C38] text-white shadow-xs'
+                  : 'bg-[#FAF6EF] dark:bg-[#25221E] text-[#292724] dark:text-[#F7F1E7] hover:bg-[#E7D5BE] dark:hover:bg-stone-800'
               }`}
             >
               {tab}
@@ -348,45 +308,39 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
 
         {/* Search Input */}
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-amber-700 pointer-events-none" />
-          <input
+          <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8A5A44] pointer-events-none" />
+          <Input
+            id="deliveries-search"
             type="text"
             placeholder="Buscar por cliente, endereço ou entregador..."
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            className="w-full bg-amber-50/50 border border-amber-200 rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm text-amber-950 placeholder-amber-700/60 focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-200 font-medium"
+            className="pl-10"
           />
-          {searchFilter && (
-            <button
-              onClick={() => setSearchFilter('')}
-              className="absolute right-2.5 top-2.5 text-amber-700 hover:text-amber-950 text-xs"
-            >
-              &times;
-            </button>
-          )}
         </div>
-      </div>
+      </Card>
 
       {/* Deliveries List Cards */}
       {displayDeliveries.length === 0 ? (
-        <div className="bg-white border border-amber-200 rounded-2xl p-10 text-center space-y-4 shadow-xs">
-          <Truck className="w-12 h-12 text-amber-400 mx-auto" />
-          <div className="max-w-md mx-auto space-y-1">
-            <h3 className="font-bold text-amber-950 text-base">
+        <Card variant="default" className="p-12 text-center space-y-4">
+          <Truck className="w-14 h-14 text-[#D4BEA2] mx-auto" />
+          <div className="max-w-md mx-auto space-y-1.5">
+            <h3 className="font-bold text-[#292724] dark:text-[#F7F1E7] text-lg">
               {searchFilter || statusTab !== 'Todas' ? 'Nenhuma entrega encontrada para o filtro' : 'Nenhuma entrega agendada'}
             </h3>
-            <p className="text-xs text-amber-700">
+            <p className="text-sm text-[#5C5852] dark:text-[#C9BFA8]">
               Selecione clientes cadastrados nas suas vendas para agendar entregas rápidas com endereço preenchido.
             </p>
           </div>
-          <button
+          <Button
             onClick={handleOpenCreateModal}
-            className="inline-flex items-center space-x-2 bg-amber-900 hover:bg-amber-800 text-amber-50 font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs sm:text-sm cursor-pointer"
+            variant="primary"
+            size="md"
+            icon={Plus}
           >
-            <Plus className="w-4 h-4" />
-            <span>Agendar Nova Entrega</span>
-          </button>
-        </div>
+            Agendar Nova Entrega
+          </Button>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {displayDeliveries.map((del) => {
@@ -396,44 +350,44 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
             const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(del.address)}`;
 
             return (
-              <div
+              <Card
                 key={del.id}
-                className={`bg-white border rounded-2xl p-5 shadow-xs space-y-3.5 transition-all hover:border-amber-400 ${
+                variant="default"
+                className={`p-5 space-y-4 transition-all ${
                   del.status === 'Entregue'
-                    ? 'border-emerald-200 bg-emerald-50/20'
+                    ? 'border-emerald-500/30 bg-emerald-500/5'
                     : del.status === 'A caminho'
-                    ? 'border-blue-300 bg-blue-50/20'
-                    : 'border-amber-200'
+                    ? 'border-blue-500/30 bg-blue-500/5'
+                    : ''
                 }`}
               >
                 {/* Card Header */}
-                <div className="flex items-start justify-between border-b border-amber-100 pb-2.5">
+                <div className="flex items-start justify-between border-b border-[#E7D5BE] dark:border-stone-800 pb-3">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold text-amber-800 flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                      <span className="text-xs sm:text-sm font-bold text-[#8A5A44] dark:text-[#D67855] flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-[#B85C38]" />
                         Prevista: {del.deliveryDate.split('-').reverse().join('/')}
                       </span>
                       {linkedCust?.type && (
-                        <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-200">
+                        <span className="text-xs font-bold bg-[#E7D5BE]/60 dark:bg-stone-700 text-[#292724] dark:text-[#F7F1E7] px-2.5 py-0.5 rounded-lg">
                           {linkedCust.type}
                         </span>
                       )}
                     </div>
-                    <h3 className="font-black text-amber-950 text-base sm:text-lg mt-0.5">{del.customerName}</h3>
+                    <h3 className="font-black text-[#292724] dark:text-[#F7F1E7] text-lg sm:text-xl mt-1">{del.customerName}</h3>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    {/* Status dropdown / badge */}
+                  <div className="flex items-center gap-2">
                     <select
                       value={del.status}
                       onChange={(e) => handleQuickStatusChange(del, e.target.value as Delivery['status'])}
-                      className={`text-xs font-bold px-2.5 py-1 rounded-xl border cursor-pointer focus:outline-none ${
+                      className={`text-xs sm:text-sm font-bold px-3 py-1.5 rounded-xl border cursor-pointer focus:outline-hidden ${
                         del.status === 'Entregue'
-                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                          ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
                           : del.status === 'A caminho'
-                          ? 'bg-blue-100 text-blue-900 border-blue-300'
-                          : 'bg-amber-100 text-amber-900 border-amber-300'
+                          ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-300 border-blue-300 dark:border-blue-800'
+                          : 'bg-[#E7D5BE]/60 dark:bg-stone-700 text-[#292724] dark:text-[#F7F1E7] border-[#D4BEA2] dark:border-stone-600'
                       }`}
                     >
                       <option value="Pendente">⏳ Pendente</option>
@@ -441,131 +395,129 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
                       <option value="Entregue">✓ Entregue</option>
                     </select>
 
-                    <button
+                    <Button
                       onClick={() => handleOpenEditModal(del)}
-                      className="p-1.5 hover:bg-amber-100 rounded-lg text-amber-800 transition-colors"
-                      title="Editar entrega"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
+                      variant="ghost"
+                      size="sm"
+                      icon={Edit3}
+                      ariaLabel="Editar entrega"
+                    />
+                    <Button
                       onClick={() => setDeliveryToDelete(del)}
-                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-700 transition-colors"
-                      title="Excluir entrega"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      variant="ghost"
+                      size="sm"
+                      icon={Trash2}
+                      ariaLabel="Excluir entrega"
+                      className="text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-900/30"
+                    />
                   </div>
                 </div>
 
                 {/* Details Box */}
-                <div className="text-xs text-amber-900 space-y-2 bg-amber-50/70 p-3.5 rounded-xl border border-amber-100">
+                <div className="text-sm text-[#292724] dark:text-[#F7F1E7] space-y-2.5 bg-[#FAF6EF] dark:bg-[#1A1816] p-4 rounded-xl border border-[#E7D5BE] dark:border-stone-800">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="flex items-start gap-1.5 font-medium leading-relaxed flex-1">
-                      <MapPin className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <p className="flex items-start gap-2 font-medium leading-relaxed flex-1">
+                      <MapPin className="w-4 h-4 text-[#B85C38] shrink-0 mt-1" />
                       <span>
-                        <strong className="font-bold text-amber-950">Endereço:</strong> {del.address}
+                        <strong className="font-bold text-[#292724] dark:text-[#F7F1E7]">Endereço:</strong> {del.address}
                       </span>
                     </p>
                     <a
                       href={mapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-950 bg-amber-200/70 hover:bg-amber-200 px-2 py-1 rounded-lg shrink-0 transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#B85C38] dark:text-[#D67855] hover:underline bg-[#E7D5BE]/40 dark:bg-stone-800 px-2.5 py-1 rounded-lg shrink-0 transition-colors"
                       title="Ver no mapa"
                     >
                       <span>Mapa</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
 
                   {phone && (
-                    <div className="flex items-center justify-between pt-1 border-t border-amber-200/50">
-                      <p className="flex items-center gap-1.5 font-medium">
-                        <Phone className="w-3.5 h-3.5 text-amber-700" />
-                        <span>Contato: {phone}</span>
+                    <div className="flex items-center justify-between pt-2 border-t border-[#E7D5BE] dark:border-stone-800">
+                      <p className="flex items-center gap-2 font-medium">
+                        <Phone className="w-4 h-4 text-[#8A5A44] dark:text-[#C9BFA8]" />
+                        <span>Contato: <strong>{phone}</strong></span>
                       </p>
                       {cleanPhoneDigits.length >= 10 && (
                         <a
                           href={`https://wa.me/55${cleanPhoneDigits}?text=${encodeURIComponent(`Olá ${del.customerName}, aqui é da Olaria do Zico referente à entrega de suas peças agendada para ${del.deliveryDate.split('-').reverse().join('/')}.`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded-md transition-colors"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 hover:bg-emerald-200 px-3 py-1 rounded-lg transition-colors"
                         >
-                          <MessageSquare className="w-3 h-3 text-emerald-700" />
+                          <MessageSquare className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                           <span>WhatsApp</span>
                         </a>
                       )}
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-amber-200/50 text-[11px]">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#E7D5BE] dark:border-stone-800 text-xs sm:text-sm">
                     <p>
-                      <strong className="font-semibold text-amber-950">Frete:</strong>{' '}
+                      <strong className="text-[#8A5A44] dark:text-[#C9BFA8]">Frete:</strong>{' '}
                       {del.shippingFee > 0 ? (
-                        <span className="font-bold text-emerald-800">R$ {del.shippingFee.toFixed(2)}</span>
+                        <span className="font-bold text-[#4F583D] dark:text-[#A4B38A] font-mono">R$ {del.shippingFee.toFixed(2)}</span>
                       ) : (
-                        <span className="text-stone-500 font-medium">Grátis / Incluso</span>
+                        <span className="text-[#5C5852] dark:text-[#C9BFA8] font-medium">Grátis / Incluso</span>
                       )}
                     </p>
                     <p>
-                      <strong className="font-semibold text-amber-950">Entregador:</strong>{' '}
-                      <span className="font-medium">{del.deliveryPerson || 'Não definido'}</span>
+                      <strong className="text-[#8A5A44] dark:text-[#C9BFA8]">Entregador:</strong>{' '}
+                      <span className="font-medium text-[#292724] dark:text-[#F7F1E7]">{del.deliveryPerson || 'Não definido'}</span>
                     </p>
                   </div>
 
                   {del.notes && (
-                    <div className="pt-1.5 border-t border-amber-200/50">
-                      <div className="flex items-start gap-1.5 text-xs text-amber-900 bg-amber-100/70 p-2 rounded-lg border border-amber-200">
-                        <MessageSquare className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
-                        <p className="leading-snug">
-                          <strong className="font-semibold text-amber-950">Obs / Peças:</strong> {del.notes}
-                        </p>
-                      </div>
+                    <div className="pt-2 border-t border-[#E7D5BE] dark:border-stone-800 text-xs sm:text-sm">
+                      <strong className="text-[#8A5A44] dark:text-[#C9BFA8]">Observações:</strong> {del.notes}
                     </div>
                   )}
                 </div>
 
-                {/* Card Action Button */}
+                {/* Bottom Actions */}
                 {del.status !== 'Entregue' ? (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3 pt-1">
                     {del.status === 'Pendente' && (
-                      <button
+                      <Button
                         onClick={() => handleQuickStatusChange(del, 'A caminho')}
-                        className="py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-all shadow-xs cursor-pointer"
+                        variant="secondary"
+                        size="md"
+                        icon={Truck}
+                        className="text-blue-700 border-blue-300 hover:bg-blue-50"
                       >
-                        <Truck className="w-3.5 h-3.5" />
-                        <span>Saiu p/ Entrega</span>
-                      </button>
+                        Saiu p/ Entrega
+                      </Button>
                     )}
-                    <button
+                    <Button
                       onClick={() => handleMarkDelivered(del)}
-                      className={`py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-all shadow-xs cursor-pointer ${
-                        del.status === 'Pendente' ? '' : 'col-span-2'
-                      }`}
+                      variant="primary"
+                      size="md"
+                      icon={CheckCircle2}
+                      className={del.status === 'Pendente' ? '' : 'col-span-2'}
                     >
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Marcar Entregue</span>
-                    </button>
+                      Marcar Entregue
+                    </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between py-1.5 px-3 text-xs text-emerald-800 font-bold bg-emerald-50 rounded-xl border border-emerald-200">
-                    <span className="flex items-center gap-1">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <div className="flex items-center justify-between py-2.5 px-4 text-sm text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       Entregue com sucesso
                     </span>
-                    <span className="text-[11px] text-emerald-700 font-medium">
+                    <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
                       {del.completedAt ? new Date(del.completedAt).toLocaleDateString('pt-BR') : del.deliveryDate}
                     </span>
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>
       )}
 
-      {/* New / Edit Delivery Modal */}
+      {/* New / Edit Modal */}
       {isModalOpen && (
         <Modal
           isOpen={isModalOpen}
@@ -575,21 +527,19 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
           size="lg"
         >
           <form onSubmit={handleSaveDelivery} className="space-y-4 font-brand-sans">
-            {/* Customer Mode Selection Tabs */}
             <div>
-              <span className="block text-xs font-bold text-[#292724] mb-1.5">
+              <span className="block text-sm font-bold text-[#292724] dark:text-[#F7F1E7] mb-2">
                 Cliente da Entrega:
               </span>
 
-              {/* Toggle between Registered Customers vs New Customer */}
-              <div className="grid grid-cols-2 gap-1.5 bg-[#FAF6EF] p-1 rounded-xl border border-[#E7D5BE] mb-2">
+              <div className="grid grid-cols-2 gap-2 bg-[#FAF6EF] dark:bg-[#1A1816] p-1.5 rounded-xl border border-[#E7D5BE] dark:border-stone-800 mb-3">
                 <button
                   type="button"
                   onClick={() => setCustomerMode('select')}
-                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                     customerMode === 'select'
-                      ? 'bg-[#B85C38] text-white shadow-2xs'
-                      : 'text-[#292724] hover:bg-[#E7D5BE]'
+                      ? 'bg-[#B85C38] text-white shadow-xs'
+                      : 'text-[#292724] dark:text-[#F7F1E7] hover:bg-[#E7D5BE] dark:hover:bg-stone-800'
                   }`}
                 >
                   <UserCheck className="w-4 h-4" />
@@ -598,194 +548,73 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setCustomerMode('manual');
-                    setSelectedCustomerId('');
-                  }}
-                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                  onClick={() => setCustomerMode('manual')}
+                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                     customerMode === 'manual'
-                      ? 'bg-[#B85C38] text-white shadow-2xs'
-                      : 'text-[#292724] hover:bg-[#E7D5BE]'
+                      ? 'bg-[#B85C38] text-white shadow-xs'
+                      : 'text-[#292724] dark:text-[#F7F1E7] hover:bg-[#E7D5BE] dark:hover:bg-stone-800'
                   }`}
                 >
                   <UserPlus className="w-4 h-4" />
-                  <span>+ Novo Cliente</span>
+                  <span>Digitar Novo Cliente</span>
                 </button>
               </div>
 
-              {/* Mode 1: Select from Registered Customers */}
               {customerMode === 'select' ? (
                 <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-3 text-[#8A5A44] pointer-events-none" />
-                    <Input
-                      id="del-cust-search"
-                      type="text"
-                      placeholder="Buscar cliente por nome, telefone ou cidade..."
-                      value={customerSearchQuery}
-                      onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-
-                  {/* Customer Selector Dropdown / Scroll Area */}
-                  <div className="max-h-40 overflow-y-auto rounded-xl border border-[#E7D5BE] divide-y divide-[#E7D5BE] bg-white">
-                    {filteredCustomers.length === 0 ? (
-                      <div className="p-3 text-center text-xs text-[#8A5A44]">
-                        Nenhum cliente cadastrado encontrado com "{customerSearchQuery}".
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCustomerMode('manual');
-                            setCustomerName(customerSearchQuery);
-                          }}
-                          className="block mx-auto mt-1.5 text-xs font-bold text-[#B85C38] underline hover:text-[#9E4A2A]"
-                        >
-                          Digitar como novo cliente
-                        </button>
-                      </div>
-                    ) : (
-                      filteredCustomers.map((cust) => {
-                        const isSelected = selectedCustomerId === cust.id || (customerName.toLowerCase() === cust.name.toLowerCase() && !selectedCustomerId);
-                        return (
-                          <button
-                            key={cust.id}
-                            type="button"
-                            onClick={() => handleSelectCustomer(cust)}
-                            className={`w-full text-left p-2.5 transition-colors flex items-center justify-between gap-2 cursor-pointer ${
-                              isSelected
-                                ? 'bg-[#FAF6EF] text-[#292724] font-bold border-l-4 border-[#B85C38]'
-                                : 'hover:bg-[#FAF6EF]/60 text-[#292724]'
-                            }`}
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-sm truncate">{cust.name}</span>
-                                {cust.type && (
-                                  <span className="text-[10px] px-1.5 py-0.2 bg-[#E7D5BE] text-[#292724] rounded font-semibold shrink-0">
-                                    {cust.type}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-[#8A5A44] flex items-center gap-2 truncate">
-                                {cust.city && <span>📍 {cust.city}</span>}
-                                {(cust.phone || cust.whatsapp) && <span>📞 {cust.phone || cust.whatsapp}</span>}
-                                {cust.address && <span className="truncate max-w-[140px]">🏠 {cust.address}</span>}
-                              </div>
-                            </div>
-                            {isSelected && (
-                              <CheckCircle2 className="w-4 h-4 text-[#B85C38] shrink-0" />
-                            )}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  {/* Selected Customer Confirmation Tag */}
-                  {customerName && (
-                    <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                        <span>Cliente selecionado: <strong>{customerName}</strong></span>
-                      </div>
-                      <span className="text-[11px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-medium">
-                        Endereço auto-preenchido
-                      </span>
-                    </div>
-                  )}
+                  <Select
+                    id="del-cust-select"
+                    value={selectedCustomerId}
+                    onChange={(e) => {
+                      const c = customers.find(item => item.id === e.target.value);
+                      if (c) handleSelectCustomer(c);
+                    }}
+                  >
+                    {filteredCustomers.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} {c.city ? `(${c.city})` : ''} {c.phone ? `• ${c.phone}` : ''}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
               ) : (
-                /* Mode 2: Manual Customer Input */
-                <FormField label="Nome do Novo Cliente" htmlFor="del-cust-manual" required hint="Salvo automaticamente no cadastro de clientes.">
-                  <Input
-                    id="del-cust-manual"
-                    type="text"
-                    required
-                    placeholder="Ex: Carlos Mendes ou Floricultura São José"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                  />
-                </FormField>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField label="Nome do Cliente" htmlFor="del-cust-name" required>
+                    <Input
+                      id="del-cust-name"
+                      type="text"
+                      required
+                      placeholder="Ex: Cerâmica Primavera"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                    />
+                  </FormField>
+
+                  <FormField label="Telefone / WhatsApp" htmlFor="del-cust-phone">
+                    <Input
+                      id="del-cust-phone"
+                      type="text"
+                      placeholder="Ex: (11) 98765-4321"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                    />
+                  </FormField>
+                </div>
               )}
             </div>
 
-            {/* Optional Recent Sales Link Section */}
-            {customerRecentSales.length > 0 && (
-              <div className="p-3 bg-[#FAF6EF] rounded-xl border border-[#E7D5BE] space-y-2">
-                <p className="text-xs font-bold text-[#292724] flex items-center gap-1.5">
-                  <Package className="w-4 h-4 text-[#8A5A44]" />
-                  <span>Vincular itens de venda recente deste cliente (opcional):</span>
-                </p>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {customerRecentSales.map((s) => {
-                    const isSelected = selectedSaleId === s.id;
-                    const itemsText = s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ');
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => handleSelectSaleLink(s)}
-                        className={`p-2 rounded-lg text-left text-xs transition-colors border flex items-center justify-between gap-2 cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#E7D5BE] border-[#B85C38] text-[#292724] font-bold'
-                            : 'bg-white border-[#E7D5BE] hover:bg-[#FAF6EF] text-[#292724]'
-                        }`}
-                      >
-                        <div className="truncate">
-                          <span className="font-black mr-1.5">{s.code}</span>
-                          <span className="text-[#8A5A44] font-medium">({s.date.split('-').reverse().join('/')}): </span>
-                          <span className="truncate">{itemsText}</span>
-                        </div>
-                        <span className="text-emerald-800 font-bold shrink-0">R$ {s.totalValue.toFixed(2)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Delivery Address */}
-            <FormField
-              label="Endereço de Entrega"
-              htmlFor="del-address"
-              required
-              hint={
-                address ? (
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] font-bold text-[#B85C38] hover:underline flex items-center gap-1"
-                  >
-                    <MapPin className="w-3 h-3 text-[#B85C38]" />
-                    <span>Abrir no Maps</span>
-                  </a>
-                ) : undefined
-              }
-            >
+            <FormField label="Endereço Completo de Entrega" htmlFor="del-address" required>
               <Input
                 id="del-address"
                 type="text"
                 required
-                placeholder="Ex: Rua das Palmeiras, 140 - Bairro Jardim, Campinas - SP"
+                placeholder="Rua das Flores, 123 - Bairro Central, Cidade"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
             </FormField>
 
-            {/* Phone & Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FormField label="Telefone / WhatsApp" htmlFor="del-phone">
-                <Input
-                  id="del-phone"
-                  type="text"
-                  placeholder="Ex: (19) 99876-5432"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                />
-              </FormField>
-
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <FormField label="Data Prevista" htmlFor="del-date" required>
                 <Input
                   id="del-date"
@@ -795,10 +624,7 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
                   onChange={(e) => setDeliveryDate(e.target.value)}
                 />
               </FormField>
-            </div>
 
-            {/* Shipping Fee & Courier */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="Valor do Frete (R$)" htmlFor="del-shipping">
                 <Input
                   id="del-shipping"
@@ -806,82 +632,35 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
                   step="0.01"
                   min={0}
                   value={shippingFee}
-                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setShippingFee(e.target.value)}
-                  placeholder="0.00"
-                  className="font-semibold"
                 />
               </FormField>
 
-              <FormField label="Entregador / Veículo" htmlFor="del-courier">
+              <FormField label="Entregador / Veículo" htmlFor="del-person">
                 <Input
-                  id="del-courier"
+                  id="del-person"
                   type="text"
-                  placeholder="Ex: Furgão do Zico / Carlos"
+                  placeholder="Ex: Furgão do Zico"
                   value={deliveryPerson}
                   onChange={(e) => setDeliveryPerson(e.target.value)}
                 />
               </FormField>
             </div>
 
-            {/* Status Selection */}
-            <div>
-              <span className="block text-xs font-bold text-[#292724] mb-1.5">Status da Entrega:</span>
-              <div className="grid grid-cols-3 gap-2">
-                {(['Pendente', 'A caminho', 'Entregue'] as const).map((st) => (
-                  <button
-                    key={st}
-                    type="button"
-                    onClick={() => setStatus(st)}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                      status === st
-                        ? st === 'Entregue'
-                          ? 'bg-emerald-700 border-emerald-800 text-white shadow-2xs'
-                          : st === 'A caminho'
-                          ? 'bg-blue-700 border-blue-800 text-white shadow-2xs'
-                          : 'bg-[#B85C38] border-[#9E4A2A] text-white shadow-2xs'
-                        : 'bg-[#FAF6EF] border-[#E7D5BE] text-[#292724] hover:bg-[#E7D5BE]'
-                    }`}
-                  >
-                    {st === 'Pendente' && '⏳ Pendente'}
-                    {st === 'A caminho' && '🚚 A caminho'}
-                    {st === 'Entregue' && '✓ Entregue'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Notes */}
-            <FormField label="Observações / Itens a Entregar" htmlFor="del-notes">
-              <textarea
+            <FormField label="Observações & Recomendações" htmlFor="del-notes">
+              <Input
                 id="del-notes"
-                rows={2}
-                placeholder="Ex: 2x Vaso Bojudo Terracota, 1x Fonte Cascata. Cuidado: Peças frágeis."
+                type="text"
+                placeholder="Ex: Frágil - Vasos vitrificados. Entregar no período da tarde."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full bg-white border border-[#D4BEA2] rounded-xl p-2.5 text-[#292724] text-sm focus:border-[#B85C38] focus:ring-2 focus:ring-[#B85C38]/20 outline-hidden transition-all"
               />
-              {/* Preset observation buttons */}
-              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                {['Cuidado: Frágil', 'Ligar 30 min antes', 'Entregar na portaria', 'Receber restante no local'].map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => setNotes(prev => prev ? `${prev} | ${tag}` : tag)}
-                    className="text-[11px] bg-[#FAF6EF] hover:bg-[#E7D5BE] text-[#292724] font-bold px-2 py-0.5 rounded-md cursor-pointer transition-colors"
-                  >
-                    + {tag}
-                  </button>
-                ))}
-              </div>
             </FormField>
 
-            {/* Modal Footer Actions */}
-            <div className="p-3.5 border-t border-[#E7D5BE] flex items-center justify-end gap-2 shrink-0">
+            <div className="flex justify-end gap-3 pt-4 border-t border-[#E7D5BE] dark:border-stone-800">
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
                 onClick={() => setIsModalOpen(false)}
               >
                 Cancelar
@@ -889,7 +668,6 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
               <Button
                 type="submit"
                 variant="primary"
-                size="md"
               >
                 {editingDelivery ? 'Salvar Alterações' : 'Confirmar Agendamento'}
               </Button>
@@ -898,20 +676,19 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
         </Modal>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       {deliveryToDelete && (
         <Modal
           isOpen={!!deliveryToDelete}
           onClose={() => setDeliveryToDelete(null)}
           title="Excluir Agendamento de Entrega?"
-          description={`Tem certeza que deseja remover o agendamento de entrega para ${deliveryToDelete.customerName} (${deliveryToDelete.address})?`}
+          description={`Tem certeza que deseja remover o agendamento de entrega para ${deliveryToDelete.customerName}?`}
           size="sm"
         >
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-3 pt-2">
             <Button
               type="button"
               variant="ghost"
-              size="sm"
               onClick={() => setDeliveryToDelete(null)}
             >
               Cancelar
@@ -919,7 +696,6 @@ export const DeliveriesView: React.FC<DeliveriesViewProps> = () => {
             <Button
               type="button"
               variant="danger"
-              size="sm"
               onClick={confirmDelete}
             >
               Sim, Excluir

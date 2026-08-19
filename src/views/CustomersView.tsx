@@ -99,59 +99,55 @@ export const CustomersView: React.FC = () => {
     if (!name.trim()) return;
 
     const customerData: Customer = {
-      id: editingCustomer ? editingCustomer.id : `cli-${Date.now()}`,
+      id: editingCustomer ? editingCustomer.id : `cust-${Date.now()}`,
       name: name.trim(),
-      phone,
-      whatsapp: whatsapp || phone,
+      phone: phone.trim(),
+      whatsapp: whatsapp.trim() || phone.trim(),
       type,
-      city,
-      address,
-      cpfCnpj,
-      notes,
-      createdAt: editingCustomer ? editingCustomer.createdAt : new Date().toISOString().split('T')[0]
+      city: city.trim(),
+      address: address.trim(),
+      cpfCnpj: cpfCnpj.trim(),
+      notes: notes.trim(),
+      createdAt: editingCustomer ? editingCustomer.createdAt : new Date().toISOString()
     };
 
     StorageService.saveCustomer(customerData);
     refreshData();
     setIsModalOpen(false);
-    setEditingCustomer(null);
     showSuccess(
       editingCustomer ? 'Cliente Atualizado' : 'Cliente Cadastrado',
-      `O cadastro de ${customerData.name} foi salvo.`
+      `"${customerData.name}" salvo com sucesso.`
     );
-
-    if (selectedCustomer && selectedCustomer.id === customerData.id) {
-      setSelectedCustomer(customerData);
-    }
   };
 
-  const handleConfirmDelete = () => {
+  const confirmDeleteCustomer = () => {
     if (!customerToDelete) return;
     StorageService.deleteCustomer(customerToDelete.id);
     refreshData();
-    if (selectedCustomer?.id === customerToDelete.id) {
-      setSelectedCustomer(null);
-    }
-    showSuccess('Cliente Removido', `O cadastro de ${customerToDelete.name} foi excluído.`);
+    showSuccess('Cliente Removido', `"${customerToDelete.name}" foi excluído com sucesso.`);
     setCustomerToDelete(null);
   };
 
-  const filteredCustomers = customers.filter(c =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.city && c.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    c.type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = customers.filter(c => {
+    const q = searchTerm.toLowerCase();
+    return c.name.toLowerCase().includes(q) ||
+      (c.city && c.city.toLowerCase().includes(q)) ||
+      (c.type && c.type.toLowerCase().includes(q)) ||
+      (c.phone && c.phone.includes(q));
+  });
 
   return (
     <div className="space-y-6 pb-20 font-brand-sans">
-      {/* Top Bar */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-[#292724] font-brand-serif flex items-center gap-2">
-            <Users className="w-6 h-6 text-[#B85C38]" />
+          <h2 className="text-2xl sm:text-3xl font-black text-[#292724] dark:text-[#F7F1E7] font-brand-serif flex items-center gap-3">
+            <Users className="w-7 h-7 text-[#B85C38]" />
             <span>Cadastro e Histórico de Clientes</span>
           </h2>
-          <p className="text-xs text-[#5C5852]">Acompanhe compras, contatos, WhatsApp e débitos em aberto.</p>
+          <p className="text-sm sm:text-base text-[#5C5852] dark:text-[#C9BFA8] mt-1">
+            Acompanhe compras, contatos, WhatsApp e débitos em aberto.
+          </p>
         </div>
 
         <Button
@@ -165,15 +161,15 @@ export const CustomersView: React.FC = () => {
       </div>
 
       {/* Search Bar */}
-      <Card variant="flat" className="p-3.5 flex items-center space-x-3">
-        <Search className="w-5 h-5 text-[#8A5A44] shrink-0" />
+      <Card variant="flat" className="p-4 flex items-center space-x-3">
+        <Search className="w-5 h-5 text-[#8A5A44] dark:text-[#C9BFA8] shrink-0" />
         <Input
           id="customer-search-input"
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Buscar por nome, cidade ou tipo (ex: Paisagista, Loja)..."
-          className="border-none bg-transparent focus:ring-0 p-0 text-sm"
+          className="border-none bg-transparent focus:ring-0 p-0 text-base"
           aria-label="Buscar clientes"
         />
       </Card>
@@ -195,17 +191,17 @@ export const CustomersView: React.FC = () => {
             const totalSpent = custSales.reduce((acc, s) => acc + s.totalValue, 0);
 
             return (
-              <Card key={cust.id} variant="default" className="p-4 space-y-3 flex flex-col justify-between">
+              <Card key={cust.id} variant="default" className="p-5 space-y-4 flex flex-col justify-between">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-[#8A5A44] bg-[#E7D5BE]/60 px-2 py-0.5 rounded-full">
+                      <span className="text-xs uppercase font-bold text-[#8A5A44] dark:text-[#C9BFA8] bg-[#E7D5BE]/60 dark:bg-stone-700 px-2.5 py-1 rounded-lg">
                         {cust.type}
                       </span>
-                      <h3 className="font-bold text-[#292724] text-base mt-1">{cust.name}</h3>
+                      <h3 className="font-black text-[#292724] dark:text-[#F7F1E7] text-lg sm:text-xl mt-1.5">{cust.name}</h3>
                       {cust.city && (
-                        <p className="text-xs text-[#5C5852] flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 text-[#B85C38]" />
+                        <p className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] flex items-center gap-1.5 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-[#B85C38]" />
                           {cust.city}
                         </p>
                       )}
@@ -217,7 +213,7 @@ export const CustomersView: React.FC = () => {
                           href={`https://wa.me/${cust.whatsapp.replace(/\D/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 bg-[#667052]/10 text-[#4F583D] hover:bg-[#667052]/20 rounded-xl transition-colors"
+                          className="p-2.5 bg-[#667052]/10 text-[#4F583D] hover:bg-[#667052]/20 rounded-xl transition-colors"
                           title="Abrir WhatsApp"
                           aria-label={`Abrir WhatsApp de ${cust.name}`}
                         >
@@ -235,48 +231,50 @@ export const CustomersView: React.FC = () => {
                         onClick={() => setCustomerToDelete(cust)}
                         variant="ghost"
                         size="sm"
-                        className="text-rose-700"
+                        icon={Trash2}
+                        className="text-rose-700 hover:bg-rose-100"
                         ariaLabel={`Excluir ${cust.name}`}
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-[#FAF6EF] p-2.5 rounded-xl border border-[#E7D5BE]">
+                  <div className="grid grid-cols-2 gap-2 text-sm bg-[#FAF6EF] dark:bg-[#1A1816] p-3.5 rounded-xl border border-[#E7D5BE] dark:border-stone-800">
                     <div>
-                      <span className="text-[#8A5A44] block text-[10px] font-bold uppercase">Total Comprado</span>
-                      <span className="font-bold text-[#292724]">R$ {totalSpent.toFixed(2)}</span>
+                      <span className="text-[#8A5A44] dark:text-[#C9BFA8] block text-xs font-bold uppercase">Total Comprado</span>
+                      <span className="font-black text-[#292724] dark:text-[#F7F1E7] font-mono">R$ {totalSpent.toFixed(2)}</span>
                     </div>
                     <div>
-                      <span className="text-[#8A5A44] block text-[10px] font-bold uppercase">Débito (Fiado)</span>
-                      <span className={`font-bold ${pendingDebt > 0 ? 'text-rose-700' : 'text-[#4F583D]'}`}>
+                      <span className="text-[#8A5A44] dark:text-[#C9BFA8] block text-xs font-bold uppercase">Débito (Fiado)</span>
+                      <span className={`font-black font-mono ${pendingDebt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-[#4F583D] dark:text-[#A4B38A]'}`}>
                         R$ {pendingDebt.toFixed(2)}
                       </span>
                     </div>
                   </div>
 
-                  {cust.notes && (
-                    <div className="text-xs text-[#292724] bg-[#FAF6EF] px-2.5 py-1.5 rounded-lg border border-[#E7D5BE]">
-                      <strong className="font-semibold text-[#8A5A44]">Obs:</strong> {cust.notes}
-                    </div>
+                  {cust.phone && (
+                    <p className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8]">
+                      Tel: <strong>{cust.phone}</strong>
+                    </p>
+                  )}
+
+                  {cust.address && (
+                    <p className="text-xs sm:text-sm text-[#5C5852] dark:text-[#C9BFA8] truncate">
+                      End: {cust.address}
+                    </p>
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-[#E7D5BE] flex items-center gap-2">
+                <div className="pt-3 border-t border-[#E7D5BE] dark:border-stone-800 flex items-center justify-between">
+                  <span className="text-xs text-[#8A5A44] dark:text-[#C9BFA8]">
+                    {custSales.length} compra(s) realizada(s)
+                  </span>
                   <Button
                     onClick={() => setSelectedCustomer(cust)}
                     variant="secondary"
                     size="sm"
-                    className="flex-1"
                   >
-                    Histórico ({custSales.length})
+                    Ver Histórico
                   </Button>
-                  <Button
-                    onClick={() => setCustomerToDelete(cust)}
-                    variant="ghost"
-                    size="sm"
-                    icon={Trash2}
-                    className="text-rose-700"
-                  />
                 </div>
               </Card>
             );
@@ -284,177 +282,182 @@ export const CustomersView: React.FC = () => {
         </div>
       )}
 
-      {/* Customer Modal (Create & Edit) */}
+      {/* Customer Form Modal (New & Edit) */}
       {isModalOpen && (
         <Modal
           isOpen={isModalOpen}
-          onClose={() => { setIsModalOpen(false); setEditingCustomer(null); }}
-          title={editingCustomer ? 'Editar Cliente' : 'Cadastrar Novo Cliente'}
-          description="Acompanhe contatos, categoria do comprador e preferências."
+          onClose={() => setIsModalOpen(false)}
+          title={editingCustomer ? `Editar Cliente: ${editingCustomer.name}` : 'Cadastrar Novo Cliente'}
           size="md"
         >
-          <form onSubmit={handleSaveCustomer} className="space-y-3 font-brand-sans">
-            <FormField label="Nome do Cliente" htmlFor="cust-name-input" required>
+          <form onSubmit={handleSaveCustomer} className="space-y-4 font-brand-sans">
+            <FormField label="Nome Completo ou Razão Social" htmlFor="cust-name" required>
               <Input
-                id="cust-name-input"
+                id="cust-name"
                 type="text"
                 required
-                placeholder="Ex: Carlos Mendes"
+                placeholder="Ex: Floricultura Bela Vista..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </FormField>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FormField label="Telefone / WhatsApp" htmlFor="cust-whatsapp-input">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Tipo de Cliente" htmlFor="cust-type" required>
+                <Select
+                  id="cust-type"
+                  value={type}
+                  onChange={(e) => setType(e.target.value as CustomerType)}
+                >
+                  {CUSTOMER_TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </Select>
+              </FormField>
+
+              <FormField label="CPF ou CNPJ" htmlFor="cust-doc">
                 <Input
-                  id="cust-whatsapp-input"
+                  id="cust-doc"
                   type="text"
-                  placeholder="(11) 99999-9999"
+                  placeholder="000.000.000-00"
+                  value={cpfCnpj}
+                  onChange={(e) => setCpfCnpj(e.target.value)}
+                />
+              </FormField>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Telefone / Contato" htmlFor="cust-phone">
+                <Input
+                  id="cust-phone"
+                  type="text"
+                  placeholder="(11) 98765-4321"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="WhatsApp (Comercial)" htmlFor="cust-whatsapp">
+                <Input
+                  id="cust-whatsapp"
+                  type="text"
+                  placeholder="(11) 98765-4321"
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
                 />
               </FormField>
+            </div>
 
-              <FormField label="Tipo de Cliente" htmlFor="cust-type-select" required>
-                <Select
-                  id="cust-type-select"
-                  value={type}
-                  onChange={(e) => setType(e.target.value as CustomerType)}
-                >
-                  {CUSTOMER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Cidade / UF" htmlFor="cust-city">
+                <Input
+                  id="cust-city"
+                  type="text"
+                  placeholder="Ex: Cunha / SP"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="Endereço de Entrega" htmlFor="cust-address">
+                <Input
+                  id="cust-address"
+                  type="text"
+                  placeholder="Rua, Número, Bairro"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
               </FormField>
             </div>
 
-            <FormField label="Cidade / Estado" htmlFor="cust-city-input">
-              <Input
-                id="cust-city-input"
-                type="text"
-                placeholder="Ex: Campinas / SP"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
-            </FormField>
-
-            <FormField label="Endereço" htmlFor="cust-address-input">
-              <Input
-                id="cust-address-input"
-                type="text"
-                placeholder="Ex: Rua das Flores, 120"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-            </FormField>
-
-            <FormField label="CPF ou CNPJ (opcional)" htmlFor="cust-cpf-input">
-              <Input
-                id="cust-cpf-input"
-                type="text"
-                placeholder="000.000.000-00"
-                value={cpfCnpj}
-                onChange={(e) => setCpfCnpj(e.target.value)}
-              />
-            </FormField>
-
-            <FormField label="Observações" htmlFor="cust-notes-textarea">
+            <FormField label="Observações & Notas Comerciais" htmlFor="cust-notes">
               <Textarea
-                id="cust-notes-textarea"
-                placeholder="Ex: Compra em lote para loja de plantas"
+                id="cust-notes"
+                rows={2}
+                placeholder="Ex: Prefere pagar no Pix; compra peças vitrificadas de grande porte..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
             </FormField>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-[#E7D5BE]">
-              <Button type="button" variant="ghost" size="sm" onClick={() => { setIsModalOpen(false); setEditingCustomer(null); }}>
+            <div className="flex justify-end gap-3 pt-4 border-t border-[#E7D5BE] dark:border-stone-800">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsModalOpen(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" variant="primary" size="md">
-                {editingCustomer ? 'Salvar Alterações' : 'Salvar Cliente'}
+              <Button
+                type="submit"
+                variant="primary"
+              >
+                {editingCustomer ? 'Salvar Alterações' : 'Cadastrar Cliente'}
               </Button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={!!customerToDelete}
-        onClose={() => setCustomerToDelete(null)}
-        onConfirm={handleConfirmDelete}
-        title="Excluir Cliente"
-        message={`Tem certeza que deseja excluir o cliente "${customerToDelete?.name}"? Esta ação não pode ser desfeita.`}
-        confirmLabel="Sim, Excluir Cliente"
-        variant="danger"
-      />
-
-      {/* Customer Details History Modal */}
+      {/* Customer Purchase History Modal */}
       {selectedCustomer && (
         <Modal
           isOpen={!!selectedCustomer}
           onClose={() => setSelectedCustomer(null)}
-          title={selectedCustomer.name}
-          description={`${selectedCustomer.type} • ${selectedCustomer.city || 'Cidade N/I'}`}
-          size="md"
+          title={`Histórico de Compras: ${selectedCustomer.name}`}
+          size="lg"
         >
           <div className="space-y-4 font-brand-sans">
-            <h4 className="font-bold text-[#8A5A44] text-xs uppercase tracking-wider font-brand-serif">
-              Histórico de Compras
-            </h4>
-            {sales
-              .filter(s => s.customerId === selectedCustomer.id || s.customerName.toLowerCase().includes(selectedCustomer.name.toLowerCase()))
-              .map((s) => (
-                <div key={s.id} className="p-3 bg-[#FAF6EF] rounded-xl border border-[#E7D5BE] text-xs space-y-1">
-                  <div className="flex justify-between font-bold text-[#292724]">
-                    <span>{s.code} ({s.date})</span>
-                    <span>R$ {s.totalValue.toFixed(2)}</span>
-                  </div>
-                  <p className="text-[#5C5852]">{s.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</p>
-                  <p className="text-[#8A5A44] font-medium">
-                    Pago: R$ {s.paidValue.toFixed(2)} | Status: <StatusBadge status={s.status} />
-                  </p>
-                </div>
-              ))}
-
-            <div className="flex items-center justify-between pt-3 border-t border-[#E7D5BE]">
-              <Button
-                type="button"
-                variant="danger"
-                size="sm"
-                icon={Trash2}
-                onClick={() => {
-                  const cust = selectedCustomer;
-                  setCustomerToDelete(cust);
-                }}
-              >
-                Excluir Cliente
-              </Button>
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  icon={Edit3}
-                  onClick={() => {
-                    const cust = selectedCustomer;
-                    handleOpenEditModal(cust);
-                  }}
-                >
-                  Editar
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedCustomer(null)}
-                >
-                  Fechar
-                </Button>
+            <div className="p-4 bg-[#FAF6EF] dark:bg-[#1A1816] rounded-xl border border-[#E7D5BE] dark:border-stone-800 flex justify-between items-center">
+              <div>
+                <span className="text-xs uppercase font-bold text-[#8A5A44] dark:text-[#C9BFA8]">{selectedCustomer.type}</span>
+                <h4 className="font-bold text-[#292724] dark:text-[#F7F1E7] text-lg">{selectedCustomer.name}</h4>
+                <p className="text-sm text-[#5C5852] dark:text-[#C9BFA8]">{selectedCustomer.city || 'Sem cidade informada'} • {selectedCustomer.phone || 'Sem telefone'}</p>
               </div>
+            </div>
+
+            <h5 className="font-bold text-[#292724] dark:text-[#F7F1E7] text-base font-brand-serif">Vendas Vinculadas</h5>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {sales.filter(s => s.customerId === selectedCustomer.id || s.customerName.toLowerCase().includes(selectedCustomer.name.toLowerCase())).length === 0 ? (
+                <p className="text-sm text-[#5C5852] dark:text-[#C9BFA8] italic">Nenhuma venda associada a este cliente.</p>
+              ) : (
+                sales.filter(s => s.customerId === selectedCustomer.id || s.customerName.toLowerCase().includes(selectedCustomer.name.toLowerCase())).map(sale => (
+                  <div key={sale.id} className="p-3 bg-[#FAF6EF] dark:bg-[#1A1816] rounded-xl border border-[#E7D5BE] dark:border-stone-800 flex justify-between items-center text-sm">
+                    <div>
+                      <span className="font-mono font-bold text-xs text-[#8A5A44] dark:text-[#D67855]">{sale.code}</span>
+                      <p className="font-medium text-[#292724] dark:text-[#F7F1E7]">{sale.items.map(i => `${i.quantity}x ${i.productName}`).join(', ')}</p>
+                      <span className="text-xs text-[#5C5852] dark:text-[#C9BFA8]">{new Date(sale.date).toLocaleDateString('pt-BR')} • {sale.paymentMethod}</span>
+                    </div>
+                    <span className="font-black text-[#292724] dark:text-[#F7F1E7] font-mono">R$ {sale.totalValue.toFixed(2)}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-[#E7D5BE] dark:border-stone-800">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => setSelectedCustomer(null)}
+              >
+                Fechar
+              </Button>
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {customerToDelete && (
+        <ConfirmModal
+          isOpen={!!customerToDelete}
+          onClose={() => setCustomerToDelete(null)}
+          onConfirm={confirmDeleteCustomer}
+          title="Excluir Cliente"
+          message={`Tem certeza que deseja remover "${customerToDelete.name}" da lista de clientes?`}
+          confirmLabel="Excluir Cliente"
+          variant="danger"
+        />
       )}
     </div>
   );

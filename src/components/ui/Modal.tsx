@@ -128,16 +128,16 @@ export const Modal: React.FC<ModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#E7D5BE] dark:border-stone-800 p-4 sm:p-5 shrink-0 bg-[#F7F1E7] dark:bg-[#1E1B18]">
           <div>
-            <h2 id="modal-title" className="font-brand-serif font-bold text-base sm:text-lg text-[#292724] dark:text-[#F7F1E7]">
+            <h2 id="modal-title" className="font-brand-serif font-bold text-lg sm:text-xl text-[#292724] dark:text-[#F7F1E7]">
               {title}
             </h2>
             {description && (
-              <p className="text-xs text-[#5C5852] dark:text-[#A8A29E] mt-0.5">{description}</p>
+              <p className="text-sm sm:text-base text-[#5C5852] dark:text-[#C9BFA8] mt-0.5">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-[#E7D5BE]/60 dark:bg-stone-800 text-[#292724] dark:text-[#F7F1E7] hover:bg-[#E7D5BE] dark:hover:bg-stone-700 hover:text-[#B85C38] transition-colors cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38]"
+            className="p-2 rounded-xl bg-[#E7D5BE]/60 dark:bg-stone-800 text-[#292724] dark:text-[#F7F1E7] hover:bg-[#E7D5BE] dark:hover:bg-stone-700 hover:text-[#B85C38] transition-colors cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-[#B85C38]"
             aria-label="Fechar janela modal"
             title="Fechar"
           >
@@ -146,7 +146,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 text-base">
           {children}
         </div>
       </div>
