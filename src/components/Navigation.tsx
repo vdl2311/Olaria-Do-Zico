@@ -132,7 +132,24 @@ export const Navigation: React.FC<NavigationProps> = ({
     <>
       {/* Desktop Sidebar Navigation */}
       <aside className="hidden lg:flex flex-col justify-between w-64 bg-[#8A5A44] dark:bg-[#252320] text-[#F7F1E7] dark:text-[#F2EBDD] border-r border-[#6E4533] dark:border-[#3D3833] p-4 shrink-0 min-h-[calc(100vh-4.5rem)] rounded-2xl shadow-md my-2 transition-colors font-brand-sans" aria-label="Navegação Principal Desktop">
-        <div className="space-y-6">
+        <div className="space-y-5">
+          {/* Prominent Sidebar Brand Header */}
+          <div className="p-3 bg-[#6E4533]/90 dark:bg-[#1E1C1A] rounded-2xl border border-[#A7735B]/40 dark:border-stone-700 flex items-center gap-3.5 shadow-sm">
+            <img
+              src="/favicon.png"
+              alt="Olaria do Zico"
+              className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0 drop-shadow-md select-none"
+              referrerPolicy="no-referrer"
+            />
+            <div className="min-w-0 flex-1">
+              <span className="font-brand-serif text-lg font-black tracking-wider uppercase text-[#F7F1E7] block truncate">
+                OLARIA DO ZICO
+              </span>
+              <span className="text-[11px] text-[#E7D5BE] font-medium block truncate">
+                Da terra para ambientes
+              </span>
+            </div>
+          </div>
           {NAV_GROUPS.map((group, idx) => (
             <div key={idx} className="space-y-2">
               <div className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#E7D5BE] dark:text-[#D4BEA2] px-3 font-brand-sans">
@@ -218,7 +235,13 @@ export const Navigation: React.FC<NavigationProps> = ({
             <div>
               {/* Drawer Header */}
               <div className="flex items-center justify-between pb-3 border-b border-[#6E4533] dark:border-[#3D3833] mb-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="/favicon.png"
+                    alt="Olaria do Zico"
+                    className="w-10 h-10 rounded-full object-contain shadow-xs border border-[#D4BEA2] bg-[#FAF6EF]"
+                    referrerPolicy="no-referrer"
+                  />
                   <span className="font-brand-serif font-black text-lg uppercase text-[#F7F1E7]">
                     Menu de Módulos
                   </span>

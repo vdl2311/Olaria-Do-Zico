@@ -1,49 +1,72 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface BrandSymbolProps {
   className?: string;
   size?: number;
-  color?: string; // Optional override
+  color?: string;
   variant?: 'terracota' | 'creme' | 'argila' | 'grafite' | 'oliva' | 'monochrome';
+  useImage?: boolean;
 }
 
 /**
- * Organic, minimalist ceramic vessel symbol combining:
- * - Vessel silhouette (Vaso)
- * - Flame curve (Fogo)
- * - Leaf / Nature curve (Terra / Folha)
- * - Clay coil curve (Argila)
+ * Ceramic medallion symbol combining:
+ * - Real Favicon Badge Image (with terracotta rim, beige ceramic interior, rising flame/steam, olive green leaf)
+ * - High fidelity Ceramic vector badge fallback
  */
 export const BrandSymbol: React.FC<BrandSymbolProps> = ({ 
-  className = 'w-6 h-6', 
+  className = 'w-10 h-10', 
   size, 
   color,
-  variant = 'terracota' 
+  variant = 'terracota',
+  useImage = true
 }) => {
-  let strokeColor = '#B85C38'; // Terracota default
-  let accentColor = '#8A5A44'; // Argila
+  const [imageError, setImageError] = useState(false);
+
+  const style = size ? { width: size, height: size } : undefined;
+
+  // Render high-res favicon image badge if requested and available
+  if (useImage && !imageError) {
+    return (
+      <img
+        src="/favicon.png"
+        alt="Símbolo Olaria"
+        style={style}
+        className={`object-contain shrink-0 select-none drop-shadow-md ${className}`}
+        referrerPolicy="no-referrer"
+        onError={() => setImageError(true)}
+      />
+    );
+  }
+
+  let strokeColor = '#B85C38';
+  let accentColor = '#8A5A44';
+  let leafColor = '#4F583D';
 
   if (color) {
     strokeColor = color;
     accentColor = color;
+    leafColor = color;
   } else if (variant === 'creme') {
     strokeColor = '#F7F1E7';
     accentColor = '#E7D5BE';
+    leafColor = '#D4BEA2';
   } else if (variant === 'argila') {
     strokeColor = '#8A5A44';
     accentColor = '#B85C38';
+    leafColor = '#667052';
   } else if (variant === 'grafite') {
     strokeColor = '#292724';
     accentColor = '#5C5852';
+    leafColor = '#292724';
   } else if (variant === 'oliva') {
     strokeColor = '#667052';
     accentColor = '#4F583D';
+    leafColor = '#4F583D';
   } else if (variant === 'monochrome') {
     strokeColor = 'currentColor';
     accentColor = 'currentColor';
+    leafColor = 'currentColor';
   }
-
-  const style = size ? { width: size, height: size } : undefined;
 
   return (
     <svg 
@@ -54,43 +77,46 @@ export const BrandSymbol: React.FC<BrandSymbolProps> = ({
       style={style}
       aria-label="Símbolo Olaria"
     >
-      {/* Outer Ceramic Vessel Organic Contour */}
+      {/* Outer Ceramic Medal Ring */}
+      <circle cx="50" cy="50" r="46" stroke={strokeColor} strokeWidth="6" fill="#FAF6EF" />
+      <circle cx="50" cy="50" r="41" stroke="#E7D5BE" strokeWidth="1.5" />
+
+      {/* Stylized Pottery Vessel Outline */}
       <path 
-        d="M32 24 C32 20, 68 20, 68 24 C68 30, 62 36, 62 44 C62 56, 78 68, 76 82 C74 90, 60 92, 50 92 C40 92, 26 90, 24 82 C22 68, 38 56, 38 44 C38 36, 32 30, 32 24 Z" 
+        d="M34 38 C30 46, 38 60, 48 76 C52 76, 60 68, 64 56 C68 48, 60 40, 56 38" 
         stroke={strokeColor} 
-        strokeWidth="4.5" 
+        strokeWidth="4" 
         strokeLinecap="round" 
         strokeLinejoin="round" 
       />
 
-      {/* Internal Organic Curve (Flame + Clay Coil + Sprout) */}
+      {/* Rising Smoke / Steam / Flame Curves */}
       <path 
-        d="M50 32 C55 42, 58 52, 52 64 C48 72, 42 76, 50 84 C56 74, 60 60, 52 46" 
+        d="M50 18 C52 24, 46 28, 50 34 C54 30, 48 24, 50 18 Z" 
+        fill={strokeColor} 
+      />
+      <path 
+        d="M58 30 C64 34, 66 42, 60 48" 
         stroke={accentColor} 
         strokeWidth="3.5" 
         strokeLinecap="round" 
       />
 
-      {/* Vessel Rim Minimalist Lip */}
+      {/* Ceramic Leaf Element */}
       <path 
-        d="M30 22 C36 19, 64 19, 70 22" 
-        stroke={strokeColor} 
-        strokeWidth="4.5" 
-        strokeLinecap="round" 
+        d="M48 76 C58 72, 72 60, 74 52 C72 66, 62 76, 38 78 C42 77, 46 76, 48 76 Z" 
+        fill={leafColor} 
       />
-
-      {/* Subtle organic dot / center of the kiln */}
-      <circle cx="50" cy="52" r="3" fill={strokeColor} />
     </svg>
   );
 };
 
 interface BrandLogoProps {
-  variant?: 'horizontal' | 'vertical' | 'symbol' | 'compact';
+  variant?: 'horizontal' | 'vertical' | 'symbol' | 'compact' | 'hero';
   theme?: 'light' | 'dark' | 'terracota' | 'argila';
   className?: string;
   showTagline?: boolean;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
@@ -103,24 +129,50 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   const isDark = theme === 'dark' || theme === 'argila' || theme === 'terracota';
   const textColor = isDark ? 'text-[#F7F1E7]' : 'text-[#292724]';
   const taglineColor = isDark ? 'text-[#E7D5BE]/80' : 'text-[#8A5A44]';
-  const symbolVariant = isDark ? 'creme' : 'terracota';
 
   if (variant === 'symbol') {
-    return <BrandSymbol variant={symbolVariant} className={className || 'w-8 h-8'} />;
+    return <BrandSymbol className={className || 'w-12 h-12'} />;
+  }
+
+  // Large Hero badge
+  if (variant === 'hero') {
+    return (
+      <div className={`flex flex-col items-center text-center gap-3.5 ${className}`}>
+        <img
+          src="/favicon.png"
+          alt="Logotipo Olaria do Zico"
+          className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 object-contain drop-shadow-xl select-none"
+          referrerPolicy="no-referrer"
+        />
+        <div>
+          <span className={`font-brand-serif text-3xl sm:text-4xl font-black tracking-wider block ${textColor}`}>
+            OLARIA DO ZICO
+          </span>
+          {showTagline && (
+            <span className={`font-brand-sans text-sm sm:text-base tracking-widest uppercase font-bold mt-1 block ${taglineColor}`}>
+              Da terra para transformar ambientes
+            </span>
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (variant === 'vertical') {
     return (
-      <div className={`flex flex-col items-center text-center gap-2 ${className}`}>
-        <div className="w-14 h-14 rounded-full bg-[#E7D5BE]/40 flex items-center justify-center p-2.5 border border-[#E7D5BE]">
-          <BrandSymbol variant={symbolVariant} className="w-9 h-9" />
-        </div>
+      <div className={`flex flex-col items-center text-center gap-3 ${className}`}>
+        <img
+          src="/favicon.png"
+          alt="Logotipo Olaria do Zico"
+          className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg select-none"
+          referrerPolicy="no-referrer"
+        />
         <div>
-          <span className={`font-brand-serif text-2xl md:text-3xl font-bold tracking-wider block ${textColor}`}>
-            OLARIA
+          <span className={`font-brand-serif text-2xl sm:text-3xl font-black tracking-wider block ${textColor}`}>
+            OLARIA DO ZICO
           </span>
           {showTagline && (
-            <span className={`font-brand-sans text-xs tracking-widest uppercase font-medium mt-0.5 block ${taglineColor}`}>
+            <span className={`font-brand-sans text-xs sm:text-sm tracking-wider uppercase font-semibold mt-0.5 block ${taglineColor}`}>
               Da terra para transformar ambientes
             </span>
           )}
@@ -133,15 +185,18 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   if (variant === 'compact') {
     return (
       <div className={`flex items-center gap-3 ${className}`}>
-        <div className="w-9 h-9 rounded-xl bg-[#E7D5BE]/50 flex items-center justify-center p-1.5 border border-[#D4BEA2]/60 shrink-0">
-          <BrandSymbol variant={symbolVariant} className="w-6 h-6" />
-        </div>
+        <img
+          src="/favicon.png"
+          alt="Olaria"
+          className="w-11 h-11 sm:w-13 sm:h-13 object-contain shrink-0 drop-shadow-md select-none"
+          referrerPolicy="no-referrer"
+        />
         <div className="min-w-0">
-          <span className={`font-brand-serif text-lg font-bold tracking-wide leading-tight block truncate ${textColor}`}>
-            OLARIA
+          <span className={`font-brand-serif text-lg sm:text-xl font-black tracking-wide leading-tight block truncate ${textColor}`}>
+            OLARIA DO ZICO
           </span>
           {showTagline && (
-            <span className={`font-brand-sans text-[11px] tracking-tight block truncate ${taglineColor}`}>
+            <span className={`font-brand-sans text-xs font-medium tracking-tight block truncate ${taglineColor}`}>
               Da terra para transformar ambientes
             </span>
           )}
@@ -150,23 +205,26 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     );
   }
 
-  // Horizontal Full Logo
+  // Horizontal Full Logo (Grandes dimensões)
   return (
-    <div className={`flex items-center gap-3.5 ${className}`}>
-      <div className="w-11 h-11 rounded-2xl bg-[#E7D5BE]/60 flex items-center justify-center p-2 border border-[#D4BEA2] shadow-xs shrink-0">
-        <BrandSymbol variant={symbolVariant} className="w-7 h-7" />
-      </div>
+    <div className={`flex items-center gap-4 ${className}`}>
+      <img
+        src="/favicon.png"
+        alt="Logotipo Olaria"
+        className="w-16 h-16 sm:w-20 sm:h-20 object-contain shrink-0 drop-shadow-lg select-none"
+        referrerPolicy="no-referrer"
+      />
       <div>
         <div className="flex items-center gap-2">
-          <span className={`font-brand-serif text-2xl font-black tracking-wider leading-none ${textColor}`}>
-            OLARIA
+          <span className={`font-brand-serif text-2xl sm:text-3xl font-black tracking-wider leading-none ${textColor}`}>
+            OLARIA DO ZICO
           </span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#667052]/15 text-[#4F583D] border border-[#667052]/30 uppercase tracking-wider font-brand-sans">
+          <span className="text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#667052]/20 text-[#4F583D] dark:text-[#A4B38A] border border-[#667052]/30 uppercase tracking-wider font-brand-sans">
             Artesanal
           </span>
         </div>
         {showTagline && (
-          <span className={`font-brand-sans text-xs tracking-wide block mt-1 ${taglineColor}`}>
+          <span className={`font-brand-sans text-xs sm:text-sm font-semibold tracking-wide block mt-1.5 ${taglineColor}`}>
             Da terra para transformar ambientes
           </span>
         )}

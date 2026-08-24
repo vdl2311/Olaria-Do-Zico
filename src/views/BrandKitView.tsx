@@ -309,7 +309,15 @@ export const BrandKitView: React.FC = () => {
                 <h3 className="font-brand-serif text-2xl font-bold text-[#292724]">Versões Oficiais do Logotipo</h3>
                 <p className="text-xs text-[#8A5A44]">Símbolo estilizado: vaso orgânico + chama do fogo + folha da natureza + espiral de argila.</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href="/favicon.png"
+                  download="favicon_olaria_do_zico.png"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#8A5A44] text-white text-xs font-bold hover:bg-[#6E4533] transition-colors cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Baixar Favicon (PNG)</span>
+                </a>
                 <button
                   onClick={() => downloadSvgLogo('light')}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#B85C38] text-white text-xs font-bold hover:bg-[#9E4A2A] transition-colors cursor-pointer"
@@ -352,14 +360,17 @@ export const BrandKitView: React.FC = () => {
 
               {/* 3. Símbolo Isolado */}
               <div className="p-6 rounded-2xl bg-[#F7F1E7] border border-[#E7D5BE] flex flex-col justify-between">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-[#8A5A44] mb-4">3. Símbolo Isolado (Ícone)</div>
-                <div className="py-6 flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-2xl bg-[#E7D5BE]/50 flex items-center justify-center border border-[#D4BEA2]">
-                    <BrandSymbol size={48} variant="terracota" />
-                  </div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#8A5A44] mb-4">3. Símbolo Isolado (Medalhão Oficial)</div>
+                <div className="py-4 flex items-center justify-center">
+                  <img
+                    src="/favicon.png"
+                    alt="Símbolo Oficial Olaria"
+                    className="w-32 h-32 object-contain drop-shadow-xl select-none"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
                 <div className="text-xs text-[#5C5852] mt-4 pt-3 border-t border-[#E7D5BE]">
-                  Uso: favicon, foto de perfil WhatsApp, Instagram, carimbo físico.
+                  Uso: favicon, foto de perfil WhatsApp, Instagram, carimbo físico e lacres.
                 </div>
               </div>
 

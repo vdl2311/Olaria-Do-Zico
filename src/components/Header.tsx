@@ -76,14 +76,17 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F7F1E7] flex items-center justify-center p-2 shadow-xs border border-[#E7D5BE] shrink-0">
-              <BrandSymbol variant="terracota" className="w-6 h-6 sm:w-7 sm:h-7" />
-            </div>
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+            <img
+              src="/favicon.png"
+              alt="Olaria do Zico"
+              className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0 drop-shadow-md select-none"
+              referrerPolicy="no-referrer"
+            />
             <div className="min-w-0 flex-1">
-              <h1 className="text-base sm:text-lg md:text-xl font-black tracking-tight text-[#F7F1E7] flex items-center gap-2 truncate">
+              <h1 className="text-base sm:text-xl font-black tracking-tight text-[#F7F1E7] flex items-center gap-2 truncate">
                 <span className="font-brand-serif font-black tracking-wider uppercase truncate">
-                  {currentUser?.companyName || (isDemo ? 'Olaria (Demo)' : 'OLARIA')}
+                  {currentUser?.companyName || (isDemo ? 'Olaria (Demo)' : 'OLARIA DO ZICO')}
                 </span>
                 {isDemo ? (
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-200 border border-cyan-700 hidden sm:inline-flex items-center gap-1 shrink-0 font-brand-sans">

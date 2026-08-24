@@ -273,13 +273,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
     <div className="min-h-screen bg-stone-100 flex flex-col justify-between p-4 sm:p-6 selection:bg-amber-800 selection:text-white">
       {/* Top Header: Brand & Environment Selector */}
       <header className="max-w-md w-full mx-auto flex items-center justify-between py-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-amber-900 flex items-center justify-center text-amber-100 shadow-sm">
-            <Flame className="w-5 h-5" />
-          </div>
+        <div className="flex items-center gap-3">
+          <img
+            src="/favicon.png"
+            alt="Olaria do Zico"
+            className="w-12 h-12 object-contain drop-shadow-md select-none"
+            referrerPolicy="no-referrer"
+          />
           <div>
-            <h1 className="text-base font-black text-amber-950 tracking-tight leading-none uppercase">Olaria do Zico</h1>
-            <span className="text-[11px] font-semibold text-stone-500 tracking-wide">Gestão & Produção</span>
+            <h1 className="text-lg font-black text-amber-950 tracking-tight leading-none uppercase font-brand-serif">Olaria do Zico</h1>
+            <span className="text-xs font-semibold text-stone-500 tracking-wide font-brand-sans">Gestão & Produção</span>
           </div>
         </div>
 

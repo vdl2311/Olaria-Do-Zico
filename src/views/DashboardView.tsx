@@ -65,10 +65,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveView }) =
     <div className="space-y-6 pb-20 font-brand-sans">
       
       {/* Banner / Operational Overview (Terracota & Argila) */}
-      <div className="bg-[#FAF6EF] dark:bg-[#252320] rounded-3xl p-6 sm:p-8 text-[#292724] dark:text-[#F7F1E7] shadow-xs border border-[#E7D5BE] dark:border-[#3D3833] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-        <div className="space-y-3 text-center md:text-left relative z-10 max-w-2xl">
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#B85C38]/10 border border-[#B85C38]/20 text-[#B85C38] dark:text-[#E78B68] text-xs sm:text-sm font-bold uppercase tracking-wider font-brand-sans">
-            <BrandSymbol variant="terracota" className="w-4 h-4" />
+      <div className="bg-[#FAF6EF] dark:bg-[#252320] rounded-3xl p-6 sm:p-8 text-[#292724] dark:text-[#F7F1E7] shadow-sm border-2 border-[#E7D5BE] dark:border-[#3D3833] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="space-y-3 text-left relative z-10 max-w-2xl">
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-[#B85C38]/15 border border-[#B85C38]/30 text-[#B85C38] dark:text-[#E78B68] text-xs sm:text-sm font-bold uppercase tracking-wider font-brand-sans">
             <span>Da terra para transformar ambientes</span>
           </div>
           <h2 className="font-brand-serif text-2xl sm:text-3xl md:text-4xl font-black text-[#292724] dark:text-[#F7F1E7] tracking-tight leading-tight">
