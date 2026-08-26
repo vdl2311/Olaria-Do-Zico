@@ -23,6 +23,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { BrandLogo, BrandSymbol } from '../components/BrandLogo';
+import olariaLogoUrl from '../assets/images/favicon.png';
 import { StorageService } from '../services/storage';
 
 interface ColorCardProps {
@@ -363,7 +364,7 @@ export const BrandKitView: React.FC = () => {
                 <div className="text-[11px] font-bold uppercase tracking-wider text-[#8A5A44] mb-4">3. Símbolo Isolado (Medalhão Oficial)</div>
                 <div className="py-4 flex items-center justify-center">
                   <img
-                    src="/favicon.png"
+                    src={olariaLogoUrl}
                     alt="Símbolo Oficial Olaria"
                     className="w-32 h-32 object-contain drop-shadow-xl select-none"
                     referrerPolicy="no-referrer"

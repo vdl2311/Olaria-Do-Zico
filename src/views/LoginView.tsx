@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { AuthService } from '../services/authService';
 import { AuthUser } from '../types';
+import olariaLogoUrl from '../assets/images/favicon.png';
 
 interface LoginViewProps {
   onLoginSuccess: (user: AuthUser) => void;
@@ -275,7 +276,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
       <header className="max-w-md w-full mx-auto flex items-center justify-between py-2">
         <div className="flex items-center gap-3">
           <img
-            src="/favicon.png"
+            src={olariaLogoUrl}
             alt="Olaria do Zico"
             className="w-12 h-12 object-contain drop-shadow-md select-none"
             referrerPolicy="no-referrer"

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { AuthService } from '../services/authService';
+import olariaLogoUrl from '../assets/images/favicon.png';
 
 interface NavigationProps {
   activeView: string;
@@ -136,7 +137,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           {/* Prominent Sidebar Brand Header */}
           <div className="p-3 bg-[#6E4533]/90 dark:bg-[#1E1C1A] rounded-2xl border border-[#A7735B]/40 dark:border-stone-700 flex items-center gap-3.5 shadow-sm">
             <img
-              src="/favicon.png"
+              src={olariaLogoUrl}
               alt="Olaria do Zico"
               className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0 drop-shadow-md select-none"
               referrerPolicy="no-referrer"
@@ -237,9 +238,9 @@ export const Navigation: React.FC<NavigationProps> = ({
               <div className="flex items-center justify-between pb-3 border-b border-[#6E4533] dark:border-[#3D3833] mb-4">
                 <div className="flex items-center gap-3">
                   <img
-                    src="/favicon.png"
+                    src={olariaLogoUrl}
                     alt="Olaria do Zico"
-                    className="w-10 h-10 rounded-full object-contain shadow-xs border border-[#D4BEA2] bg-[#FAF6EF]"
+                    className="w-10 h-10 object-contain drop-shadow-xs select-none"
                     referrerPolicy="no-referrer"
                   />
                   <span className="font-brand-serif font-black text-lg uppercase text-[#F7F1E7]">

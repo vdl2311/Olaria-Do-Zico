@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import olariaLogoUrl from '../assets/images/favicon.png';
+
+export const OLARIA_LOGO_SRC = olariaLogoUrl;
 
 interface BrandSymbolProps {
   className?: string;
@@ -28,7 +31,7 @@ export const BrandSymbol: React.FC<BrandSymbolProps> = ({
   if (useImage && !imageError) {
     return (
       <img
-        src="/favicon.png"
+        src={olariaLogoUrl || '/favicon.png'}
         alt="Símbolo Olaria"
         style={style}
         className={`object-contain shrink-0 select-none drop-shadow-md ${className}`}
@@ -139,7 +142,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     return (
       <div className={`flex flex-col items-center text-center gap-3.5 ${className}`}>
         <img
-          src="/favicon.png"
+          src={olariaLogoUrl}
           alt="Logotipo Olaria do Zico"
           className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 object-contain drop-shadow-xl select-none"
           referrerPolicy="no-referrer"
@@ -162,7 +165,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     return (
       <div className={`flex flex-col items-center text-center gap-3 ${className}`}>
         <img
-          src="/favicon.png"
+          src={olariaLogoUrl}
           alt="Logotipo Olaria do Zico"
           className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg select-none"
           referrerPolicy="no-referrer"
@@ -186,7 +189,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     return (
       <div className={`flex items-center gap-3 ${className}`}>
         <img
-          src="/favicon.png"
+          src={olariaLogoUrl}
           alt="Olaria"
           className="w-11 h-11 sm:w-13 sm:h-13 object-contain shrink-0 drop-shadow-md select-none"
           referrerPolicy="no-referrer"
@@ -209,7 +212,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   return (
     <div className={`flex items-center gap-4 ${className}`}>
       <img
-        src="/favicon.png"
+        src={olariaLogoUrl}
         alt="Logotipo Olaria"
         className="w-16 h-16 sm:w-20 sm:h-20 object-contain shrink-0 drop-shadow-lg select-none"
         referrerPolicy="no-referrer"

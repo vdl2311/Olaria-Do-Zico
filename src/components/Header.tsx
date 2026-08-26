@@ -4,6 +4,7 @@ import { StorageService } from '../services/storage';
 import { AuthService } from '../services/authService';
 import { BrandSymbol } from './BrandLogo';
 import { useTheme } from '../context/ThemeContext';
+import olariaLogoUrl from '../assets/images/favicon.png';
 
 interface HeaderProps {
   onOpenVoiceModal?: () => void;
@@ -78,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
             <img
-              src="/favicon.png"
+              src={olariaLogoUrl}
               alt="Olaria do Zico"
               className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0 drop-shadow-md select-none"
               referrerPolicy="no-referrer"
